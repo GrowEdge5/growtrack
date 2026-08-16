@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: growtrack
+      POSTGRES_USER: growtrack
+      POSTGRES_PASSWORD: growtrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - growtrack-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U growtrack -d growtrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - growtrack-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgresql://growtrack:growtrack@postgres:5432/growtrack?schema=public
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:3000
+      EVM_RPC_URL: https://ethereum-rpc.publicnode.com
+      EVM_CHAIN_ID: 1
+      EVM_CHAIN_NAME: ethereum
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["node", "dist/main.js"]
+
+  worker:
+    build: .
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://growtrack:growtrack@postgres:5432/growtrack?schema=public
+      REDIS_URL: redis://redis:6379
+      EVM_RPC_URL: https://ethereum-rpc.publicnode.com
+      EVM_CHAIN_ID: 1
+      EVM_CHAIN_NAME: ethereum
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["node", "dist/worker.js"]
+
+volumes:
+  growtrack-postgres:
+  growtrack-redis:

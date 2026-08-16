@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell([Environment]::SetEnvironmentVariable\\(\"ANTHROPIC_MODEL\", \"claude-sonnet-5\", [EnvironmentVariableTarget]::User\\); \"User scope : \" + [Environment]::GetEnvironmentVariable\\(\"ANTHROPIC_MODEL\", \"User\"\\); \"This session: \" + $\\(if \\($env:ANTHROPIC_MODEL\\) { $env:ANTHROPIC_MODEL } else { \"\\(not set\\)\" }\\))"
+    ]
+  }
+}

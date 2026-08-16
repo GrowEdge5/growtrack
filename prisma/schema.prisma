@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SnapshotStatus {
+  PENDING
+  COMPLETE
+  PARTIAL
+  FAILED
+}
+
+enum SyncStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum SignalSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Chain {
+  id          Int      @id
+  slug        String   @unique
+  displayName String
+  namespace   String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  wallets     Wallet[]
+  tokens      Token[]
+}
+
+model Wallet {
+  id               String           @id @default(cuid())
+  chainId          Int
+  canonicalAddress String
+  displayAddress   String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  chain            Chain            @relation(fields: [chainId], references: [id], onDelete: Restrict)
+  snapshots        WalletSnapshot[]
+  syncRuns         SyncRun[]
+
+  @@unique([chainId, canonicalAddress])
+  @@index([canonicalAddress])
+}
+
+model WalletSnapshot {
+  id              String               @id @default(cuid())
+  walletId        String
+  status          SnapshotStatus       @default(PENDING)
+  nativeBalance   String?
+  nativeSymbol    String?
+  totalValueUsd   Decimal?             @db.Decimal(36, 8)
+  provider        String
+  blockNumber     String?
+  capturedAt      DateTime             @default(now())
+  expiresAt       DateTime
+  createdAt       DateTime             @default(now())
+  wallet          Wallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  tokenBalances   WalletTokenBalance[]
+  transactions    Transaction[]
+  positions       ProtocolPosition[]
+  signals         IntelligenceSignal[]
+
+  @@index([walletId, capturedAt(sort: Desc)])
+  @@index([expiresAt])
+}
+
+model Token {
+  id               String               @id @default(cuid())
+  chainId          Int
+  canonicalAddress String
+  symbol           String
+  name             String
+  decimals         Int
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  chain            Chain                @relation(fields: [chainId], references: [id], onDelete: Restrict)
+  balances         WalletTokenBalance[]
+
+  @@unique([chainId, canonicalAddress])
+}
+
+model WalletTokenBalance {
+  id          String         @id @default(cuid())
+  snapshotId  String
+  tokenId     String
+  rawAmount   String
+  valueUsd    Decimal?       @db.Decimal(36, 8)
+  snapshot    WalletSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  token       Token          @relation(fields: [tokenId], references: [id], onDelete: Restrict)
+
+  @@unique([snapshotId, tokenId])
+  @@index([tokenId])
+}
+
+model Transaction {
+  id          String         @id @default(cuid())
+  snapshotId  String
+  chainId     Int
+  txHash      String
+  blockNumber String
+  fromAddress String
+  toAddress   String?
+  value       String
+  occurredAt  DateTime
+  snapshot    WalletSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([chainId, txHash])
+  @@index([snapshotId, occurredAt(sort: Desc)])
+}
+
+model ProtocolPosition {
+  id          String         @id @default(cuid())
+  snapshotId  String
+  protocol    String
+  category    String
+  externalId  String
+  valueUsd    Decimal?       @db.Decimal(36, 8)
+  data        Json
+  snapshot    WalletSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, protocol, externalId])
+  @@index([snapshotId])
+}
+
+model IntelligenceSignal {
+  id          String         @id @default(cuid())
+  snapshotId  String
+  category    String
+  severity    SignalSeverity
+  title       String
+  description String
+  source      String
+  evidence    Json?
+  expiresAt   DateTime?
+  snapshot    WalletSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId, severity])
+}
+
+model SyncRun {
+  id          String     @id @default(cuid())
+  walletId    String
+  jobId       String     @unique
+  status      SyncStatus @default(QUEUED)
+  provider    String
+  attempts    Int        @default(0)
+  errorCode   String?
+  errorDetail String?
+  queuedAt    DateTime   @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  wallet      Wallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, queuedAt(sort: Desc)])
+}
