@@ -56,7 +56,21 @@ export function buildContainer(env: Environment): ApplicationContainer {
       env.WALLET_FRESHNESS_SECONDS
     ),
     async connect() {
-      await Promise.all([prisma.$connect(), redis.connect()]);
+      // BullMQ shares this ioredis client and eagerly initiates its connection during
+      // Queue construction, so an unconditional redis.connect() here throws
+      // "Redis is already connecting/connected". Only trigger the connection when the
+      // client is still idle, and tolerate losing the race to BullMQ.
+      const redisAlreadyLive =
+        redis.status === "connecting" || redis.status === "connect" || redis.status === "ready";
+      const connectRedis = redisAlreadyLive
+        ? Promise.resolve()
+        : redis.connect().catch((error: unknown) => {
+            if (error instanceof Error && /already connect/i.test(error.message)) {
+              return;
+            }
+            throw error;
+          });
+      await Promise.all([prisma.$connect(), connectRedis]);
     },
     async close() {
       await Promise.allSettled([refreshQueue.queue.close(), redis.quit(), prisma.$disconnect()]);
