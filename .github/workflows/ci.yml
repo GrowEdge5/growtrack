@@ -8,6 +8,13 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # Placeholder connection strings so Prisma can resolve env("DATABASE_URL")
+    # during validate/generate and the app's env schema parses during tests.
+    # No real database/redis is contacted in CI — these are not secrets.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/growtrack?schema=public
+      REDIS_URL: redis://localhost:6379
+      EVM_RPC_URL: https://ethereum-rpc.publicnode.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,5 +22,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npx prisma generate
       - run: npx prisma validate
       - run: npm run ci
