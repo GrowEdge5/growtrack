@@ -25,8 +25,7 @@ declare module "viem" {
   }
 
   export type ViemMulticallResult =
-    | { status: "success"; result: unknown }
-    | { status: "failure"; error: unknown };
+    { status: "success"; result: unknown } | { status: "failure"; error: unknown };
 
   export interface ViemPublicClient {
     getBalance(args: { address: string }): Promise<bigint>;

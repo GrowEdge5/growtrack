@@ -35,50 +35,50 @@ _Last verified: **2026-08-18** — Phase 1 (scaffold + local infrastructure veri
 
 Every check below was actually executed this session.
 
-| Command | Result | Notes |
-| --- | --- | --- |
-| `docker compose ps` | **PASS** | postgres + redis `Up (healthy)`, ports 5432 / 6379 |
-| `npx prisma migrate status` | **PASS** | "Database schema is up to date" (1 migration) |
-| `npm run dev` (API) | **PASS** | listening on `:3000` after the Redis fix |
-| `curl /health/live` | **PASS** | `200` `{"status":"ok"}` |
-| `curl /health/ready` | **PASS** | `200` `{"status":"ready","checks":{"database":"up","redis":"up"}}` |
-| `curl /metrics` | **PASS** | `200`, Prometheus `growtrack_*` metrics |
-| `curl /docs` | **PASS** | `200` `text/html` (Swagger UI) |
-| `GET /v1/wallets/ethereum/<addr>` (cold) | **PASS** | `404` `WALLET_NOT_FOUND` (expected — nothing cached yet) |
-| `POST /v1/wallets/ethereum/<addr>/refresh` | **PASS** | `202` + `jobId` |
-| `npm run dev:worker` + reprocess | **PASS** | worker consumed the job |
+| Command                                           | Result   | Notes                                                                                                                                |
+| ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `docker compose ps`                               | **PASS** | postgres + redis `Up (healthy)`, ports 5432 / 6379                                                                                   |
+| `npx prisma migrate status`                       | **PASS** | "Database schema is up to date" (1 migration)                                                                                        |
+| `npm run dev` (API)                               | **PASS** | listening on `:3000` after the Redis fix                                                                                             |
+| `curl /health/live`                               | **PASS** | `200` `{"status":"ok"}`                                                                                                              |
+| `curl /health/ready`                              | **PASS** | `200` `{"status":"ready","checks":{"database":"up","redis":"up"}}`                                                                   |
+| `curl /metrics`                                   | **PASS** | `200`, Prometheus `growtrack_*` metrics                                                                                              |
+| `curl /docs`                                      | **PASS** | `200` `text/html` (Swagger UI)                                                                                                       |
+| `GET /v1/wallets/ethereum/<addr>` (cold)          | **PASS** | `404` `WALLET_NOT_FOUND` (expected — nothing cached yet)                                                                             |
+| `POST /v1/wallets/ethereum/<addr>/refresh`        | **PASS** | `202` + `jobId`                                                                                                                      |
+| `npm run dev:worker` + reprocess                  | **PASS** | worker consumed the job                                                                                                              |
 | `GET /v1/wallets/ethereum/<addr>` (after refresh) | **PASS** | `200`, real snapshot: `nativeBalance` `6635339380601433797` wei, `blockNumber` `25780084`, `provider` `viem-rpc`, `status` `partial` |
-| `npm run ci` | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (4 tests / 2 files) ✓ · build ✓ |
+| `npm run ci`                                      | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (4 tests / 2 files) ✓ · build ✓                                                  |
 
 ### Infrastructure status
 
-| Component | Status |
-| --- | --- |
-| Docker Desktop | RUNNING (v4.87.0) |
-| PostgreSQL | RUNNING & VERIFIED (`:5432`, healthy) |
-| Redis | RUNNING & VERIFIED (`:6379`, healthy) |
-| API (Fastify) | RUNNING & VERIFIED (`:3000`) |
-| Worker (BullMQ) | RUNNING & VERIFIED |
+| Component          | Status                                                            |
+| ------------------ | ----------------------------------------------------------------- |
+| Docker Desktop     | RUNNING (v4.87.0)                                                 |
+| PostgreSQL         | RUNNING & VERIFIED (`:5432`, healthy)                             |
+| Redis              | RUNNING & VERIFIED (`:6379`, healthy)                             |
+| API (Fastify)      | RUNNING & VERIFIED (`:3000`)                                      |
+| Worker (BullMQ)    | RUNNING & VERIFIED                                                |
 | Environment config | `.env` present (gitignored), schema-validated, auto-loaded in dev |
 
 ### Hackathon compliance status (Algorand Global x402 Challenge)
 
-| Requirement | Status |
-| --- | --- |
-| Paid x402 endpoint | NOT IMPLEMENTED |
-| HTTP 402 response | NOT IMPLEMENTED |
-| Algorand Testnet flow | NOT IMPLEMENTED |
-| Algorand Mainnet endpoint | NOT IMPLEMENTED |
-| GoPlausible x402 Facilitator | NOT IMPLEMENTED |
-| Mainnet USDC ASA `31566704` | NOT IMPLEMENTED |
-| `payTo` (Mainnet, USDC-opted-in) | NOT IMPLEMENTED |
-| Bazaar discovery | NOT IMPLEMENTED |
-| `x402-global-challenge` tag | NOT IMPLEMENTED |
-| HTTPS (public) | NOT IMPLEMENTED (local HTTP only) |
-| Real Mainnet payment | NOT TESTED |
-| USDC received at payTo | NOT TESTED |
-| Leaderboard attribution | NOT TESTED |
-| Submission readiness | NOT IMPLEMENTED |
+| Requirement                      | Status                            |
+| -------------------------------- | --------------------------------- |
+| Paid x402 endpoint               | NOT IMPLEMENTED                   |
+| HTTP 402 response                | NOT IMPLEMENTED                   |
+| Algorand Testnet flow            | NOT IMPLEMENTED                   |
+| Algorand Mainnet endpoint        | NOT IMPLEMENTED                   |
+| GoPlausible x402 Facilitator     | NOT IMPLEMENTED                   |
+| Mainnet USDC ASA `31566704`      | NOT IMPLEMENTED                   |
+| `payTo` (Mainnet, USDC-opted-in) | NOT IMPLEMENTED                   |
+| Bazaar discovery                 | NOT IMPLEMENTED                   |
+| `x402-global-challenge` tag      | NOT IMPLEMENTED                   |
+| HTTPS (public)                   | NOT IMPLEMENTED (local HTTP only) |
+| Real Mainnet payment             | NOT TESTED                        |
+| USDC received at payTo           | NOT TESTED                        |
+| Leaderboard attribution          | NOT TESTED                        |
+| Submission readiness             | NOT IMPLEMENTED                   |
 
 ### Current project phase
 
