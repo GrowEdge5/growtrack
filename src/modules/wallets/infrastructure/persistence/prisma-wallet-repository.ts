@@ -15,7 +15,12 @@ export class PrismaWalletRepository implements WalletRepository {
           canonicalAddress: identity.canonicalAddress
         }
       },
-      orderBy: { capturedAt: "desc" }
+      orderBy: { capturedAt: "desc" },
+      include: {
+        tokenBalances: {
+          include: { token: true }
+        }
+      }
     });
 
     if (!record) {
@@ -31,7 +36,14 @@ export class PrismaWalletRepository implements WalletRepository {
       ...(record.blockNumber ? { blockNumber: record.blockNumber } : {}),
       capturedAt: record.capturedAt,
       expiresAt: record.expiresAt,
-      holdings: [],
+      holdings: record.tokenBalances.map((balance) => ({
+        tokenAddress: balance.token.canonicalAddress,
+        symbol: balance.token.symbol,
+        name: balance.token.name,
+        decimals: balance.token.decimals,
+        rawAmount: balance.rawAmount,
+        ...(balance.valueUsd !== null ? { valueUsd: balance.valueUsd.toString() } : {})
+      })),
       transactions: [],
       positions: [],
       signals: []
@@ -69,7 +81,7 @@ export class PrismaWalletRepository implements WalletRepository {
         }
       });
 
-      await transaction.walletSnapshot.create({
+      const created = await transaction.walletSnapshot.create({
         data: {
           walletId: wallet.id,
           status: snapshot.status === "complete" ? "COMPLETE" : "PARTIAL",
@@ -81,6 +93,42 @@ export class PrismaWalletRepository implements WalletRepository {
           expiresAt: snapshot.expiresAt
         }
       });
+
+      // Persist token holdings: upsert the shared Token row, then link it to this
+      // snapshot via WalletTokenBalance. Sequential awaits on purpose — a Prisma
+      // interactive transaction runs on one connection, so parallel queries here
+      // are unsafe.
+      for (const holding of snapshot.holdings) {
+        const token = await transaction.token.upsert({
+          where: {
+            chainId_canonicalAddress: {
+              chainId: snapshot.wallet.chain.id,
+              canonicalAddress: holding.tokenAddress
+            }
+          },
+          update: {
+            symbol: holding.symbol,
+            name: holding.name,
+            decimals: holding.decimals
+          },
+          create: {
+            chainId: snapshot.wallet.chain.id,
+            canonicalAddress: holding.tokenAddress,
+            symbol: holding.symbol,
+            name: holding.name,
+            decimals: holding.decimals
+          }
+        });
+
+        await transaction.walletTokenBalance.create({
+          data: {
+            snapshotId: created.id,
+            tokenId: token.id,
+            rawAmount: holding.rawAmount,
+            ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {})
+          }
+        });
+      }
     });
   }
 }

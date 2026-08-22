@@ -31,7 +31,9 @@
       "Bash(curl -s -m 10 -w \"\\\\nHTTP=%{http_code}\\\\n\" http://localhost:3000/v1/wallets/ethereum/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045)",
       "Bash(curl -s -m 10 -X POST -w \"\\\\nHTTP=%{http_code}\\\\n\" http://localhost:3000/v1/wallets/ethereum/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045/refresh)",
       "Bash(curl -s -m 12 -w \"\\\\nHTTP=%{http_code}\\\\n\" http://localhost:3000/v1/wallets/ethereum/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045)",
-      "Bash(npx prettier *)"
+      "Bash(npx prettier *)",
+      "Bash(npx tsx *)",
+      "Bash(npm test *)"
     ]
   }
 }

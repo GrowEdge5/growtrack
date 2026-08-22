@@ -12,11 +12,29 @@ declare module "viem" {
         http: string[];
       };
     };
+    contracts?: {
+      multicall3?: { address: string; blockCreated?: number };
+    };
   }
+
+  export interface ViemMulticallContract {
+    address: string;
+    abi: unknown;
+    functionName: string;
+    args?: readonly unknown[];
+  }
+
+  export type ViemMulticallResult =
+    | { status: "success"; result: unknown }
+    | { status: "failure"; error: unknown };
 
   export interface ViemPublicClient {
     getBalance(args: { address: string }): Promise<bigint>;
     getBlockNumber(): Promise<bigint>;
+    multicall(args: {
+      contracts: readonly ViemMulticallContract[];
+      allowFailure?: boolean;
+    }): Promise<ViemMulticallResult[]>;
   }
 
   export interface ViemTransportOptions {
