@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 
 import type { PriceQuote } from "./ports/price-provider.js";
-import type { TokenHolding } from "../domain/wallet-snapshot.js";
+import type { SnapshotStatus, TokenHolding } from "../domain/wallet-snapshot.js";
 
 // EVM-family native currencies (ETH and L2 gas tokens) use 18 decimals.
 // Growtrack only reads EVM chains today; revisit when a non-EVM native such as
@@ -18,30 +18,40 @@ export interface PriceableWallet {
 }
 
 export interface PricedSnapshot {
+  status: SnapshotStatus;
   holdings: TokenHolding[];
   totalValueUsd?: string;
 }
 
-// Enriches holdings with a per-token USD value and computes the wallet's total
-// USD value (native currency + tokens).
+// Enriches holdings with a per-token USD value, computes the wallet's total USD
+// value (native currency + tokens), and derives the snapshot's pricing status.
 //
 // Only prices actually returned by the provider are applied: a missing price
 // leaves that holding's valueUsd undefined and excludes it from the total.
 // If nothing at all can be priced, totalValueUsd is undefined rather than "0" —
 // an unpriced wallet is not the same as an empty one. Nothing is fabricated.
+//
+// Status semantics (documented in the README): "complete" means every asset we
+// discovered was assigned a USD value — the native balance plus every holding.
+// Any missing price yields "partial". This describes USD-pricing coverage of the
+// assets we found; it does NOT claim exhaustive portfolio coverage, since token
+// discovery is limited to a curated token list.
 export function applyUsdPricing(wallet: PriceableWallet, quote: PriceQuote): PricedSnapshot {
   let total: Decimal | undefined;
   const addToTotal = (value: Decimal): void => {
     total = total === undefined ? value : total.plus(value);
   };
 
+  const nativePriced = quote.nativeUsd !== undefined;
   if (quote.nativeUsd !== undefined) {
     addToTotal(toWholeUnits(wallet.nativeBalance, EVM_NATIVE_DECIMALS).mul(quote.nativeUsd));
   }
 
+  let allHoldingsPriced = true;
   const holdings = wallet.holdings.map((holding) => {
     const price = quote.tokenUsd[holding.tokenAddress.toLowerCase()];
     if (price === undefined) {
+      allHoldingsPriced = false;
       return holding;
     }
     const value = toWholeUnits(holding.rawAmount, holding.decimals).mul(price);
@@ -49,7 +59,11 @@ export function applyUsdPricing(wallet: PriceableWallet, quote: PriceQuote): Pri
     return { ...holding, valueUsd: value.toFixed(USD_SCALE) };
   });
 
-  return total === undefined ? { holdings } : { holdings, totalValueUsd: total.toFixed(USD_SCALE) };
+  const status: SnapshotStatus = nativePriced && allHoldingsPriced ? "complete" : "partial";
+
+  return total === undefined
+    ? { status, holdings }
+    : { status, holdings, totalValueUsd: total.toFixed(USD_SCALE) };
 }
 
 function toWholeUnits(rawAmount: string, decimals: number): Decimal {

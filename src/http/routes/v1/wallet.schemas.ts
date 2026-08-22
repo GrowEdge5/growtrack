@@ -16,6 +16,16 @@ const walletIdentitySchema = z.object({
   displayAddress: z.string()
 });
 
+const tokenHoldingSchema = z.object({
+  tokenAddress: z.string(),
+  symbol: z.string(),
+  name: z.string(),
+  decimals: z.number().int().nonnegative(),
+  rawAmount: z.string(),
+  // Present only when a trustworthy USD price was found for this token.
+  valueUsd: z.string().optional()
+});
+
 export const walletResponseSchema = z.object({
   data: z.object({
     wallet: walletIdentitySchema,
@@ -24,9 +34,12 @@ export const walletResponseSchema = z.object({
     nativeSymbol: z.string(),
     provider: z.string(),
     blockNumber: z.string().optional(),
+    // Sum of native + all priced holdings, in USD. Omitted when nothing could
+    // be priced (never zero-filled).
+    totalValueUsd: z.string().optional(),
     capturedAt: z.string().datetime(),
     expiresAt: z.string().datetime(),
-    holdings: z.array(z.unknown()),
+    holdings: z.array(tokenHoldingSchema),
     transactions: z.array(z.unknown()),
     positions: z.array(z.unknown()),
     signals: z.array(z.unknown())

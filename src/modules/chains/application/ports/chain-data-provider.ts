@@ -6,8 +6,10 @@ import type {
   WalletTransaction
 } from "../../../wallets/domain/wallet-snapshot.js";
 
+// Raw on-chain data as read by a chain provider, before USD pricing is applied.
+// The snapshot's complete/partial status is derived later from pricing coverage
+// (see applyUsdPricing), so it is deliberately not reported here.
 export interface ProviderWalletData {
-  status: "complete" | "partial";
   nativeBalance: string;
   nativeSymbol: string;
   provider: string;

@@ -31,7 +31,7 @@ export class RefreshWalletIntelligence {
     const capturedAt = this.clock.now();
     const snapshot: WalletSnapshot = {
       wallet,
-      status: data.status,
+      status: priced.status,
       nativeBalance: data.nativeBalance,
       nativeSymbol: data.nativeSymbol,
       provider: data.provider,

@@ -80,7 +80,6 @@ export class ViemChainDataProvider implements ChainDataProvider {
     ]);
 
     return {
-      status: "partial",
       nativeBalance: nativeBalance.toString(),
       nativeSymbol: this.chain.nativeSymbol,
       provider: "viem-rpc",

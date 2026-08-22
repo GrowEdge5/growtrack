@@ -39,7 +39,6 @@ function dependencies() {
     chain: identity.chain,
     normalizeAddress: vi.fn(() => identity),
     fetchWalletData: vi.fn(async () => ({
-      status: "complete" as const,
       nativeBalance: "42",
       nativeSymbol: "ETH",
       provider: "test",

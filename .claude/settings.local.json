@@ -33,7 +33,8 @@
       "Bash(curl -s -m 12 -w \"\\\\nHTTP=%{http_code}\\\\n\" http://localhost:3000/v1/wallets/ethereum/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045)",
       "Bash(npx prettier *)",
       "Bash(npx tsx *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(curl -s \"https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,0xdac17f958d2ee523a2206206994597c13d831ec7&vs_currencies=usd\")"
     ]
   }
 }

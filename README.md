@@ -1,54 +1,51 @@
 # Growtrack
 
-Growtrack is a multichain wallet intelligence API. The current scaffold provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and an EVM provider adapter.
+Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and an EVM provider adapter that reads native balance, ERC-20 token holdings, and USD valuation.
 
 ## Development Status
 
-_Last verified: **2026-08-18** — Phase 1 (scaffold + local infrastructure verification): **COMPLETE**._
+_Last verified: **2026-08-22** — EVM wallet intelligence (ERC-20 holdings + USD pricing + valuation exposure): **COMPLETE**. Phase 1 (scaffold + local infrastructure): COMPLETE (2026-08-18)._
 
 ### Completed progress
 
-- **Local infrastructure brought up and verified.** Docker Desktop engine running (v4.87.0); `growtrack-postgres-1` and `growtrack-redis-1` containers healthy on `5432` / `6379`.
-- **Prisma migration confirmed applied** — `prisma migrate status` reports _"Database schema is up to date"_ (migration `20260817062730_init`).
-- **Fixed a startup bug that prevented the API and worker from booting.** BullMQ eagerly initiates a connection on the shared ioredis client during `Queue` construction, so the unconditional `redis.connect()` in the DI container threw `Redis is already connecting/connected` and the process exited before `listen()`. Guarded the explicit connect in `src/app/build-container.ts` (`connect()`); this fixes both the API (`main.ts`) and the worker (`worker.ts`).
-- **API verified running** (`npm run dev`) with every core endpoint responding.
-- **Worker verified running** (`npm run dev:worker`) and consuming BullMQ jobs.
-- **Full EVM read path verified end-to-end** against a known public address (vitalik.eth `0xd8dA…6045`): `POST /refresh` → BullMQ → worker → viem (`ethereum-rpc.publicnode.com`) → real native balance + block → PostgreSQL + Redis → `GET` returns `200`.
+**EVM wallet intelligence (2026-08-22)** — the wallet snapshot now carries real token holdings and USD valuation, end-to-end:
 
-**Files changed this session:** `src/app/build-container.ts` (Redis connect guard — the only code change).
+- **ERC-20 token holdings** are read in a single Multicall3 `balanceOf` batch over a curated Ethereum token list (`src/modules/chains/infrastructure/evm/ethereum-token-list.ts`). Only successful, non-zero balances appear; a per-token revert is tolerated (`allowFailure`) and never fails the whole snapshot. Nothing is fabricated or zero-filled.
+- **USD pricing** uses the keyless DeFiLlama coins API (`https://coins.llama.fi`). One request prices the native currency plus every token. DeFiLlama's per-price `confidence` (0..1) is enforced at `>= 0.5`; anything lower is treated as unpriced. Pricing sits behind a `PriceProvider` port, so the source is a pure adapter swap. _(CoinGecko was dropped: its keyless API now caps token lookups at one address per request, which breaks the no-API-key design.)_
+- **USD valuation is exposed** in the API: each holding carries an optional `valueUsd`, and the snapshot carries an optional top-level `totalValueUsd` (native + all priced holdings). Amounts use `decimal.js` and are persisted as `Decimal(36,8)`.
+- **Honest `status` semantics.** `status: "complete"` means every asset we discovered was assigned a USD value — the native balance and every holding. Any missing price yields `"partial"`. **This describes USD-pricing coverage of the assets we found; it does NOT claim exhaustive portfolio coverage**, because token discovery is limited to the curated list above. A missing price is never faked — the holding simply has no `valueUsd` and is excluded from `totalValueUsd`, which is omitted entirely (never `"0"`) when nothing can be priced.
+
+**Phase 1 — scaffold + local infrastructure (2026-08-18):**
+
+- Docker Desktop + PostgreSQL + Redis brought up and verified; Prisma migration `20260817062730_init` applied.
+- Fixed a startup bug: BullMQ eagerly connects the shared ioredis client during `Queue` construction, so the unconditional `redis.connect()` in the DI container threw `Redis is already connecting/connected`. Guarded in `src/app/build-container.ts`; fixes both API and worker boot.
+- API + worker + full EVM read path verified end-to-end.
 
 **Currently working functionality:**
 
 - `GET /health/live`, `GET /health/ready` (DB + Redis checks), `GET /metrics`, `GET /docs`
-- EVM (Ethereum) **native balance + block number** via viem, persisted in PostgreSQL and cached in Redis
+- EVM (Ethereum) **native balance + block number + ERC-20 holdings (curated list) + USD pricing + `totalValueUsd`**, persisted in PostgreSQL and cached in Redis
 - CQRS flow: `GET` reads cache/DB (`404` if absent) · `POST /refresh` enqueues · worker computes the snapshot
 
 ### Problems / limitations
 
-- **Wallet snapshot is `partial` by design** — `holdings`, `transactions`, `positions`, `signals` are empty. These are unimplemented extension points, not fabricated data. _(Non-blocker; Phase 2 scope. File: `src/modules/chains/infrastructure/evm/viem-chain-data-provider.ts`.)_
-- **Only EVM/Ethereum is implemented.** Algorand, Solana, Bitcoin are not. _(Non-blocker for Phase 1; roadmap Phases 3–4.)_
-- **No pricing** — no CoinGecko/USD valuation yet. _(Non-blocker; Phase 2.)_
-- **x402 payment layer not started.** _(Blocker for hackathon submission — roadmap Phases 6–8.)_
-- Compiled/production start (`npm start`) expects env vars from the environment; `.env` is auto-loaded only in dev (via `tsx`). _(Non-blocker; expected for Docker/prod deployment.)_
+- **Token discovery is curated-list-based, not exhaustive.** Holdings come from a fixed list of well-known Ethereum ERC-20s; a token outside that list is not detected. `status` reflects USD-pricing coverage of discovered assets, not total portfolio completeness. _(By design for now; documented above. File: `src/modules/chains/infrastructure/evm/ethereum-token-list.ts`.)_
+- **`transactions`, `positions`, `signals` are still empty** — unimplemented extension points, not fabricated data. _(Later scope.)_
+- **Only EVM/Ethereum is implemented.** Algorand, Solana, Bitcoin are not. _(Roadmap Phases 3–4.)_
+- **x402 payment layer not started.** _(Blocker for hackathon submission — later roadmap phases.)_
+- Compiled/production start (`npm start`) expects env vars from the environment; `.env` is auto-loaded only in dev. _(Non-blocker; expected for Docker/prod deployment.)_
 
 ### Tests & verification
 
-Every check below was actually executed this session.
+Every check below was actually executed.
 
-| Command                                           | Result   | Notes                                                                                                                                |
-| ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `docker compose ps`                               | **PASS** | postgres + redis `Up (healthy)`, ports 5432 / 6379                                                                                   |
-| `npx prisma migrate status`                       | **PASS** | "Database schema is up to date" (1 migration)                                                                                        |
-| `npm run dev` (API)                               | **PASS** | listening on `:3000` after the Redis fix                                                                                             |
-| `curl /health/live`                               | **PASS** | `200` `{"status":"ok"}`                                                                                                              |
-| `curl /health/ready`                              | **PASS** | `200` `{"status":"ready","checks":{"database":"up","redis":"up"}}`                                                                   |
-| `curl /metrics`                                   | **PASS** | `200`, Prometheus `growtrack_*` metrics                                                                                              |
-| `curl /docs`                                      | **PASS** | `200` `text/html` (Swagger UI)                                                                                                       |
-| `GET /v1/wallets/ethereum/<addr>` (cold)          | **PASS** | `404` `WALLET_NOT_FOUND` (expected — nothing cached yet)                                                                             |
-| `POST /v1/wallets/ethereum/<addr>/refresh`        | **PASS** | `202` + `jobId`                                                                                                                      |
-| `npm run dev:worker` + reprocess                  | **PASS** | worker consumed the job                                                                                                              |
-| `GET /v1/wallets/ethereum/<addr>` (after refresh) | **PASS** | `200`, real snapshot: `nativeBalance` `6635339380601433797` wei, `blockNumber` `25780084`, `provider` `viem-rpc`, `status` `partial` |
-| `npm run ci`                                      | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (4 tests / 2 files) ✓ · build ✓                                                  |
+| Command / check                                  | Result   | Notes                                                                                                                                                  |
+| ------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run ci`                                     | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (11 tests / 4 files) ✓ · build ✓                                                                   |
+| `applyUsdPricing` unit tests                     | **PASS** | totals, missing-price honesty, and the `complete`/`partial` status rule (5 tests)                                                                      |
+| `walletResponseSchema` serializer test           | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                  |
+| Live refresh + `GET` (vitalik.eth `0xd8dA…6045`) | **PASS** | `200`, `status: "complete"`, `totalValueUsd` ≈ `$20,086.64`, all 9 discovered holdings priced with `valueUsd`, through the full Fastify/zod serializer |
+| Docker `postgres` + `redis`                      | **PASS** | `Up (healthy)`, ports 5432 / 6379                                                                                                                      |
 
 ### Infrastructure status
 
@@ -82,19 +79,19 @@ Every check below was actually executed this session.
 
 ### Current project phase
 
-**Phase 1 — scaffold + local infrastructure verification: COMPLETE.** Runtime API + worker + full EVM read path are verified locally.
+**EVM wallet intelligence — ERC-20 holdings + USD pricing + valuation exposure + honest status: COMPLETE and verified.** Runtime API + worker + full EVM read path (balance, block, holdings, USD totals) are verified locally against a live public address.
 
 ### Next recommended step
 
-1. **Commit this tested milestone** (Redis startup fix + verified Phase 1):
+1. **Commit this tested milestone** (USD valuation exposure + honest snapshot status):
 
    ```bash
-   git add README.md src/app/build-container.ts && git commit -m "Fix Redis double-connect on startup; verify Phase 1 API/worker/EVM flow"
+   git add -A && git commit -m "Expose USD valuation (totalValueUsd + per-holding valueUsd) and derive honest snapshot status"
    ```
 
-2. **Begin Phase 2 — EVM wallet intelligence:** extend `viem-chain-data-provider.ts` beyond native balance to ERC-20 token holdings, then add USD pricing (CoinGecko). Test each addition before moving on.
+2. **Continue the roadmap:** broaden EVM coverage as needed, then begin the next read chain (Algorand), followed by the x402 payment layer.
 
-x402 work (roadmap Phases 6–8) stays deferred until the multichain data layer is solid, per the project plan.
+x402 work stays deferred until the multichain data layer is solid, per the project plan. The GoPlausible x402 Facilitator and Algorand USDC ASA are the intended payment path — no custom or fake facilitator.
 
 ## Prerequisites
 
@@ -143,4 +140,4 @@ npm run build
 
 ## Current capability boundary
 
-The first provider slice reads native EVM balance and block number. The returned wallet snapshot is marked `partial`; holdings, transactions, protocol positions, pricing, and intelligence signals are explicit extension points rather than fabricated data.
+The EVM provider reads native balance, block number, and ERC-20 holdings (from a curated Ethereum token list), then enriches each holding with a USD `valueUsd` and the snapshot with a `totalValueUsd`. A snapshot is `complete` only when the native balance and every discovered holding were priced; otherwise it is `partial`. Because token discovery is limited to the curated list, `complete` describes USD-pricing coverage of the assets found — **not** exhaustive portfolio coverage. Transactions, protocol positions, and intelligence signals remain explicit extension points rather than fabricated data.
