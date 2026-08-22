@@ -14,7 +14,9 @@ const environmentSchema = z.object({
   PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   EVM_RPC_URL: z.string().url(),
   EVM_CHAIN_ID: z.coerce.number().int().positive().default(1),
-  EVM_CHAIN_NAME: z.string().min(1).default("ethereum")
+  EVM_CHAIN_NAME: z.string().min(1).default("ethereum"),
+  PRICE_API_BASE_URL: z.string().url().default("https://coins.llama.fi"),
+  PRICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000)
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

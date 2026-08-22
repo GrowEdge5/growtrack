@@ -34,6 +34,7 @@ export class PrismaWalletRepository implements WalletRepository {
       nativeSymbol: record.nativeSymbol ?? identity.chain.nativeSymbol,
       provider: record.provider,
       ...(record.blockNumber ? { blockNumber: record.blockNumber } : {}),
+      ...(record.totalValueUsd !== null ? { totalValueUsd: record.totalValueUsd.toString() } : {}),
       capturedAt: record.capturedAt,
       expiresAt: record.expiresAt,
       holdings: record.tokenBalances.map((balance) => ({
@@ -89,6 +90,9 @@ export class PrismaWalletRepository implements WalletRepository {
           nativeSymbol: snapshot.nativeSymbol,
           provider: snapshot.provider,
           ...(snapshot.blockNumber ? { blockNumber: snapshot.blockNumber } : {}),
+          ...(snapshot.totalValueUsd !== undefined
+            ? { totalValueUsd: snapshot.totalValueUsd }
+            : {}),
           capturedAt: snapshot.capturedAt,
           expiresAt: snapshot.expiresAt
         }

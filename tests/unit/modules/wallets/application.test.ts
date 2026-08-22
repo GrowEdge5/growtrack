@@ -8,6 +8,7 @@ import { RequestWalletRefresh } from "../../../../src/modules/wallets/applicatio
 import type { WalletCache } from "../../../../src/modules/wallets/application/ports/wallet-cache.js";
 import type { WalletRefreshQueue } from "../../../../src/modules/wallets/application/ports/wallet-refresh-queue.js";
 import type { WalletRepository } from "../../../../src/modules/wallets/application/ports/wallet-repository.js";
+import type { PriceProvider } from "../../../../src/modules/wallets/application/ports/price-provider.js";
 import type { WalletSnapshot } from "../../../../src/modules/wallets/domain/wallet-snapshot.js";
 
 const now = new Date("2026-01-01T00:00:00.000Z");
@@ -57,8 +58,11 @@ function dependencies() {
   const queue: WalletRefreshQueue = {
     enqueue: vi.fn(async () => ({ jobId: "refresh-1" }))
   };
+  const priceProvider: PriceProvider = {
+    getUsdPrices: vi.fn(async () => ({ tokenUsd: {} }))
+  };
 
-  return { provider, providers, cache, repository, queue };
+  return { provider, providers, cache, repository, queue, priceProvider };
 }
 
 describe("wallet intelligence application services", () => {
@@ -95,6 +99,7 @@ describe("wallet intelligence application services", () => {
     const deps = dependencies();
     const service = new RefreshWalletIntelligence(
       deps.providers,
+      deps.priceProvider,
       deps.repository,
       deps.cache,
       { now: () => now },

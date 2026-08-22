@@ -12,6 +12,7 @@ import { RefreshWalletIntelligence } from "../modules/wallets/application/refres
 import { RequestWalletRefresh } from "../modules/wallets/application/request-wallet-refresh.js";
 import { RedisWalletCache } from "../modules/wallets/infrastructure/cache/redis-wallet-cache.js";
 import { PrismaWalletRepository } from "../modules/wallets/infrastructure/persistence/prisma-wallet-repository.js";
+import { DefiLlamaPriceProvider } from "../modules/wallets/infrastructure/pricing/defillama-price-provider.js";
 import { systemClock } from "../shared/application/clock.js";
 
 export interface ApplicationContainer {
@@ -37,6 +38,10 @@ export function buildContainer(env: Environment): ApplicationContainer {
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
   const providers = new DefaultChainProviderRegistry([provider]);
+  const priceProvider = new DefiLlamaPriceProvider({
+    baseUrl: env.PRICE_API_BASE_URL,
+    timeoutMs: env.PRICE_TIMEOUT_MS
+  });
   const repository = new PrismaWalletRepository(prisma);
   const cache = new RedisWalletCache(redis, env.CACHE_TTL_SECONDS);
   const refreshQueue = new BullMqWalletRefreshQueue(redis);
@@ -50,6 +55,7 @@ export function buildContainer(env: Environment): ApplicationContainer {
     requestWalletRefresh: new RequestWalletRefresh(providers, refreshQueue, systemClock),
     refreshWalletIntelligence: new RefreshWalletIntelligence(
       providers,
+      priceProvider,
       repository,
       cache,
       systemClock,

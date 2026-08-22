@@ -47,6 +47,7 @@ export interface WalletSnapshot {
   nativeSymbol: string;
   provider: string;
   blockNumber?: string;
+  totalValueUsd?: string;
   capturedAt: Date;
   expiresAt: Date;
   holdings: TokenHolding[];
