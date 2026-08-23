@@ -4,16 +4,20 @@ import type {
   PriceRequest
 } from "../../application/ports/price-provider.js";
 
-// Maps an EVM chainId to DeFiLlama's chain slug and the coin key it uses for the
-// chain's native currency. Only chains Growtrack actually reads are listed; any
-// other chain yields an empty quote rather than guessing.
+// Maps a Growtrack chain id to DeFiLlama's chain slug and the coin key it uses
+// for the chain's native currency. Only chains Growtrack actually reads are
+// listed; any other chain yields an empty quote rather than guessing.
 interface LlamaChain {
   slug: string;
   nativeCoinKey: string;
 }
 
 const LLAMA_CHAINS: Readonly<Record<number, LlamaChain>> = {
-  1: { slug: "ethereum", nativeCoinKey: "coingecko:ethereum" }
+  1: { slug: "ethereum", nativeCoinKey: "coingecko:ethereum" },
+  // Algorand mainnet (Growtrack chain id 2, not EIP-155). ASAs auto-key as
+  // algorand:<assetId> through the shared token-key path below; lowercasing a
+  // numeric ASA id is a no-op, so the same code prices them without special-casing.
+  2: { slug: "algorand", nativeCoinKey: "coingecko:algorand" }
 };
 
 // DeFiLlama attaches a 0..1 confidence to each price. Anything below this is

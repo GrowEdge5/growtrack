@@ -1,12 +1,21 @@
 # Growtrack
 
-Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and an EVM provider adapter that reads native balance, ERC-20 token holdings, and USD valuation.
+Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **two read-chain adapters — EVM (Ethereum) and Algorand** — each reading native balance, curated token holdings, and USD valuation behind a shared provider port.
 
 ## Development Status
 
-_Last verified: **2026-08-22** — EVM wallet intelligence (ERC-20 holdings + USD pricing + valuation exposure): **COMPLETE**. Phase 1 (scaffold + local infrastructure): COMPLETE (2026-08-18)._
+_Last verified: **2026-08-23** — Algorand read chain (ALGO + curated ASA holdings + USD valuation): **COMPLETE**. EVM wallet intelligence (ERC-20 holdings + USD pricing + valuation exposure): COMPLETE (2026-08-22). Phase 1 (scaffold + local infrastructure): COMPLETE (2026-08-18)._
 
 ### Completed progress
+
+**Algorand read chain + ALGO/ASA USD valuation (2026-08-23)** — Algorand is now a first-class read chain alongside EVM, end-to-end:
+
+- **ALGO balance + curated ASA holdings** are read from the keyless Algonode algod REST endpoint (`https://mainnet-api.algonode.cloud`) via `algosdk` v3 (`src/modules/chains/infrastructure/algorand/`). algosdk v3 returns `bigint` for account and asset amounts, so balances are carried as exact strings — **no JS-number precision loss** on whale ALGO balances or large-supply ASAs (a value above 2^53 would silently round as a JS `number`). Holdings are limited to a curated ASA list (USDC `31566704`, USDt `312769`); other ASAs simply do not appear.
+- **Address safety.** Algorand addresses are case-sensitive base32 with a checksum, validated with `algosdk.isValidAddress` and kept **verbatim — never lowercased** (unlike EVM). We never hand-roll the checksum crypto.
+- **Honest reads.** A `404` from algod is a genuine zero-balance account (reported as `"0"`, not an error); any other failure (timeout, 5xx) rethrows so a bad read never persists as data. The read path is bounded by a `Promise.race` timeout.
+- **ALGO + ASA USD pricing** reuses the same DeFiLlama adapter: ALGO via `coingecko:algorand`, ASAs via `algorand:<assetId>`. One code path, one new chain-map entry — no special-casing.
+- **Native decimals generalized.** The old hardcoded EVM 18-decimal constant became a per-provider `nativeDecimals` (EVM = 18, ALGO = 6) so ALGO's 6-decimal micro-unit scales correctly. Behavior-preserving for EVM. Growtrack-internal chain id `2` = Algorand mainnet (not EIP-155).
+- **Live-verified read-only** against a public mainnet account: `nativeBalance` and USDC holding matched an **independent raw algod read** exactly (drift-free, same instant), and the priced snapshot returned `status: "complete"` with `totalValueUsd ≈ $188,825` (ALGO $0.089 + 188,851.85 USDC). EVM (vitalik.eth) still values to a complete USD total, unchanged.
 
 **EVM wallet intelligence (2026-08-22)** — the wallet snapshot now carries real token holdings and USD valuation, end-to-end:
 
@@ -25,27 +34,30 @@ _Last verified: **2026-08-22** — EVM wallet intelligence (ERC-20 holdings + US
 
 - `GET /health/live`, `GET /health/ready` (DB + Redis checks), `GET /metrics`, `GET /docs`
 - EVM (Ethereum) **native balance + block number + ERC-20 holdings (curated list) + USD pricing + `totalValueUsd`**, persisted in PostgreSQL and cached in Redis
+- Algorand (mainnet) **ALGO balance + round + curated ASA holdings (USDC, USDt) + USD pricing + `totalValueUsd`**, through the same snapshot/persistence/cache path
 - CQRS flow: `GET` reads cache/DB (`404` if absent) · `POST /refresh` enqueues · worker computes the snapshot
 
 ### Problems / limitations
 
-- **Token discovery is curated-list-based, not exhaustive.** Holdings come from a fixed list of well-known Ethereum ERC-20s; a token outside that list is not detected. `status` reflects USD-pricing coverage of discovered assets, not total portfolio completeness. _(By design for now; documented above. File: `src/modules/chains/infrastructure/evm/ethereum-token-list.ts`.)_
+- **Token discovery is curated-list-based, not exhaustive.** EVM holdings come from a fixed list of well-known Ethereum ERC-20s (`src/modules/chains/infrastructure/evm/ethereum-token-list.ts`); Algorand holdings come from a curated ASA list — USDC + USDt (`src/modules/chains/infrastructure/algorand/algorand-asset-list.ts`). A token/ASA outside its list is not detected. `status` reflects USD-pricing coverage of discovered assets, not total portfolio completeness. _(By design for now; documented above.)_
 - **`transactions`, `positions`, `signals` are still empty** — unimplemented extension points, not fabricated data. _(Later scope.)_
-- **Only EVM/Ethereum is implemented.** Algorand, Solana, Bitcoin are not. _(Roadmap Phases 3–4.)_
-- **x402 payment layer not started.** _(Blocker for hackathon submission — later roadmap phases.)_
+- **Read chains: EVM (Ethereum) and Algorand (mainnet) are implemented.** Solana and Bitcoin are not, and Algorand testnet is a later `ALGORAND_API_URL` swap. _(Roadmap.)_
+- **x402 payment layer not started.** _(Blocker for hackathon submission — next roadmap phase.)_
 - Compiled/production start (`npm start`) expects env vars from the environment; `.env` is auto-loaded only in dev. _(Non-blocker; expected for Docker/prod deployment.)_
 
 ### Tests & verification
 
 Every check below was actually executed.
 
-| Command / check                                  | Result   | Notes                                                                                                                                                  |
-| ------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run ci`                                     | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (11 tests / 4 files) ✓ · build ✓                                                                   |
-| `applyUsdPricing` unit tests                     | **PASS** | totals, missing-price honesty, and the `complete`/`partial` status rule (5 tests)                                                                      |
-| `walletResponseSchema` serializer test           | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                  |
-| Live refresh + `GET` (vitalik.eth `0xd8dA…6045`) | **PASS** | `200`, `status: "complete"`, `totalValueUsd` ≈ `$20,086.64`, all 9 discovered holdings priced with `valueUsd`, through the full Fastify/zod serializer |
-| Docker `postgres` + `redis`                      | **PASS** | `Up (healthy)`, ports 5432 / 6379                                                                                                                      |
+| Command / check                                      | Result   | Notes                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run ci`                                         | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (17 tests / 5 files) ✓ · build ✓                                                                                                                                                                                     |
+| `applyUsdPricing` unit tests                         | **PASS** | totals, missing-price honesty, the `complete`/`partial` status rule, and 6-decimal (ALGO) native scaling (6 tests)                                                                                                                                                       |
+| Algorand provider unit tests (mocked algod)          | **PASS** | verbatim-address accept + lowercase/junk reject, curated/non-curated/zero-amount ASA mapping, `404` → zero-balance, non-`404` rethrow (5 tests)                                                                                                                          |
+| `walletResponseSchema` serializer test               | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                                                                                                                                    |
+| Live Algorand read + DeFiLlama pricing (`ABQH…F7QY`) | **PASS** | 2026-08-23, read-only: `status: "complete"`, `totalValueUsd ≈ $188,825`; `nativeBalance` + USDC holding cross-checked against an **independent raw algod read** (drift-free). Provider-level — the route/serializer is chain-generic and already `GET`-verified for EVM. |
+| Live refresh + `GET` (vitalik.eth `0xd8dA…6045`)     | **PASS** | 2026-08-22: `200`, `status: "complete"`, `totalValueUsd ≈ $20,086.64`, all 9 discovered holdings priced with `valueUsd`, through the full Fastify/zod serializer                                                                                                         |
+| Docker `postgres` + `redis`                          | **PASS** | `Up (healthy)`, ports 5432 / 6379                                                                                                                                                                                                                                        |
 
 ### Infrastructure status
 
@@ -77,21 +89,22 @@ Every check below was actually executed.
 | Leaderboard attribution          | NOT TESTED                        |
 | Submission readiness             | NOT IMPLEMENTED                   |
 
+**Read the table strictly.** Every row above is about the **x402 _payment_ layer**, which is not started. It does **not** contradict the completed Algorand **data** layer: Growtrack already reads ALGO + curated ASA balances from Algorand mainnet and prices them in USD (see [Completed progress](#completed-progress)). What's missing is the paid `402` endpoint, the GoPlausible facilitator handshake, and the on-chain USDC settlement — i.e. turning that read into a metered, pay-per-query service. That payment layer is the next phase and the real blocker for hackathon submission.
+
 ### Current project phase
 
-**EVM wallet intelligence — ERC-20 holdings + USD pricing + valuation exposure + honest status: COMPLETE and verified.** Runtime API + worker + full EVM read path (balance, block, holdings, USD totals) are verified locally against a live public address.
+**Multichain read + USD valuation layer: COMPLETE and verified.** Two first-class read chains — EVM (Ethereum) and Algorand (mainnet) — each return native balance, curated token/ASA holdings, and USD totals through a shared provider port, persisted and cached. Both are verified live read-only against public mainnet addresses. **Next phase: the x402 payment layer** (metered pay-per-query access over the GoPlausible facilitator on Algorand) — not started, and the blocker for hackathon submission.
 
 ### Next recommended step
 
-1. **Commit this tested milestone** (USD valuation exposure + honest snapshot status):
+**Build the x402 payment layer (Phase 4)** — turn the working read API into a metered, pay-per-query service:
 
-   ```bash
-   git add -A && git commit -m "Expose USD valuation (totalValueUsd + per-holding valueUsd) and derive honest snapshot status"
-   ```
+1. Return `HTTP 402` with x402 payment requirements on the wallet endpoints when no valid payment proof is presented.
+2. Verify payment through the **official GoPlausible x402 Facilitator** (no custom or fake facilitator), settling in USDC — Algorand testnet ASA `10458941` first, then mainnet ASA `31566704`.
+3. On verified payment, serve the existing snapshot; wire a mainnet `payTo` address opted into USDC.
+4. Deploy over public HTTPS, list on Bazaar with the `x402-global-challenge` tag, and run one real end-to-end mainnet payment before submission.
 
-2. **Continue the roadmap:** broaden EVM coverage as needed, then begin the next read chain (Algorand), followed by the x402 payment layer.
-
-x402 work stays deferred until the multichain data layer is solid, per the project plan. The GoPlausible x402 Facilitator and Algorand USDC ASA are the intended payment path — no custom or fake facilitator.
+The multichain data layer is now solid, so x402 has a wallet it can actually describe. Read-only guarantee for blockchain data stays intact — the payment layer never signs on a user's behalf.
 
 ## Prerequisites
 
@@ -125,8 +138,12 @@ The API is served at `http://localhost:3000`.
 - Readiness: `GET /health/ready`
 - Metrics: `GET /metrics`
 - OpenAPI UI: `http://localhost:3000/docs`
-- Wallet snapshot: `GET /v1/wallets/ethereum/:address`
-- Queue refresh: `POST /v1/wallets/ethereum/:address/refresh`
+- Wallet snapshot (EVM): `GET /v1/wallets/ethereum/:address`
+- Queue refresh (EVM): `POST /v1/wallets/ethereum/:address/refresh`
+- Wallet snapshot (Algorand): `GET /v1/wallets/algorand/:address`
+- Queue refresh (Algorand): `POST /v1/wallets/algorand/:address/refresh`
+
+The route is chain-generic — the `:chain` segment selects the registered provider, so no per-chain route code exists. Algorand addresses are case-sensitive; pass them verbatim (never lowercased).
 
 ## Quality checks
 
@@ -140,4 +157,4 @@ npm run build
 
 ## Current capability boundary
 
-The EVM provider reads native balance, block number, and ERC-20 holdings (from a curated Ethereum token list), then enriches each holding with a USD `valueUsd` and the snapshot with a `totalValueUsd`. A snapshot is `complete` only when the native balance and every discovered holding were priced; otherwise it is `partial`. Because token discovery is limited to the curated list, `complete` describes USD-pricing coverage of the assets found — **not** exhaustive portfolio coverage. Transactions, protocol positions, and intelligence signals remain explicit extension points rather than fabricated data.
+Two read chains share one provider port. The **EVM** provider reads native balance, block number, and ERC-20 holdings (from a curated Ethereum token list); the **Algorand** provider reads the ALGO balance, round, and curated ASA holdings (USDC, USDt) from a keyless algod endpoint, keeping addresses verbatim (case-sensitive base32 — never lowercased). Each holding is then enriched with a USD `valueUsd` and the snapshot with a `totalValueUsd`, priced through the same keyless DeFiLlama adapter. A snapshot is `complete` only when the native balance and every discovered holding were priced; otherwise it is `partial`. Because token/ASA discovery is limited to the curated lists, `complete` describes USD-pricing coverage of the assets found — **not** exhaustive portfolio coverage. Transactions, protocol positions, and intelligence signals remain explicit extension points rather than fabricated data. Blockchain access is **read-only**: Growtrack never holds keys, signs, or moves funds.
