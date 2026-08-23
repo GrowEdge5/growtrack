@@ -12,6 +12,10 @@ import type {
 export interface ProviderWalletData {
   nativeBalance: string;
   nativeSymbol: string;
+  // Decimals of the native currency's smallest unit (EVM wei = 18, ALGO
+  // microAlgos = 6). Carried per-provider so USD valuation scales any chain's
+  // native balance correctly without hardcoding an EVM assumption.
+  nativeDecimals: number;
   provider: string;
   blockNumber?: string;
   holdings: TokenHolding[];

@@ -15,6 +15,8 @@ const environmentSchema = z.object({
   EVM_RPC_URL: z.string().url(),
   EVM_CHAIN_ID: z.coerce.number().int().positive().default(1),
   EVM_CHAIN_NAME: z.string().min(1).default("ethereum"),
+  ALGORAND_API_URL: z.string().url().default("https://mainnet-api.algonode.cloud"),
+  ALGORAND_CHAIN_NAME: z.string().min(1).default("algorand"),
   PRICE_API_BASE_URL: z.string().url().default("https://coins.llama.fi"),
   PRICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000)
 });

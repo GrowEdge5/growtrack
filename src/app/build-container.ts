@@ -6,6 +6,8 @@ import { createPrismaClient } from "../infrastructure/database/prisma.js";
 import { BullMqWalletRefreshQueue } from "../infrastructure/queue/bullmq-wallet-refresh-queue.js";
 import { createRedisClient } from "../infrastructure/redis/redis.js";
 import { DefaultChainProviderRegistry } from "../modules/chains/infrastructure/chain-provider-registry.js";
+import { AlgorandChainDataProvider } from "../modules/chains/infrastructure/algorand/algorand-chain-data-provider.js";
+import { ALGORAND_MAINNET_CHAIN_ID } from "../modules/chains/infrastructure/algorand/algorand-asset-list.js";
 import { ViemChainDataProvider } from "../modules/chains/infrastructure/evm/viem-chain-data-provider.js";
 import { GetWalletIntelligence } from "../modules/wallets/application/get-wallet-intelligence.js";
 import { RefreshWalletIntelligence } from "../modules/wallets/application/refresh-wallet-intelligence.js";
@@ -37,7 +39,13 @@ export function buildContainer(env: Environment): ApplicationContainer {
     rpcUrl: env.EVM_RPC_URL,
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
-  const providers = new DefaultChainProviderRegistry([provider]);
+  const algorandProvider = new AlgorandChainDataProvider({
+    chainId: ALGORAND_MAINNET_CHAIN_ID,
+    chainName: env.ALGORAND_CHAIN_NAME,
+    apiUrl: env.ALGORAND_API_URL,
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const providers = new DefaultChainProviderRegistry([provider, algorandProvider]);
   const priceProvider = new DefiLlamaPriceProvider({
     baseUrl: env.PRICE_API_BASE_URL,
     timeoutMs: env.PRICE_TIMEOUT_MS

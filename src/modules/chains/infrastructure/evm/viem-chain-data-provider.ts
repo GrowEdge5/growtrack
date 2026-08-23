@@ -82,6 +82,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
     return {
       nativeBalance: nativeBalance.toString(),
       nativeSymbol: this.chain.nativeSymbol,
+      nativeDecimals: 18,
       provider: "viem-rpc",
       blockNumber: blockNumber.toString(),
       holdings,

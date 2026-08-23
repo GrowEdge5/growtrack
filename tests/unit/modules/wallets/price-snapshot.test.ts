@@ -22,6 +22,7 @@ const WETH: TokenHolding = {
 
 const wallet = {
   nativeBalance: "1500000000000000000", // 1.5 ETH
+  nativeDecimals: 18,
   holdings: [USDC, WETH]
 };
 
@@ -92,11 +93,21 @@ describe("applyUsdPricing", () => {
   });
 
   it("is complete for a token-less wallet once the native balance is priced", () => {
-    const nativeOnly = { nativeBalance: "1500000000000000000", holdings: [] };
+    const nativeOnly = { nativeBalance: "1500000000000000000", nativeDecimals: 18, holdings: [] };
 
     const result = applyUsdPricing(nativeOnly, { nativeUsd: 2000, tokenUsd: {} });
 
     expect(result.totalValueUsd).toBe("3000.00000000");
+    expect(result.status).toBe("complete");
+  });
+
+  it("scales a 6-decimal native currency (ALGO) correctly", () => {
+    // 1.5 ALGO expressed in microAlgos (6 decimals), priced at $0.20 => $0.30.
+    const algoWallet = { nativeBalance: "1500000", nativeDecimals: 6, holdings: [] };
+
+    const result = applyUsdPricing(algoWallet, { nativeUsd: 0.2, tokenUsd: {} });
+
+    expect(result.totalValueUsd).toBe("0.30000000");
     expect(result.status).toBe("complete");
   });
 });

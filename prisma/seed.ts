@@ -13,6 +13,18 @@ async function seed(): Promise<void> {
       namespace: "eip155"
     }
   });
+
+  // Growtrack-internal id 2 for Algorand mainnet (not an EIP-155 chainId).
+  await prisma.chain.upsert({
+    where: { id: 2 },
+    update: { slug: "algorand", displayName: "Algorand", namespace: "algorand", enabled: true },
+    create: {
+      id: 2,
+      slug: "algorand",
+      displayName: "Algorand",
+      namespace: "algorand"
+    }
+  });
 }
 
 seed()

@@ -3,17 +3,15 @@ import { Decimal } from "decimal.js";
 import type { PriceQuote } from "./ports/price-provider.js";
 import type { SnapshotStatus, TokenHolding } from "../domain/wallet-snapshot.js";
 
-// EVM-family native currencies (ETH and L2 gas tokens) use 18 decimals.
-// Growtrack only reads EVM chains today; revisit when a non-EVM native such as
-// Algorand's 6-decimal ALGO is added.
-const EVM_NATIVE_DECIMALS = 18;
-
 // USD amounts are persisted as Decimal(36,8); match that scale here so the
 // in-memory value and the stored value agree.
 const USD_SCALE = 8;
 
 export interface PriceableWallet {
   nativeBalance: string;
+  // Decimals of the native currency's smallest unit (EVM = 18, ALGO = 6), supplied
+  // by the reading provider so the native balance is scaled correctly per chain.
+  nativeDecimals: number;
   holdings: TokenHolding[];
 }
 
@@ -44,7 +42,7 @@ export function applyUsdPricing(wallet: PriceableWallet, quote: PriceQuote): Pri
 
   const nativePriced = quote.nativeUsd !== undefined;
   if (quote.nativeUsd !== undefined) {
-    addToTotal(toWholeUnits(wallet.nativeBalance, EVM_NATIVE_DECIMALS).mul(quote.nativeUsd));
+    addToTotal(toWholeUnits(wallet.nativeBalance, wallet.nativeDecimals).mul(quote.nativeUsd));
   }
 
   let allHoldingsPriced = true;

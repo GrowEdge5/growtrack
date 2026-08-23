@@ -37,6 +37,7 @@
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
     "@prisma/client": "^6.4.1",
+    "algosdk": "^3.7.0",
     "bullmq": "^5.41.9",
     "decimal.js": "^10.5.0",
     "fastify": "^5.2.1",

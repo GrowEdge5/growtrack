@@ -41,6 +41,7 @@ function dependencies() {
     fetchWalletData: vi.fn(async () => ({
       nativeBalance: "42",
       nativeSymbol: "ETH",
+      nativeDecimals: 18,
       provider: "test",
       holdings: [],
       transactions: [],
