@@ -1,12 +1,21 @@
 # Growtrack
 
-Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **two read-chain adapters — EVM (Ethereum) and Algorand** — each reading native balance, curated token holdings, and USD valuation behind a shared provider port.
+Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **two read-chain adapters — EVM (Ethereum) and Algorand** — each reading native balance, curated token holdings, and USD valuation behind a shared provider port. On top of the read layer, a pay-per-query **x402 payment layer** (Algorand USDC micropayments via the official GoPlausible facilitator) gates a synchronous `/live` snapshot endpoint. Its `402 → verify → settle` path is implemented and covered by unit + e2e tests against a **mocked** facilitator; live on-chain verification against the real facilitator is the next step.
 
 ## Development Status
 
-_Last verified: **2026-08-23** — Algorand read chain (ALGO + curated ASA holdings + USD valuation): **COMPLETE**. EVM wallet intelligence (ERC-20 holdings + USD pricing + valuation exposure): COMPLETE (2026-08-22). Phase 1 (scaffold + local infrastructure): COMPLETE (2026-08-18)._
+_Last verified: **2026-08-31** — x402 pay-per-query payment core (HTTP 402 + payment requirements + guard verify→settle via the GoPlausible facilitator client): **IMPLEMENTED & TESTED against a mocked facilitator; not yet live-verified on-chain**. Algorand read chain (ALGO + curated ASA holdings + USD valuation): COMPLETE (2026-08-23). EVM wallet intelligence (ERC-20 holdings + USD pricing + valuation exposure): COMPLETE (2026-08-22). Phase 1 (scaffold + local infrastructure): COMPLETE (2026-08-18)._
 
 ### Completed progress
+
+**x402 pay-per-query payment core (2026-08-31)** — the read API is now gated behind an Algorand x402 micropayment on a new synchronous endpoint, implemented and tested end-to-end against a **mocked** facilitator (live on-chain verification is the next step):
+
+- **New paid tier, freemium split.** `GET /v1/wallets/:chain/:address/live` returns a fresh, synchronous full snapshot and is gated by an x402 `preHandler` guard (`src/http/plugins/x402-guard.ts`). The free cached `GET` and the async `POST /refresh` routes are **untouched** — this adds a paid lane, it does not paywall the existing endpoints.
+- **HTTP 402 + payment requirements.** When payment is absent, undecodable, or rejected, the guard responds `402` with x402 v2 payment requirements as both a JSON body and a base64 `PAYMENT-REQUIRED` header, built by a deterministic `PaymentRequirementsBuilder`: a single canonical `exact`-scheme accept carrying the network, USDC ASA, `payTo`, `feePayer`, price in atomic units, and the `x402-global-challenge` tag.
+- **Verify → settle handshake.** On a presented `PAYMENT-SIGNATURE`, the guard decodes the opaque client payload and calls the **official GoPlausible facilitator** `POST /verify` then `POST /settle` (`src/modules/payments/infrastructure/http-payment-facilitator.ts`), forwarding the payload verbatim alongside the exact accept it priced. On success it sets a base64 `PAYMENT-RESPONSE` (the settlement result) and lets the snapshot handler run.
+- **Fail-closed semantics.** No facilitator wired, missing/invalid signature, `isValid: false`, or `success: false` → `402` (an unpaid request is never served). Facilitator unreachable / non-2xx / timeout → `502` (a gateway error, kept distinct from "unpaid"). Growtrack never fakes verification and never substitutes a custom facilitator.
+- **Read-only preserved.** Growtrack is the resource server, never the payer: it treats the payment payload as opaque, holds no keys, and never signs — the client's wallet and the facilitator move the funds.
+- **Not yet:** a live testnet/mainnet payment against the real facilitator, HTTPS deploy, and Bazaar listing. The verify→settle logic is covered by unit + e2e tests with a **mocked** facilitator; the HTTP facilitator adapter itself is type-checked but not yet exercised against the live endpoint.
 
 **Algorand read chain + ALGO/ASA USD valuation (2026-08-23)** — Algorand is now a first-class read chain alongside EVM, end-to-end:
 
@@ -42,7 +51,7 @@ _Last verified: **2026-08-23** — Algorand read chain (ALGO + curated ASA holdi
 - **Token discovery is curated-list-based, not exhaustive.** EVM holdings come from a fixed list of well-known Ethereum ERC-20s (`src/modules/chains/infrastructure/evm/ethereum-token-list.ts`); Algorand holdings come from a curated ASA list — USDC + USDt (`src/modules/chains/infrastructure/algorand/algorand-asset-list.ts`). A token/ASA outside its list is not detected. `status` reflects USD-pricing coverage of discovered assets, not total portfolio completeness. _(By design for now; documented above.)_
 - **`transactions`, `positions`, `signals` are still empty** — unimplemented extension points, not fabricated data. _(Later scope.)_
 - **Read chains: EVM (Ethereum) and Algorand (mainnet) are implemented.** Solana and Bitcoin are not, and Algorand testnet is a later `ALGORAND_API_URL` swap. _(Roadmap.)_
-- **x402 payment layer not started.** _(Blocker for hackathon submission — next roadmap phase.)_
+- **x402 payment layer: core implemented, not yet live.** The `402 → verify → settle` flow (guard, payment-requirements builder, GoPlausible facilitator HTTP client) is built and covered by unit + e2e tests **against a mocked facilitator**. What remains: a real payment against the live GoPlausible facilitator (testnet USDC ASA `10458941`, then mainnet `31566704`), public HTTPS deploy, and Bazaar listing. The HTTP facilitator adapter is type-checked but not yet hit against the real endpoint. _(Next roadmap phase; still the blocker for hackathon submission.)_
 - Compiled/production start (`npm start`) expects env vars from the environment; `.env` is auto-loaded only in dev. _(Non-blocker; expected for Docker/prod deployment.)_
 
 ### Tests & verification
@@ -51,7 +60,9 @@ Every check below was actually executed.
 
 | Command / check                                      | Result   | Notes                                                                                                                                                                                                                                                                    |
 | ---------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run ci`                                         | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (17 tests / 5 files) ✓ · build ✓                                                                                                                                                                                     |
+| `npm run ci`                                         | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (32 tests / 8 files) ✓ · build ✓                                                                                                                                                                                     |
+| x402 guard unit tests (mocked facilitator)           | **PASS** | disabled pass-through, fail-closed 402 (no facilitator), missing/invalid signature → 402, `isValid:false` → 402 (+ never settles), `success:false` → 402, verify throws → 502 (+ never settles), paid happy-path → base64 `PAYMENT-RESPONSE`, `decodePaymentSignature` (10 tests) |
+| x402 guard e2e (Fastify + zod, mocked facilitator)   | **PASS** | unpaid → 402 (body + `PAYMENT-REQUIRED` header), disabled → 200, paid verify+settle → 200 `meta.source:"live"` + `PAYMENT-RESPONSE` decodes to the settlement — full route/serializer, zero provider/DB IO (3 tests)                                                       |
 | `applyUsdPricing` unit tests                         | **PASS** | totals, missing-price honesty, the `complete`/`partial` status rule, and 6-decimal (ALGO) native scaling (6 tests)                                                                                                                                                       |
 | Algorand provider unit tests (mocked algod)          | **PASS** | verbatim-address accept + lowercase/junk reject, curated/non-curated/zero-amount ASA mapping, `404` → zero-balance, non-`404` rethrow (5 tests)                                                                                                                          |
 | `walletResponseSchema` serializer test               | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                                                                                                                                    |
@@ -72,22 +83,24 @@ Every check below was actually executed.
 
 ### Hackathon compliance status (Algorand Global x402 Challenge)
 
-| Requirement                      | Status                            |
-| -------------------------------- | --------------------------------- |
-| Paid x402 endpoint               | NOT IMPLEMENTED                   |
-| HTTP 402 response                | NOT IMPLEMENTED                   |
-| Algorand Testnet flow            | NOT IMPLEMENTED                   |
-| Algorand Mainnet endpoint        | NOT IMPLEMENTED                   |
-| GoPlausible x402 Facilitator     | NOT IMPLEMENTED                   |
-| Mainnet USDC ASA `31566704`      | NOT IMPLEMENTED                   |
-| `payTo` (Mainnet, USDC-opted-in) | NOT IMPLEMENTED                   |
-| Bazaar discovery                 | NOT IMPLEMENTED                   |
-| `x402-global-challenge` tag      | NOT IMPLEMENTED                   |
-| HTTPS (public)                   | NOT IMPLEMENTED (local HTTP only) |
-| Real Mainnet payment             | NOT TESTED                        |
-| USDC received at payTo           | NOT TESTED                        |
-| Leaderboard attribution          | NOT TESTED                        |
-| Submission readiness             | NOT IMPLEMENTED                   |
+| Requirement                      | Status                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| Paid x402 endpoint               | IMPLEMENTED — `/live` gated by the guard; mock-tested, not yet live            |
+| HTTP 402 response                | IMPLEMENTED & TESTED (mock) — JSON body + base64 `PAYMENT-REQUIRED` header     |
+| Verify → settle handshake        | IMPLEMENTED & TESTED (mock) — facilitator HTTP client; not yet hit live        |
+| Fail-closed (402/502) semantics  | IMPLEMENTED & TESTED (mock) — unpaid → 402, gateway error → 502                |
+| GoPlausible x402 Facilitator     | CLIENT IMPLEMENTED — real endpoint not yet exercised (adapter type-checked)    |
+| `x402-global-challenge` tag      | IMPLEMENTED & TESTED (mock) — emitted in `accept.extra.tag`                    |
+| Mainnet USDC ASA `31566704`      | CONFIGURED in payment requirements; no real payment yet                        |
+| `payTo` (Mainnet, USDC-opted-in) | CONFIGURED value; on-chain opt-in + receipt NOT VERIFIED                       |
+| Algorand Testnet flow            | NOT TESTED — next: real payment on testnet USDC ASA `10458941`                 |
+| Algorand Mainnet flow            | NOT TESTED — no real mainnet payment yet                                       |
+| Bazaar discovery                 | NOT IMPLEMENTED                                                                |
+| HTTPS (public)                   | NOT IMPLEMENTED (local HTTP only)                                              |
+| Real Mainnet payment             | NOT TESTED                                                                     |
+| USDC received at payTo           | NOT TESTED                                                                     |
+| Leaderboard attribution          | NOT TESTED                                                                     |
+| Submission readiness             | NOT READY — core built + mock-tested; live payment + HTTPS + Bazaar pending    |
 
 **Read the table strictly.** Every row above is about the **x402 _payment_ layer**, which is not started. It does **not** contradict the completed Algorand **data** layer: Growtrack already reads ALGO + curated ASA balances from Algorand mainnet and prices them in USD (see [Completed progress](#completed-progress)). What's missing is the paid `402` endpoint, the GoPlausible facilitator handshake, and the on-chain USDC settlement — i.e. turning that read into a metered, pay-per-query service. That payment layer is the next phase and the real blocker for hackathon submission.
 

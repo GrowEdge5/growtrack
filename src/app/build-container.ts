@@ -12,6 +12,9 @@ import { ViemChainDataProvider } from "../modules/chains/infrastructure/evm/viem
 import { GetWalletIntelligence } from "../modules/wallets/application/get-wallet-intelligence.js";
 import { RefreshWalletIntelligence } from "../modules/wallets/application/refresh-wallet-intelligence.js";
 import { RequestWalletRefresh } from "../modules/wallets/application/request-wallet-refresh.js";
+import { PaymentRequirementsBuilder } from "../modules/payments/application/payment-requirements-builder.js";
+import type { PaymentFacilitator } from "../modules/payments/application/ports/payment-facilitator.js";
+import { HttpPaymentFacilitator } from "../modules/payments/infrastructure/http-payment-facilitator.js";
 import { RedisWalletCache } from "../modules/wallets/infrastructure/cache/redis-wallet-cache.js";
 import { PrismaWalletRepository } from "../modules/wallets/infrastructure/persistence/prisma-wallet-repository.js";
 import { DefiLlamaPriceProvider } from "../modules/wallets/infrastructure/pricing/defillama-price-provider.js";
@@ -25,6 +28,8 @@ export interface ApplicationContainer {
   getWalletIntelligence: GetWalletIntelligence;
   requestWalletRefresh: RequestWalletRefresh;
   refreshWalletIntelligence: RefreshWalletIntelligence;
+  paymentRequirements: PaymentRequirementsBuilder;
+  paymentFacilitator: PaymentFacilitator;
   connect(): Promise<void>;
   close(): Promise<void>;
 }
@@ -53,6 +58,26 @@ export function buildContainer(env: Environment): ApplicationContainer {
   const repository = new PrismaWalletRepository(prisma);
   const cache = new RedisWalletCache(redis, env.CACHE_TTL_SECONDS);
   const refreshQueue = new BullMqWalletRefreshQueue(redis);
+  const paymentRequirements = new PaymentRequirementsBuilder({
+    network: env.X402_NETWORK,
+    asset: env.X402_ASSET_ID,
+    assetDecimals: env.X402_ASSET_DECIMALS,
+    priceAtomic: env.X402_PRICE_ATOMIC,
+    // env's superRefine guarantees X402_PAY_TO is present when enabled; this ""
+    // fallback only applies while x402 is disabled (the guard never builds
+    // requirements in that state), so an empty payTo can never reach a client.
+    payTo: env.X402_PAY_TO ?? "",
+    feePayer: env.X402_FEE_PAYER,
+    maxTimeoutSeconds: env.X402_MAX_TIMEOUT_SECONDS,
+    tag: env.X402_TAG
+  });
+  // HTTP client for the official GoPlausible facilitator (verify + settle). Wired
+  // into the x402 guard so a supplied PAYMENT-SIGNATURE can be validated and
+  // broadcast. Reuses the shared provider timeout for its calls.
+  const paymentFacilitator = new HttpPaymentFacilitator({
+    facilitatorUrl: env.X402_FACILITATOR_URL,
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
 
   return {
     env,
@@ -69,6 +94,8 @@ export function buildContainer(env: Environment): ApplicationContainer {
       systemClock,
       env.WALLET_FRESHNESS_SECONDS
     ),
+    paymentRequirements,
+    paymentFacilitator,
     async connect() {
       // BullMQ shares this ioredis client and eagerly initiates its connection during
       // Queue construction, so an unconditional redis.connect() here throws
