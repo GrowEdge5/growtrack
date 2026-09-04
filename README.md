@@ -58,17 +58,17 @@ _Last verified: **2026-08-31** — x402 pay-per-query payment core (HTTP 402 + p
 
 Every check below was actually executed.
 
-| Command / check                                      | Result   | Notes                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run ci`                                         | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (32 tests / 8 files) ✓ · build ✓                                                                                                                                                                                     |
+| Command / check                                      | Result   | Notes                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run ci`                                         | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (32 tests / 8 files) ✓ · build ✓                                                                                                                                                                                              |
 | x402 guard unit tests (mocked facilitator)           | **PASS** | disabled pass-through, fail-closed 402 (no facilitator), missing/invalid signature → 402, `isValid:false` → 402 (+ never settles), `success:false` → 402, verify throws → 502 (+ never settles), paid happy-path → base64 `PAYMENT-RESPONSE`, `decodePaymentSignature` (10 tests) |
-| x402 guard e2e (Fastify + zod, mocked facilitator)   | **PASS** | unpaid → 402 (body + `PAYMENT-REQUIRED` header), disabled → 200, paid verify+settle → 200 `meta.source:"live"` + `PAYMENT-RESPONSE` decodes to the settlement — full route/serializer, zero provider/DB IO (3 tests)                                                       |
-| `applyUsdPricing` unit tests                         | **PASS** | totals, missing-price honesty, the `complete`/`partial` status rule, and 6-decimal (ALGO) native scaling (6 tests)                                                                                                                                                       |
-| Algorand provider unit tests (mocked algod)          | **PASS** | verbatim-address accept + lowercase/junk reject, curated/non-curated/zero-amount ASA mapping, `404` → zero-balance, non-`404` rethrow (5 tests)                                                                                                                          |
-| `walletResponseSchema` serializer test               | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                                                                                                                                    |
-| Live Algorand read + DeFiLlama pricing (`ABQH…F7QY`) | **PASS** | 2026-08-23, read-only: `status: "complete"`, `totalValueUsd ≈ $188,825`; `nativeBalance` + USDC holding cross-checked against an **independent raw algod read** (drift-free). Provider-level — the route/serializer is chain-generic and already `GET`-verified for EVM. |
-| Live refresh + `GET` (vitalik.eth `0xd8dA…6045`)     | **PASS** | 2026-08-22: `200`, `status: "complete"`, `totalValueUsd ≈ $20,086.64`, all 9 discovered holdings priced with `valueUsd`, through the full Fastify/zod serializer                                                                                                         |
-| Docker `postgres` + `redis`                          | **PASS** | `Up (healthy)`, ports 5432 / 6379                                                                                                                                                                                                                                        |
+| x402 guard e2e (Fastify + zod, mocked facilitator)   | **PASS** | unpaid → 402 (body + `PAYMENT-REQUIRED` header), disabled → 200, paid verify+settle → 200 `meta.source:"live"` + `PAYMENT-RESPONSE` decodes to the settlement — full route/serializer, zero provider/DB IO (3 tests)                                                              |
+| `applyUsdPricing` unit tests                         | **PASS** | totals, missing-price honesty, the `complete`/`partial` status rule, and 6-decimal (ALGO) native scaling (6 tests)                                                                                                                                                                |
+| Algorand provider unit tests (mocked algod)          | **PASS** | verbatim-address accept + lowercase/junk reject, curated/non-curated/zero-amount ASA mapping, `404` → zero-balance, non-`404` rethrow (5 tests)                                                                                                                                   |
+| `walletResponseSchema` serializer test               | **PASS** | confirms `totalValueUsd` + per-holding `valueUsd` survive serialization — the field zod previously stripped (2 tests)                                                                                                                                                             |
+| Live Algorand read + DeFiLlama pricing (`ABQH…F7QY`) | **PASS** | 2026-08-23, read-only: `status: "complete"`, `totalValueUsd ≈ $188,825`; `nativeBalance` + USDC holding cross-checked against an **independent raw algod read** (drift-free). Provider-level — the route/serializer is chain-generic and already `GET`-verified for EVM.          |
+| Live refresh + `GET` (vitalik.eth `0xd8dA…6045`)     | **PASS** | 2026-08-22: `200`, `status: "complete"`, `totalValueUsd ≈ $20,086.64`, all 9 discovered holdings priced with `valueUsd`, through the full Fastify/zod serializer                                                                                                                  |
+| Docker `postgres` + `redis`                          | **PASS** | `Up (healthy)`, ports 5432 / 6379                                                                                                                                                                                                                                                 |
 
 ### Infrastructure status
 
@@ -83,41 +83,41 @@ Every check below was actually executed.
 
 ### Hackathon compliance status (Algorand Global x402 Challenge)
 
-| Requirement                      | Status                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------ |
-| Paid x402 endpoint               | IMPLEMENTED — `/live` gated by the guard; mock-tested, not yet live            |
-| HTTP 402 response                | IMPLEMENTED & TESTED (mock) — JSON body + base64 `PAYMENT-REQUIRED` header     |
-| Verify → settle handshake        | IMPLEMENTED & TESTED (mock) — facilitator HTTP client; not yet hit live        |
-| Fail-closed (402/502) semantics  | IMPLEMENTED & TESTED (mock) — unpaid → 402, gateway error → 502                |
-| GoPlausible x402 Facilitator     | CLIENT IMPLEMENTED — real endpoint not yet exercised (adapter type-checked)    |
-| `x402-global-challenge` tag      | IMPLEMENTED & TESTED (mock) — emitted in `accept.extra.tag`                    |
-| Mainnet USDC ASA `31566704`      | CONFIGURED in payment requirements; no real payment yet                        |
-| `payTo` (Mainnet, USDC-opted-in) | CONFIGURED value; on-chain opt-in + receipt NOT VERIFIED                       |
-| Algorand Testnet flow            | NOT TESTED — next: real payment on testnet USDC ASA `10458941`                 |
-| Algorand Mainnet flow            | NOT TESTED — no real mainnet payment yet                                       |
-| Bazaar discovery                 | NOT IMPLEMENTED                                                                |
-| HTTPS (public)                   | NOT IMPLEMENTED (local HTTP only)                                              |
-| Real Mainnet payment             | NOT TESTED                                                                     |
-| USDC received at payTo           | NOT TESTED                                                                     |
-| Leaderboard attribution          | NOT TESTED                                                                     |
-| Submission readiness             | NOT READY — core built + mock-tested; live payment + HTTPS + Bazaar pending    |
+| Requirement                      | Status                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| Paid x402 endpoint               | IMPLEMENTED — `/live` gated by the guard; mock-tested, not yet live         |
+| HTTP 402 response                | IMPLEMENTED & TESTED (mock) — JSON body + base64 `PAYMENT-REQUIRED` header  |
+| Verify → settle handshake        | IMPLEMENTED & TESTED (mock) — facilitator HTTP client; not yet hit live     |
+| Fail-closed (402/502) semantics  | IMPLEMENTED & TESTED (mock) — unpaid → 402, gateway error → 502             |
+| GoPlausible x402 Facilitator     | CLIENT IMPLEMENTED — real endpoint not yet exercised (adapter type-checked) |
+| `x402-global-challenge` tag      | IMPLEMENTED & TESTED (mock) — emitted in `accept.extra.tag`                 |
+| Mainnet USDC ASA `31566704`      | CONFIGURED in payment requirements; no real payment yet                     |
+| `payTo` (Mainnet, USDC-opted-in) | CONFIGURED value; on-chain opt-in + receipt NOT VERIFIED                    |
+| Algorand Testnet flow            | NOT TESTED — next: real payment on testnet USDC ASA `10458941`              |
+| Algorand Mainnet flow            | NOT TESTED — no real mainnet payment yet                                    |
+| Bazaar discovery                 | NOT IMPLEMENTED                                                             |
+| HTTPS (public)                   | NOT IMPLEMENTED (local HTTP only)                                           |
+| Real Mainnet payment             | NOT TESTED                                                                  |
+| USDC received at payTo           | NOT TESTED                                                                  |
+| Leaderboard attribution          | NOT TESTED                                                                  |
+| Submission readiness             | NOT READY — core built + mock-tested; live payment + HTTPS + Bazaar pending |
 
-**Read the table strictly.** Every row above is about the **x402 _payment_ layer**, which is not started. It does **not** contradict the completed Algorand **data** layer: Growtrack already reads ALGO + curated ASA balances from Algorand mainnet and prices them in USD (see [Completed progress](#completed-progress)). What's missing is the paid `402` endpoint, the GoPlausible facilitator handshake, and the on-chain USDC settlement — i.e. turning that read into a metered, pay-per-query service. That payment layer is the next phase and the real blocker for hackathon submission.
+**Read the table strictly.** Every row above is about the **x402 _payment_ layer**. Its **core is implemented and tested against a mocked facilitator** — the `402 → verify → settle` handshake, the payment-requirements builder, the fail-closed 402/502 semantics, and the `x402-global-challenge` tag (see [Completed progress](#completed-progress)). What is **not** done is the **live on-chain flow**: a real USDC payment against the running GoPlausible facilitator (testnet then mainnet), a public HTTPS deploy, and a Bazaar listing. Rows reading "CONFIGURED", "CLIENT IMPLEMENTED", or "NOT TESTED" mark exactly that gap — code exists and is mock-tested, but no real payment has moved on-chain yet. None of this contradicts the completed Algorand **data** layer, which already reads ALGO + curated ASA balances from mainnet and prices them in USD. The remaining live-payment work is the real blocker for hackathon submission.
 
 ### Current project phase
 
-**Multichain read + USD valuation layer: COMPLETE and verified.** Two first-class read chains — EVM (Ethereum) and Algorand (mainnet) — each return native balance, curated token/ASA holdings, and USD totals through a shared provider port, persisted and cached. Both are verified live read-only against public mainnet addresses. **Next phase: the x402 payment layer** (metered pay-per-query access over the GoPlausible facilitator on Algorand) — not started, and the blocker for hackathon submission.
+**Multichain read + USD valuation layer: COMPLETE and verified. x402 payment core: IMPLEMENTED and tested against a mocked facilitator.** Two first-class read chains — EVM (Ethereum) and Algorand (mainnet) — each return native balance, curated token/ASA holdings, and USD totals through a shared provider port, persisted and cached, verified live read-only against public mainnet addresses. On top of that, the paid `/live` endpoint is gated by an x402 guard whose `402 → verify → settle` path (over the GoPlausible facilitator client) is covered by unit + e2e tests with a **mocked** facilitator. **Next phase: take x402 live on-chain** — a real USDC payment against the running facilitator (testnet ASA `10458941`, then mainnet `31566704`), a public HTTPS deploy, and a Bazaar listing. That live-payment work is the remaining blocker for hackathon submission.
 
 ### Next recommended step
 
-**Build the x402 payment layer (Phase 4)** — turn the working read API into a metered, pay-per-query service:
+**Take the x402 payment layer live on-chain (Phase 4.3+)** — the `402 → verify → settle` core is built and mock-tested; what remains is proving it against the real facilitator and real USDC:
 
-1. Return `HTTP 402` with x402 payment requirements on the wallet endpoints when no valid payment proof is presented.
-2. Verify payment through the **official GoPlausible x402 Facilitator** (no custom or fake facilitator), settling in USDC — Algorand testnet ASA `10458941` first, then mainnet ASA `31566704`.
-3. On verified payment, serve the existing snapshot; wire a mainnet `payTo` address opted into USDC.
-4. Deploy over public HTTPS, list on Bazaar with the `x402-global-challenge` tag, and run one real end-to-end mainnet payment before submission.
+1. Run one real end-to-end payment on **Algorand testnet** (USDC ASA `10458941`) against the live **GoPlausible facilitator** — a genuine `402`, a client-signed payment, then verify + settle moving testnet USDC. This is the first exercise of the HTTP facilitator adapter against the real endpoint.
+2. Wire a mainnet `payTo` address opted into USDC and repeat once on **mainnet** (ASA `31566704`), confirming USDC is actually received at `payTo`.
+3. Deploy over public **HTTPS** and list on **Bazaar** with the `x402-global-challenge` tag so the paid endpoint is discoverable.
+4. Only then flip the submission-readiness rows above to done.
 
-The multichain data layer is now solid, so x402 has a wallet it can actually describe. Read-only guarantee for blockchain data stays intact — the payment layer never signs on a user's behalf.
+The multichain data layer and the x402 core are both in place, so nothing new needs building for this — it is verification against live infrastructure. Read-only guarantee for blockchain data stays intact: the payment layer treats the client payload as opaque and never signs on a user's behalf.
 
 ## Prerequisites
 
