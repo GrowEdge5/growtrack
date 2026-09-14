@@ -30,6 +30,7 @@
     "ci": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "^9.2.2",
     "@fastify/cors": "^10.0.2",
     "@fastify/helmet": "^13.0.1",
     "@fastify/rate-limit": "^10.2.1",
@@ -37,6 +38,8 @@
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
     "@prisma/client": "^6.4.1",
+    "@x402-avm/core": "^2.6.1",
+    "@x402-avm/express": "^2.6.1",
     "algosdk": "^3.7.0",
     "bullmq": "^5.41.9",
     "decimal.js": "^10.5.0",
