@@ -19,6 +19,7 @@ import type { PaymentRequirements } from "../../../src/modules/payments/domain/p
 const builder = new PaymentRequirementsBuilder({
   network: "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
   asset: "10458941",
+  assetName: "USDC",
   assetDecimals: 6,
   priceAtomic: "1000",
   payTo: "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",

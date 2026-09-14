@@ -5,13 +5,26 @@ import type { PaymentAccept, PaymentRequirements } from "../domain/payment-requi
 export interface X402PricingConfig {
   network: string;
   asset: string;
+  // Human-readable asset name (e.g. "USDC") advertised in extra.name for the Bazaar.
+  assetName: string;
   assetDecimals: number;
   priceAtomic: string;
   payTo: string;
   feePayer: string;
   maxTimeoutSeconds: number;
   tag: string;
+  // Canonical PUBLIC URL of the priced resource and its human-readable summary,
+  // surfaced in the GoPlausible Bazaar listing. Optional: omitted locally where
+  // there is no stable public URL to advertise (the 402 then carries no resource).
+  resourceUrl?: string;
+  resourceDescription?: string;
 }
+
+// The paid resource returns JSON.
+const RESOURCE_MIME_TYPE = "application/json";
+// Fallback Bazaar summary when X402_RESOURCE_DESCRIPTION is unset but a URL is set.
+export const DEFAULT_RESOURCE_DESCRIPTION =
+  "Growtrack multichain wallet intelligence — live wallet snapshot";
 
 // Pure, transport-agnostic construction of the x402 PaymentRequirements. It knows
 // nothing about HTTP, base64, or Fastify — the guard adapts it to the wire. This
@@ -33,7 +46,7 @@ export class PaymentRequirementsBuilder {
       payTo: this.config.payTo,
       maxTimeoutSeconds: this.config.maxTimeoutSeconds,
       extra: {
-        asset: this.config.asset,
+        name: this.config.assetName,
         tag: this.config.tag,
         decimals: this.config.assetDecimals,
         feePayer: this.config.feePayer
@@ -44,8 +57,17 @@ export class PaymentRequirementsBuilder {
   public build(error?: string): PaymentRequirements {
     return {
       x402Version: 2,
-      accepts: [this.buildAccept()],
-      ...(error !== undefined ? { error } : {})
+      ...(error !== undefined ? { error } : {}),
+      ...(this.config.resourceUrl !== undefined
+        ? {
+            resource: {
+              url: this.config.resourceUrl,
+              description: this.config.resourceDescription ?? DEFAULT_RESOURCE_DESCRIPTION,
+              mimeType: RESOURCE_MIME_TYPE
+            }
+          }
+        : {}),
+      accepts: [this.buildAccept()]
     };
   }
 }

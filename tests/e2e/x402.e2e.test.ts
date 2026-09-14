@@ -19,12 +19,14 @@ import {
 const builder = new PaymentRequirementsBuilder({
   network: "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
   asset: "10458941",
+  assetName: "USDC",
   assetDecimals: 6,
   priceAtomic: "1000",
   payTo: "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
   feePayer: "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
   maxTimeoutSeconds: 300,
-  tag: "x402-global-challenge"
+  tag: "x402-global-challenge",
+  resourceUrl: "https://growtrack.example/v1/wallets"
 });
 
 // A minimal snapshot matching liveWalletResponseSchema, returned by a stub handler
@@ -107,6 +109,9 @@ describe("x402 guard on the paid /live route", () => {
     expect(body.accepts[0]?.scheme).toBe("exact");
     expect(body.accepts[0]?.asset).toBe("10458941");
     expect(body.accepts[0]?.extra.tag).toBe("x402-global-challenge");
+    expect(body.accepts[0]?.extra.name).toBe("USDC");
+    expect(body.resource?.url).toBe("https://growtrack.example/v1/wallets");
+    expect(body.resource?.mimeType).toBe("application/json");
 
     // The header carries the same requirements, base64-encoded.
     const header = response.headers["payment-required"];

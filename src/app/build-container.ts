@@ -69,7 +69,14 @@ export function buildContainer(env: Environment): ApplicationContainer {
     payTo: env.X402_PAY_TO ?? "",
     feePayer: env.X402_FEE_PAYER,
     maxTimeoutSeconds: env.X402_MAX_TIMEOUT_SECONDS,
-    tag: env.X402_TAG
+    tag: env.X402_TAG,
+    assetName: env.X402_ASSET_NAME,
+    // Optional (exactOptionalPropertyTypes): only pass when configured so the
+    // builder can omit `resource` where no public URL exists.
+    ...(env.X402_RESOURCE_URL !== undefined ? { resourceUrl: env.X402_RESOURCE_URL } : {}),
+    ...(env.X402_RESOURCE_DESCRIPTION !== undefined
+      ? { resourceDescription: env.X402_RESOURCE_DESCRIPTION }
+      : {})
   });
   // HTTP client for the official GoPlausible facilitator (verify + settle). Wired
   // into the x402 guard so a supplied PAYMENT-SIGNATURE can be validated and

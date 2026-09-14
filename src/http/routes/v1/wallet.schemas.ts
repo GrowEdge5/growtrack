@@ -66,6 +66,16 @@ export const liveWalletResponseSchema = z.object({
 // payment requirements in OpenAPI and validates the outgoing 402 payload.
 export const paymentRequiredSchema = z.object({
   x402Version: z.literal(2),
+  error: z.string().optional(),
+  // Top-level x402 v2 resource descriptor (present when X402_RESOURCE_URL is set);
+  // its description is the human-readable Bazaar summary.
+  resource: z
+    .object({
+      url: z.string().url(),
+      description: z.string(),
+      mimeType: z.string()
+    })
+    .optional(),
   accepts: z.array(
     z.object({
       scheme: z.literal("exact"),
@@ -75,14 +85,13 @@ export const paymentRequiredSchema = z.object({
       payTo: z.string(),
       maxTimeoutSeconds: z.number().int().positive(),
       extra: z.object({
-        asset: z.string(),
+        name: z.string(),
         tag: z.string(),
         decimals: z.number().int().nonnegative(),
         feePayer: z.string()
       })
     })
-  ),
-  error: z.string().optional()
+  )
 });
 
 export const refreshResponseSchema = z.object({

@@ -44,6 +44,8 @@ const environmentSchema = z
     // USDC ASA id (string). Default = testnet USDC.
     X402_ASSET_ID: z.string().min(1).default("10458941"),
     X402_ASSET_DECIMALS: z.coerce.number().int().nonnegative().default(6),
+    // Human-readable asset name advertised in the 402 accept's extra.name (Bazaar).
+    X402_ASSET_NAME: z.string().min(1).default("USDC"),
     // Price in atomic units. "1000" = $0.001 at 6 decimals.
     X402_PRICE_ATOMIC: z
       .string()
@@ -57,7 +59,12 @@ const environmentSchema = z
       .min(1)
       .default("ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"),
     X402_MAX_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(300),
-    X402_TAG: z.string().min(1).default("x402-global-challenge")
+    X402_TAG: z.string().min(1).default("x402-global-challenge"),
+    // Canonical PUBLIC URL of the priced resource, surfaced in the Bazaar listing.
+    // Set on a public deploy; leave unset locally (the 402 then carries no resource).
+    X402_RESOURCE_URL: z.string().url().optional(),
+    // Human-readable Bazaar summary. Falls back to a built-in default when unset.
+    X402_RESOURCE_DESCRIPTION: z.string().min(1).optional()
   })
   .superRefine((env, ctx) => {
     // Fail fast at startup rather than shipping a 402 that advertises an empty payTo.
