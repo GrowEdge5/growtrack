@@ -20,4 +20,5 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY package*.json ./
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+# START_SCRIPT picks the entrypoint per service (main.js = api, worker.js = worker).
+CMD ["sh", "-c", "node dist/${START_SCRIPT:-main}.js"]

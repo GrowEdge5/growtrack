@@ -15,6 +15,7 @@ import {
 import type { ApplicationContainer } from "./build-container.js";
 import { registerErrorHandler } from "../http/plugins/error-handler.js";
 import { registerHealthRoutes } from "../http/routes/health.routes.js";
+import { registerLandingRoute } from "../http/routes/landing.routes.js";
 import { registerMetricsRoute } from "../http/routes/metrics.routes.js";
 import { registerWalletRoutes } from "../http/routes/v1/wallet.routes.js";
 
@@ -46,6 +47,7 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
   await app.register(rateLimit, { max: container.env.RATE_LIMIT_MAX, timeWindow: "1 minute" });
 
   registerErrorHandler(app);
+  registerLandingRoute(app);
   registerHealthRoutes(app, container);
   registerMetricsRoute(app);
   registerWalletRoutes(app, container);

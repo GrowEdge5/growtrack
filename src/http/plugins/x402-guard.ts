@@ -99,10 +99,24 @@ export function createX402Guard(options: X402GuardOptions) {
     // paymentRequirements the facilitator validates the payment against.
     const requirements = builder.buildAccept();
 
+    // x402 v2: the payment payload is expected to carry the resource descriptor
+    // and Bazaar discovery extension (a spec-compliant client copies them from the
+    // 402 envelope). The GoPlausible MCP client omits them, and the facilitator
+    // auto-catalogs the Bazaar listing from exactly these payload fields — so the
+    // guard attaches its OWN resource metadata before forwarding. The client's
+    // payment data (paymentGroup, signatures) is forwarded untouched.
+    const resource = builder.buildResource();
+    const extensions = builder.buildExtensions();
+    const payloadWithResource: PaymentPayload = {
+      ...payload,
+      ...(resource !== undefined ? { resource } : {}),
+      ...(extensions !== undefined ? { extensions } : {})
+    };
+
     // 3. Verify the payment (no funds move yet).
     let verification;
     try {
-      verification = await facilitator.verify(payload, requirements);
+      verification = await facilitator.verify(payloadWithResource, requirements);
     } catch {
       return facilitatorUnavailable("Payment facilitator verification is unavailable");
     }
@@ -113,7 +127,7 @@ export function createX402Guard(options: X402GuardOptions) {
     // 4. Settle the payment (broadcast on-chain).
     let settlement;
     try {
-      settlement = await facilitator.settle(payload, requirements);
+      settlement = await facilitator.settle(payloadWithResource, requirements);
     } catch {
       return facilitatorUnavailable("Payment facilitator settlement is unavailable");
     }

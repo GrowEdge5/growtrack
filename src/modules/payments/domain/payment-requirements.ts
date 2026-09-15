@@ -30,6 +30,13 @@ export interface PaymentAccept {
   payTo: string;
   maxTimeoutSeconds: number;
   extra: PaymentAcceptExtra;
+  // Present when a public resource URL is configured (X402_RESOURCE_URL). The
+  // facilitator auto-catalogs the resource into the Bazaar from the accept it
+  // receives on /verify + /settle, so the descriptor must ride on the accept —
+  // not only on the 402 envelope — for the listing to appear.
+  resource?: PaymentResource;
+  // Bazaar discovery extension, forwarded with the accept for auto-cataloging.
+  extensions?: PaymentExtensions;
 }
 
 // Top-level x402 v2 resource descriptor. Its `description` becomes the
@@ -48,5 +55,33 @@ export interface PaymentRequirements {
   // Present when a public resource URL is configured (X402_RESOURCE_URL); omitted
   // locally/testnet where there is no stable public URL to advertise.
   resource?: PaymentResource;
+  // Present with `resource`: the GoPlausible Bazaar extension carrying the
+  // endpoint's input/output shape. The facilitator copies `bazaar.info` into the
+  // listing's discoveryInfo when it auto-catalogs the resource.
+  extensions?: PaymentExtensions;
   accepts: PaymentAccept[];
+}
+
+// The GoPlausible Bazaar discovery extension (x402 v2). `info` describes the
+// HTTP input (method + params) and JSON output (with an example) of the priced
+// resource; `schema` is the JSON Schema `info` is validated against by the
+// facilitator; `routeTemplate` is the :param-style canonical path for dynamic
+// routes (e.g. "/v1/wallets/:chain/:address/live"). The facilitator catalogs
+// the listing from these fields when they ride on the payment payload.
+export interface PaymentExtensions {
+  bazaar: {
+    info: {
+      input: {
+        type: "http";
+        method: string;
+        pathParams?: Record<string, string>;
+      };
+      output: {
+        type: "json";
+        example: Record<string, unknown>;
+      };
+    };
+    schema: Record<string, unknown>;
+    routeTemplate?: string;
+  };
 }
