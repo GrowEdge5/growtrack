@@ -92,9 +92,14 @@ export class PaymentRequirementsBuilder {
           input: {
             type: "http",
             method: "GET",
-            pathParams: {
-              chain: "ethereum | algorand",
-              address: "on-chain wallet address"
+            // The Bazaar's GET discovery contract uses `queryParams` (every
+            // cataloged resource describes its parameters there); `pathParams`
+            // is not recognized and silently blocks cataloging. The route's
+            // path segments are described as query params with example values,
+            // matching how other parameterized resources advertise themselves.
+            queryParams: {
+              chain: "ethereum",
+              address: "0xd8dA680F17485f5fE14a58674455179eBBfC1F40"
             }
           },
           output: {
@@ -124,7 +129,20 @@ export class PaymentRequirementsBuilder {
               properties: {
                 type: { type: "string", const: "http" },
                 method: { type: "string", enum: ["GET"] },
-                pathParams: { type: "object" }
+                queryParams: {
+                  type: "object",
+                  properties: {
+                    chain: {
+                      type: "string",
+                      enum: ["ethereum", "algorand"],
+                      description: "Read chain slug — path segment in the resource URL"
+                    },
+                    address: {
+                      type: "string",
+                      description: "On-chain wallet address — path segment in the resource URL"
+                    }
+                  }
+                }
               },
               required: ["type", "method"],
               additionalProperties: true

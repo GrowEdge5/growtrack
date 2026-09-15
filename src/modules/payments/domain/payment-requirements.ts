@@ -74,7 +74,9 @@ export interface PaymentExtensions {
       input: {
         type: "http";
         method: string;
-        pathParams?: Record<string, string>;
+        // The Bazaar GET discovery contract reads `queryParams` (the de-facto
+        // field every cataloged resource uses, even for path parameters).
+        queryParams?: Record<string, string>;
       };
       output: {
         type: "json";
