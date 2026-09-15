@@ -3,6 +3,29 @@
 > Temporary file — project fully complete hone ke baad DELETE kar dena hai.
 > Track karta hai: Algorand Global x402 Challenge ke liye jo bana hai + jo bacha hai.
 
+## 🎯 SPRINT PLAN — Sept 20-22 tak LIVE (compressed)
+
+**Goal:** Sep 20-22 tak poora product (multichain tracker + frontend + paid report) live. Uske baad user marketing pe focus karega.
+
+| Din                    | Kaam                                                                   | Deliverable               |
+| ---------------------- | ---------------------------------------------------------------------- | ------------------------- |
+| **Sep 16 (Day 1)**     | A1 address auto-detect + A2 Solana provider + tests                    | Solana reads working      |
+| **Sep 17 (Day 2)**     | A3 BTC provider + A4 seed + A5 live verify + Railway deploy            | 4 chains API pe live      |
+| **Sep 18 (Day 3)**     | B1 frontend setup + B2 portfolio view (free tier)                      | Tracker UI chal raha      |
+| **Sep 19 (Day 4)**     | C1 paid report endpoint + B3-B4 free/paid split + browser x402 payment | Paid report flow complete |
+| **Sep 20 (Day 5)**     | B5 polish + B6 landing + B7 full deploy                                | 🚀 **PRODUCT LIVE**       |
+| **Sep 21-22 (buffer)** | Bugs, edge cases, README/screenshots, demo video basics                | Submission-ready state    |
+
+**Scope cuts (deadline ke liye — baad mein add honge):**
+
+- Koi login/account nahi — sirf localStorage (already planned)
+- Transaction history nahi (transactions/positions/signals extension points hi rahenge)
+- Curated token lists hi (exhaustive discovery nahi) — documented limitation
+- Report = clean printable HTML view (fancy PDF generation baad mein)
+- Demo video polish marketing phase mein (Sep 22 ke baad)
+
+**⚠️ Highest-risk item:** B4 (browser se x402 payment — Pera wallet integration). Fallback ready: report endpoint API/MCP se bhi kaam karta hai (agents ke liye), browser flow deadline ke baad polish ho sakta hai. **Isko Day 4 ki subah pehle attack karna.**
+
 ## 📅 Deadlines (Algorand Global x402 Challenge)
 
 | Date             | Kya karna hai                                                                                      |
