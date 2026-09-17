@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { ApplicationContainer } from "../../src/app/build-container.js";
 import { loadEnvironment } from "../../src/config/env.js";
 import { registerDiscoveryRoutes } from "../../src/http/routes/discovery.routes.js";
+import { registerDashboardRoute } from "../../src/http/routes/dashboard.routes.js";
 import { registerLandingRoute } from "../../src/http/routes/landing.routes.js";
 import { registerChainRoutes } from "../../src/http/routes/v1/chains.routes.js";
 import { registerPortfolioRoutes } from "../../src/http/routes/v1/portfolio.routes.js";
@@ -157,6 +158,7 @@ async function buildApp(options: {
   await app.register(cors, { origin: ["http://localhost:3000"] });
   const deps = container(options);
   registerLandingRoute(app, deps);
+  registerDashboardRoute(app);
   registerDiscoveryRoutes(app, deps);
   registerChainRoutes(app, deps);
   registerPortfolioRoutes(app, deps);
@@ -290,6 +292,20 @@ describe("public surface end to end", () => {
     const logo = await app.inject({ method: "GET", url: "/logo.svg" });
     expect(logo.statusCode).toBe(200);
     expect(logo.headers["content-type"]).toContain("image/svg+xml");
+
+    await app.close();
+  });
+
+  it("serves the interactive portfolio demo", async () => {
+    const app = await buildApp({ x402Enabled: true });
+
+    const response = await app.inject({ method: "GET", url: "/demo" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/html");
+    expect(response.body).toContain("Connect Pera Wallet");
+    expect(response.body).toContain("Generate full portfolio report");
+    expect(response.body).toContain("DEMO DATA");
 
     await app.close();
   });

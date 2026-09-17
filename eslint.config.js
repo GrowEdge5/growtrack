@@ -4,7 +4,14 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "coverage/**", "node_modules/**", "prisma/migrations/**", "*.config.js"]
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      "prisma/migrations/**",
+      "*.config.js",
+      "web/**"
+    ]
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

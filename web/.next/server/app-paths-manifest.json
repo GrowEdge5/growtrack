@@ -1,0 +1,4 @@
+{
+  "/wallet/[address]/page": "app/wallet/[address]/page.js",
+  "/page": "app/page.js"
+}

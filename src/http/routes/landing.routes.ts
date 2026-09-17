@@ -128,7 +128,7 @@ function landingPage(container: ApplicationContainer): string {
   <p class="lede">Call a paid endpoint without payment and it answers <code>402</code> with the price in a
   <code>PAYMENT-REQUIRED</code> header. Sign, retry with <code>PAYMENT-SIGNATURE</code>, and the response
   returns with a <code>PAYMENT-RESPONSE</code> header carrying the on-chain settlement.</p>
-  <p><a href="/docs">API reference</a> · <a href="/llms.txt">llms.txt</a> ·
+  <p><a href="/app">Open demo dashboard</a> · <a href="/docs">API reference</a> · <a href="/llms.txt">llms.txt</a> ·
      <a href="/.well-known/x402">.well-known/x402</a> · <a href="/health/ready">health</a></p>
 
   <footer>Read-only: Growtrack reads public chain data and never signs on a user's behalf.</footer>
