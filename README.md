@@ -34,10 +34,12 @@
 >   the zod response schema under-declared them, while the base64 `PAYMENT-REQUIRED` header kept
 >   them. Body and header now agree, and an e2e test asserts it.
 > - **Tests: 69 across 13 files**, all external services mocked (`npm run ci` green).
->
-> Still outstanding: the GitHub repository is **private** and must be made public for the Electric
-> Capital qualification step; the frontend does not exist yet; the Bazaar directory listing remains
-> facilitator-side.
+> - **Live on `https://growtrack.pro`** — bought through Railway Domains, attached and verified
+>   2026-09-17 with a valid Let's Encrypt certificate. Every paid route advertises
+>   `https://growtrack.pro/...` in its Bazaar resource descriptor. The generated
+>   `api-production-7c303.up.railway.app` hostname was removed in the same pass, so the merchant's
+>   `payTo` is reachable on exactly one root domain. Historical settlement records below that cite
+>   the old hostname are accurate as history.
 
 Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **four read-chain adapters — EVM (Ethereum), Algorand, Solana and Bitcoin** — each reading native balance, token holdings, and USD valuation behind a shared provider port. On top of the read layer, a pay-per-query **x402 payment layer** (Algorand USDC micropayments via the official GoPlausible facilitator) gates the priced endpoints: a synchronous live snapshot, combined portfolio totals, and a full portfolio report. Its `402 → verify → settle` path is implemented, covered by unit + e2e tests against a **mocked** facilitator, verified live on Algorand testnet (2026-09-14), verified live on Algorand **MAINNET** (2026-09-15), and — on **2026-09-15** — was **deployed publicly over HTTPS on Railway and paid live on mainnet by external x402 clients, on both then-supported read chains (Algorand and Ethereum)**. _The 12+ mainnet settlements against it are permanent on-chain and independently verifiable regardless of instance uptime._ The facilitator tracks the merchant with the `x402-global-challenge` flag set; the public Bazaar listing surface is pending facilitator-side promotion.
 

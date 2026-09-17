@@ -10,26 +10,43 @@
 
 Sections 2–8 below were written on Sept 16 as the plan. This is what has since landed in the code:
 
-| Item                                | Status                                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------------ |
-| §2.1 Public repo + Electric Capital | ❌ **Still open — the repo is private. This is a qualification gate.**               |
-| §2.2 Pricing corrected              | ✅ $0.01 / $0.02 / $0.05, calibrated against the live Bazaar catalog                 |
-| §2.3 Composite Entry                | ✅ Three priced endpoints on one `payTo`, each with its own Bazaar listing           |
-| §3 Merchant metadata                | ✅ Landing page rebuilt with og/twitter tags, logo, `/llms.txt`, `/.well-known/x402` |
-| §4 Endpoint ladder                  | ✅ All three paid routes live; the two aggregation routes are new                    |
-| §5 A1 address auto-detect           | ✅ `detectAddress()`, exposed at `GET /v1/chains/detect`                             |
-| §5 A2 Solana provider               | ✅ Live-verified; enumerates all SPL tokens, excludes unverified airdrops            |
-| §5 A3 Bitcoin provider              | ✅ Live-verified against blockstream.info                                            |
-| §5 B composite restructure          | ✅ Per-resource builder factory, per-route price and description                     |
-| §6 item 5 aggregation endpoint      | ✅ `GetPortfolioReport` — totals, per-chain, allocation, unpriced list               |
-| §6 item 7 402 body fix              | ✅ Schema superset, with an e2e test asserting body == header                        |
-| §6 item 8 CORS list                 | ✅ `CORS_ORIGIN` is now a comma-separated list                                       |
-| Phase C frontend                    | ❌ Not started — the next major piece of work                                        |
-| Domain decision (§2.3b)             | ❌ Not started — steps below                                                         |
+| Item                                | Status                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| §2.1 Public repo + Electric Capital | ❌ **Still open — the repo is private. This is a qualification gate.**                         |
+| §2.2 Pricing corrected              | ✅ $0.01 / $0.02 / $0.05, calibrated against the live Bazaar catalog                           |
+| §2.3 Composite Entry                | ✅ Three priced endpoints on one `payTo`, each with its own Bazaar listing                     |
+| §3 Merchant metadata                | ✅ Landing page rebuilt with og/twitter tags, logo, `/llms.txt`, `/.well-known/x402`           |
+| §4 Endpoint ladder                  | ✅ All three paid routes live; the two aggregation routes are new                              |
+| §5 A1 address auto-detect           | ✅ `detectAddress()`, exposed at `GET /v1/chains/detect`                                       |
+| §5 A2 Solana provider               | ✅ Live-verified; enumerates all SPL tokens, excludes unverified airdrops                      |
+| §5 A3 Bitcoin provider              | ✅ Live-verified against blockstream.info                                                      |
+| §5 B composite restructure          | ✅ Per-resource builder factory, per-route price and description                               |
+| §6 item 5 aggregation endpoint      | ✅ `GetPortfolioReport` — totals, per-chain, allocation, unpriced list                         |
+| §6 item 7 402 body fix              | ✅ Schema superset, with an e2e test asserting body == header                                  |
+| §6 item 8 CORS list                 | ✅ `CORS_ORIGIN` is now a comma-separated list                                                 |
+| Phase C frontend                    | ❌ Not started — the next major piece of work                                                  |
+| Domain decision (§2.3b)             | ✅ `growtrack.pro` bought, attached, DNS auto-configured, verified, live with a valid TLS cert |
 
 Tests went from 34 to 69 across 13 files, and `npm run ci` is green.
 
 ### Domain fix — what to actually do
+
+**Progress (2026-09-17) — DONE:** `growtrack.pro` was bought through Railway Domains and attached to the
+`api` service (domain ID `16c3e3b4-99cd-4ea8-8c20-496291e74110`). The important empirical finding:
+**Railway auto-configured the DNS records itself** because it registered the domain — the CNAME and the
+ownership TXT were both created in the zone with no manual step, and both were publicly resolvable
+(apex `A` → `69.46.46.73`, the Railway edge; `_railway-verify` TXT → Railway's exact token), confirmed
+through 8.8.8.8 and 1.1.1.1. So buying through Railway really did remove the manual DNS work.
+`X402_PUBLIC_BASE_URL=https://growtrack.pro` was set, `CORS_ORIGIN` widened to a list, the new build was
+deployed, and Railway's ownership check then completed on its own (`Verified: yes`, certificate `VALID`).
+Live verification through public DNS: `/`, `/health/ready`, `/v1/chains`, `/llms.txt`,
+`/.well-known/x402` and `/logo.svg` all `200`; the TLS certificate is `CN=growtrack.pro` (Let's Encrypt,
+valid to 16 Dec 2026) with no verification errors; and the three paid routes answer `402` at `$0.01`,
+`$0.02` and `$0.05` with `resource.url` on `https://growtrack.pro/...`. Steps 1–9 are done; **step 10
+(removing the generated `*.up.railway.app` domain) is the only piece left**, and it is deliberately
+deferred until the new code is committed to git — the currently deployed build came from the local
+working tree via `railway up`, so a GitHub-triggered deploy would otherwise revert to code that still
+depends on `X402_RESOURCE_URL`.
 
 The rule is that a merchant's `payTo` must be attached to **one root domain** (the guide is explicit:
 "Each merchant account should be connected to only one root domain", and on mainnet "never use the
@@ -38,31 +55,90 @@ same `payTo` address for different domain endpoints"). Today all the paid routes
 broken yet. The risk is the frontend: putting it on Vercel would create a second domain in the
 product's footprint.
 
-The steps, in order:
+Reassurance worth having: the facilitator keys a merchant by its **`payTo`**, not by domain. As long as
+the `payTo` (`F232…DSEA`) does not change, the existing leaderboard attribution and settlement history
+carry over to the new domain untouched.
 
-1. **Buy one domain** for the product (e.g. `growtrack.xyz`) — this becomes the brand, the merchant
-   domain, and the API host, all at once.
-2. **Attach it to the Railway API service** (Railway → service → Settings → Networking → Custom
-   Domain, then add the CNAME/A record at your registrar). Verify `https://<domain>/health/ready`
-   returns `200` before going further.
-3. **Set `X402_PUBLIC_BASE_URL=https://<domain>`** on the Railway service and redeploy. Every paid
-   resource's Bazaar URL is derived as this origin plus its own path, so all three listings will now
-   advertise the one root domain.
-4. **Verify the change on the wire:** call a paid route without payment and confirm the 402 body's
-   `resource.url` and `accepts[0].resource.url` both use the new domain, and that
-   `GET /.well-known/x402` lists three resources under it.
-5. **When the frontend is built, serve it from the same origin** — the SPA at `/` and the API under
-   `/v1/*`. Two workable shapes:
-   - Railway serving the built SPA as static assets on the same service, with `/v1/*` and the other
-     API paths taking precedence, or
-   - a small reverse proxy (Cloudflare Worker, Caddy, Next.js `rewrites`) in front of both.
+#### Facts verified against Railway's docs (2026-09-17)
 
-   Either way the browser sees a single origin, which also removes CORS from the picture and lets
-   `CORS_ORIGIN` stay narrow.
+- Adding a custom domain in Railway (service → Settings → Networking → Public Networking →
+  **+ Custom Domain**) yields **two records: a CNAME target and a TXT record. Both are required.**
+  If the TXT record is missing, requests to the custom domain return **404 even after the CNAME
+  resolves** — Railway uses the TXT record to confirm ownership before routing traffic.
+- SSL is provisioned automatically once verified.
+- DNS changes can take up to 72 hours to propagate worldwide (usually far less).
+- **The Trial plan is limited to 1 custom domain**, so `domain.com` and `www.domain.com` count as two
+  and cannot both be used on Trial. Hobby allows 2 per service. Use the apex only.
+- A **root/apex** domain needs CNAME flattening or a dynamic ALIAS record, which requires a DNS
+  provider that supports it. Railway's docs name **Hostinger, GoDaddy, Route 53, Azure DNS, NameSilo,
+  Squarespace and Hurricane Electric as NOT supporting it**, and list Cloudflare, DNSimple, Namecheap
+  and bunny.net as supporting it. The documented workaround when your registrar's DNS cannot do it:
+  keep the domain registered where it is and **point its nameservers at Cloudflare** (free), then add
+  the CNAME at the apex there.
+- Railway also sells domains directly with auto-configured DNS, which removes the DNS work entirely.
 
-6. **Do not** register the frontend's hostname as a merchant domain, do not put a second `payTo` on
-   it, and do not list it in the Bazaar metadata. If a temporary Vercel preview is used during
-   development, keep it out of the merchant records.
+#### Where to buy the domain (verified 2026-09-17)
+
+Registration only — see step 1. Three workable options, in order of least effort:
+
+| Option                                          | Setup effort                                                                                          | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Railway Domains** (`railway.com/domains`)     | Lowest — no DNS records at all                                                                        | 250+ TLDs (`.com`, `.io`, `.dev`, `.app`, `.co`, …). "When purchased from a service, the domain is automatically attached and configured", and Railway manages DNS on its own nameservers, so the manual CNAME/TXT step disappears. WHOIS privacy and auto-renewal on by default. Caveats: Railway is listed as the **registrant contact** and handles registry communication; a newly registered domain carries ICANN's **60-day transfer lock**, so it cannot be moved to another registrar until 60 days after purchase. Pricing is only shown in the search itself, so compare it against Cloudflare before paying. Once active you can delegate DNS to Cloudflare later without transferring the domain out. |
+| **Cloudflare Registrar**                        | Medium — Cloudflare manages DNS, so the apex works, but Railway's CNAME + TXT still get added by hand | Buy and renew **at cost** ("no markup, no surprise fees"), WHOIS redacted by default, auto-renew by default. Requires Cloudflare nameservers — which is exactly what an apex domain needs anyway, so it costs nothing here. No IDN/unicode domains.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Namecheap / Porkbun / Spaceship / Hostinger** | Medium–high — depends entirely on the provider's DNS                                                  | Fine for **registration**; often cheapest in year one. But an apex domain needs CNAME flattening or an ALIAS record. Railway's docs name **Namecheap** as supporting it and **Hostinger** as not supporting it. Spaceship's own DNS support for this could not be verified, so assume you may need to point its nameservers at Cloudflare (free) — which then makes the DNS provider irrelevant.                                                                                                                                                                                                                                                                                                                  |
+
+Whichever route: check the **renewal** price, not the first-year promo, and avoid `.ai` (Railway's docs note some TLDs require a two-year minimum).
+
+#### What NOT to buy
+
+- **Web hosting.** Railway runs the API, the worker, Postgres and Redis, and will serve the frontend too.
+- **An SSL certificate.** Railway provisions it automatically once the custom domain verifies.
+- **A paid Cloudflare plan.** The free plan covers DNS and CNAME flattening.
+- **Any paid data API.** All four chains use free keyless sources today: public Solana RPC, blockstream.info, Algonode, DeFiLlama, and the Jupiter token list.
+
+#### The one thing that does need paying for
+
+**Railway itself.** The subscription base is `$5/month` on Hobby (Free tier gets `$1` of credit per month) and it goes toward usage; RAM, CPU and egress are billed on top of it. The service has been running on trial credit, and the endpoint must stay up through the **unannounced October judging window** and the **Nov 2 final presentation** — an expired trial means zero volume and no Bazaar presence, which is a scoring problem, not just an inconvenience. Move to Hobby and set a spend limit before the trial lapses.
+
+#### Steps, in order
+
+1. **Buy one domain** — registration only. **Do not buy web hosting**: Railway runs the API, the
+   worker, Postgres and Redis, and it will serve the frontend too. Shared hosting cannot run this
+   stack. Pick the name deliberately; it becomes the brand, the merchant domain and the API host at
+   once. Avoid Freenom domains (Railway does not support them).
+2. **Put DNS on Cloudflare** (free plan) if the registrar's own DNS cannot do CNAME flattening at the
+   apex — true for Hostinger. At the registrar, replace the nameservers with the two Cloudflare gives
+   you and wait for activation.
+3. **Add the custom domain in Railway** and copy the CNAME target and TXT name/value exactly as
+   shown. Choose the target port (`3000`, the app's `PORT`; Railway usually auto-detects it).
+4. **In Cloudflare DNS**, add the CNAME (`Name` → `@`, target → Railway's value, proxy **on**) and the
+   TXT record exactly as Railway showed it.
+5. **In Cloudflare SSL/TLS**, set the mode to **Full** (not Full Strict — Railway's docs say Strict
+   will not work as intended) and enable **Universal SSL** under Edge Certificates.
+6. **Wait for Railway to show a green check** next to the domain, then confirm
+   `https://<domain>/health/ready` returns `200`. A 404 here means the TXT record is missing or wrong.
+7. **Deploy the current code** (the live instance still runs the pre-change build: `/v1/chains`
+   returns 404 there and the accept still prices at `1000`).
+8. **Set `X402_PUBLIC_BASE_URL=https://<domain>`** on the Railway service and redeploy — the new code
+   derives every paid resource's Bazaar URL from this origin. `X402_RESOURCE_URL` can then be removed.
+9. **Verify on the wire:** call a paid route unpaid and confirm both `resource.url` and
+   `accepts[0].resource.url` in the 402 body use the new domain, and that `GET /.well-known/x402`
+   lists three resources under it.
+10. **Optional cleanup:** if Railway allows removing the generated `*.up.railway.app` domain once the
+    custom domain is verified, remove it so one `payTo` is reachable at exactly one root domain. Then
+    update the URL in `README.md` and `TASKS.md`.
+11. **When the frontend is built, serve it from the same origin** — the SPA at `/` and the API under
+    `/v1/*`. Two workable shapes:
+    - Railway serving the built SPA as static assets on the same service, with `/v1/*` and the other
+      API paths taking precedence, or
+    - a small reverse proxy (Cloudflare Worker, Caddy, Next.js `rewrites`) in front of both.
+
+    Either way the browser sees a single origin, which also removes CORS from the picture and lets
+    `CORS_ORIGIN` stay narrow.
+
+12. **Do not** register the frontend's hostname as a merchant domain, do not put a second `payTo` on
+    it, and do not list it in the Bazaar metadata. If a temporary Vercel preview is used during
+    development, keep it out of the merchant records.
 
 ---
 

@@ -4,27 +4,62 @@
 > Track karta hai: Algorand Global x402 Challenge ke liye jo bana hai + jo bacha hai.
 > Detail wala plan `docs/roadmap.md` mein hai (usme market data aur 3 corrections hain).
 
+## 🌐 DOMAIN — `growtrack.pro` (2026-09-17)
+
+- [x] **Domain kharida** — `growtrack.pro`, Railway se (Railway Domains). Registered 2026-09-17 06:04 UTC,
+      expiry 2027-09-17. NS = name.com (Railway ka registrar backend), registry status
+      `client transfer prohibited` + `add period` (normal, ICANN ka 60-day transfer lock).
+- [x] **Custom domain attach kiya** service `api` pe (domain ID `16c3e3b4-99cd-4ea8-8c20-496291e74110`).
+- [x] **DNS records auto-configure ho gaye** — ye important discovery hai: Railway-managed domain hone ki
+      wajah se CNAME + TXT khud ban gaye, manually add karne ki zarurat nahi padi. Public resolvers se
+      verify kiya: apex A → `69.46.46.73` (Railway edge), `_railway-verify` TXT → Railway ka exact token.
+- [x] **Env vars set kiye**: `X402_PUBLIC_BASE_URL=https://growtrack.pro`,
+      `CORS_ORIGIN=https://growtrack.pro,https://api-production-7c303.up.railway.app,http://localhost:3000`
+- [x] **Naya code deploy hua** `railway up` se — live verify: `/live` → 402 `10000` ($0.01) aur
+      `resource.url` = `https://growtrack.pro/...`, `/v1/portfolio/report` → 402 `50000` ($0.05),
+      body mein `extensions` present (pehle gayab the), `/v1/chains/detect` Solana address resolve
+      kar raha hai, `/llms.txt` + `/.well-known/x402` → 200.
+- [x] **Domain VERIFIED aur LIVE** — Railway ne ownership check complete kar liya (`Verified: yes`,
+      certificate `VALID`). Final verify (public DNS se, kyunki is machine ka local resolver `growtrack.pro`
+      ko resolve nahi karta): - `https://growtrack.pro/` → 200, `/health/ready` → 200, `/v1/chains` → 200,
+      `/llms.txt` → 200, `/.well-known/x402` → 200, `/logo.svg` → 200 - TLS cert: `CN=growtrack.pro`, Let's Encrypt, valid 17 Sep – 16 Dec 2026, `ssl_verify_result=0` - `/live` → 402 `10000` ($0.01) · `/v1/portfolio` → 402 `20000` ($0.02) ·
+      `/v1/portfolio/report` → 402 `50000` ($0.05) — teeno ka `resource.url` `https://growtrack.pro/...` - `/v1/portfolio` ka discovery input contract live check: `{"type":"http","method":"GET","queryParams":{"addresses":"..."}}`
+- [ ] **Optional cleanup (commit ke baad karo)** — generated `*.up.railway.app` domain hata do, taaki ek
+      `payTo` sirf ek hi root domain pe reachable ho (guide: ek merchant = ek root domain). Iske saath
+      `X402_RESOURCE_URL` env var bhi hata dena. **Commit se pehle mat karo** — agar GitHub se purana code
+      deploy ho jaye to wo `X402_RESOURCE_URL` pe depend karta hai.
+
+### ⚠️ Deploy source ka dhyan rakho
+
+Naya code `railway up` se deploy hua hai, matlab **local working tree se** — GitHub se nahi. Isliye:
+**abhi git mein commit + push karna zaroori hai.** Warna agli baar jab GitHub pe koi push hoga
+(auto-deploy on), Railway purana commit deploy kar dega aur saare aaj ke changes chup-chaap revert
+ho jayenge (composite pricing, Solana/BTC, naye routes — sab).
+
 ## 🚨 AAJ HI KARNA — blocking (code nahi, account/deploy kaam hai)
 
 - [ ] **Repo ko PUBLIC karo** — `github.com/GrowEdge5/growtrack` abhi PRIVATE hai, aur official guide
       ka naya qualification step isse explicitly maangta hai: _"Submit your Github repo to Electric
       Capital... Make sure your repository is publicly accessible and contains the relevant Algorand
       code."_ Repo private = qualification fail. (Python: settings → change visibility)
+- [ ] **Aaj ke changes commit + push karo** — naya code `railway up` se live hai par git mein nahi;
+      GitHub pe push hote hi Railway purana commit deploy kar dega (neeche warning dekho)
 - [ ] **Electric Capital pe repo submit karo** (guide ka step 7 — TASKS mein pehle ye missing tha)
 - [ ] **Submission form bharo** — window abhi open hai, deadline **29 Sept** (rules: 11:45pm ET;
       guide "through September 30th" kehta hai). Safe date 29 Sept maano.
-- [ ] **Railway pe env vars update karo** (neeche "Environment changes" dekho) + redeploy
+- [x] ~~Railway pe env vars update karo + redeploy~~ — **DONE** (neeche "Environment changes" dekho)
 - [ ] Repo description + topics set karo (khali hai abhi)
 
-## 🔧 Environment changes (deploy pe update karne hain)
+## 🔧 Environment changes (Railway pe already applied)
 
-| Variable                                                       | Kya karna                                                                                                                                                       |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `X402_PUBLIC_BASE_URL`                                         | **Naya, set karo** — canonical root origin, e.g. `https://api-production-7c303.up.railway.app` (ya custom domain). Isse har paid endpoint ka Bazaar URL banega. |
-| `X402_RESOURCE_URL`                                            | Ab legacy hai (sirf origin use hota hai). `X402_PUBLIC_BASE_URL` set karne ke baad hata sakte ho.                                                               |
-| `X402_PRICE_ATOMIC`                                            | **Hata do** — ab har endpoint ki price code mein hai (`paid-resource.ts`). Zod unknown keys ignore karta hai, to purana rehna harmless hai, par confusing.      |
-| `CORS_ORIGIN`                                                  | Ab comma-separated list. Frontend same domain pe hoga to `https://<root-domain>`                                                                                |
-| `SOLANA_RPC_URL` / `SOLANA_TOKEN_LIST_URL` / `BITCOIN_API_URL` | Naye, defaults theek hain. `BITCOIN_FALLBACK_API_URL` optional.                                                                                                 |
+| Variable                                                       | Status                                                                                                                                                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X402_PUBLIC_BASE_URL`                                         | ✅ **SET** = `https://growtrack.pro` — live 402 body isi se `https://growtrack.pro/...` resource URLs de raha hai                                                                                  |
+| `X402_RESOURCE_URL`                                            | ⏳ Purana value abhi bhi set hai — jaan-bujh ke rakha, taaki agar purana code wapas deploy ho to cataloging data na toote. Naya code `X402_PUBLIC_BASE_URL` ko prefer karta hai. Ab hata sakte ho. |
+| `X402_RESOURCE_DESCRIPTION`                                    | ⏳ Ab use nahi hota (naye code mein ye env var hi nahi hai; descriptions resource definitions mein hain). Hata sakte ho.                                                                           |
+| `X402_PRICE_ATOMIC`                                            | ➖ Railway pe kabhi set nahi tha, koi kaam nahi                                                                                                                                                    |
+| `CORS_ORIGIN`                                                  | ✅ **SET** = `https://growtrack.pro,https://api-production-7c303.up.railway.app,http://localhost:3000`                                                                                             |
+| `SOLANA_RPC_URL` / `SOLANA_TOKEN_LIST_URL` / `BITCOIN_API_URL` | ➖ Set nahi kiye — code ke defaults sahi hain aur live verify ho chuke hain                                                                                                                        |
 
 ## ✅ DONE — 2026-09-17 (aaj ka kaam)
 
@@ -72,8 +107,8 @@
 
 ### Phase B3 — Domain + Bazaar polish
 
-- [ ] Custom root domain kharido + attach karo (Railway custom domain ya Cloudflare)
-- [ ] `X402_PUBLIC_BASE_URL` ko us domain pe set karo, redeploy, phir 402 body mein URL verify karo
+- [x] Custom root domain kharido + attach karo — **DONE**: `growtrack.pro` (Railway se)
+- [x] `X402_PUBLIC_BASE_URL` set + deploy + 402 body verify — **DONE** (live body `https://growtrack.pro/...` dikha raha hai)
 - [ ] Merchant NFD (Algorand name service) `payTo` ke liye, agar available ho
 - [ ] `og:image` ko 1200×630 **PNG** banao (abhi SVG hai — kuch social crawlers SVG skip karte hain)
 - [ ] Bazaar resource descriptions ko dobara padho: catalog mein jeetne wale entries 300+ chars likhte
@@ -124,7 +159,8 @@ rank 50 ~$1 (2026-09-17 ka Bazaar catalog, 2,019 resources / 147 merchants).
 
 ## 🧰 Reference
 
-- **API (Railway):** `https://api-production-7c303.up.railway.app` — 2026-09-17 ko live check kiya:
+- **API (Railway):** `https://growtrack.pro` (custom domain, verification pending) — abhi bhi reachable at
+  `https://api-production-7c303.up.railway.app` — 2026-09-17 ko live check kiya:
   `/health/ready` → 200, unpaid `/live` → 402
 - **Repo:** `github.com/GrowEdge5/growtrack` — CI green, **PRIVATE (fix karna hai)**
 - **Payer wallets:** `JJNP…TB4` (growtrack-mainnet-payer), `6T4E…ZRGI` (uc-test-payer) — keys
