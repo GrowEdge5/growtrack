@@ -32,8 +32,12 @@ interface EvmProviderOptions {
   timeoutMs: number;
 }
 
+// EVM native currency (wei) has 18 decimals on every chain Growtrack reads.
+const EVM_NATIVE_DECIMALS = 18;
+
 export class ViemChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
+  public readonly nativeDecimals = EVM_NATIVE_DECIMALS;
   private readonly client;
 
   public constructor(options: EvmProviderOptions) {
@@ -46,7 +50,11 @@ export class ViemChainDataProvider implements ChainDataProvider {
     const viemChain = defineChain({
       id: options.chainId,
       name: options.chainName,
-      nativeCurrency: { name: options.nativeSymbol, symbol: options.nativeSymbol, decimals: 18 },
+      nativeCurrency: {
+        name: options.nativeSymbol,
+        symbol: options.nativeSymbol,
+        decimals: EVM_NATIVE_DECIMALS
+      },
       rpcUrls: { default: { http: [options.rpcUrl] } },
       contracts: {
         multicall3: { address: MULTICALL3_ADDRESS }
@@ -82,7 +90,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
     return {
       nativeBalance: nativeBalance.toString(),
       nativeSymbol: this.chain.nativeSymbol,
-      nativeDecimals: 18,
+      nativeDecimals: EVM_NATIVE_DECIMALS,
       provider: "viem-rpc",
       blockNumber: blockNumber.toString(),
       holdings,

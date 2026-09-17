@@ -62,37 +62,61 @@ export const liveWalletResponseSchema = z.object({
   })
 });
 
-// x402 HTTP 402 body (also base64 in the PAYMENT-REQUIRED header). Documents the
-// payment requirements in OpenAPI and validates the outgoing 402 payload.
-export const paymentRequiredSchema = z.object({
-  x402Version: z.literal(2),
-  error: z.string().optional(),
-  // Top-level x402 v2 resource descriptor (present when X402_RESOURCE_URL is set);
-  // its description is the human-readable Bazaar summary.
-  resource: z
-    .object({
-      url: z.string().url(),
-      description: z.string(),
-      mimeType: z.string()
-    })
-    .optional(),
-  accepts: z.array(
-    z.object({
-      scheme: z.literal("exact"),
-      network: z.string(),
-      amount: z.string(),
-      asset: z.string(),
-      payTo: z.string(),
-      maxTimeoutSeconds: z.number().int().positive(),
-      extra: z.object({
+const paymentResourceSchema = z
+  .object({
+    url: z.string().min(1),
+    description: z.string(),
+    mimeType: z.string()
+  })
+  .passthrough();
+
+// The GoPlausible Bazaar discovery extension. Declared loosely (and passthrough)
+// on purpose: it is the facilitator's cataloging payload, forwarded verbatim, and
+// an under-declared schema here would SILENTLY STRIP it from the 402 body — the
+// zod response serializer emits only what the schema declares, while the base64
+// PAYMENT-REQUIRED header keeps everything. Body and header must agree.
+const bazaarExtensionsSchema = z
+  .object({
+    bazaar: z.record(z.unknown())
+  })
+  .passthrough();
+
+const paymentAcceptSchema = z
+  .object({
+    scheme: z.literal("exact"),
+    network: z.string(),
+    amount: z.string(),
+    asset: z.string(),
+    payTo: z.string(),
+    maxTimeoutSeconds: z.number().int().positive(),
+    extra: z
+      .object({
         name: z.string(),
         tag: z.string(),
         decimals: z.number().int().nonnegative(),
         feePayer: z.string()
       })
-    })
-  )
-});
+      .passthrough(),
+    // Rides on the accept so the facilitator auto-catalogs the resource from the
+    // payload it sees on /verify + /settle.
+    resource: paymentResourceSchema.optional(),
+    extensions: bazaarExtensionsSchema.optional()
+  })
+  .passthrough();
+
+// x402 HTTP 402 body (also base64 in the PAYMENT-REQUIRED header). Documents the
+// payment requirements in OpenAPI and validates the outgoing 402 payload.
+export const paymentRequiredSchema = z
+  .object({
+    x402Version: z.literal(2),
+    error: z.string().optional(),
+    // Top-level x402 v2 resource descriptor (present when a public base URL is
+    // configured); its description is the human-readable Bazaar summary.
+    resource: paymentResourceSchema.optional(),
+    extensions: bazaarExtensionsSchema.optional(),
+    accepts: z.array(paymentAcceptSchema)
+  })
+  .passthrough();
 
 export const refreshResponseSchema = z.object({
   data: z.object({

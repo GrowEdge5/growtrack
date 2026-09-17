@@ -37,6 +37,7 @@ function snapshot(expiresAt = new Date("2026-01-01T00:15:00.000Z")): WalletSnaps
 function dependencies() {
   const provider = {
     chain: identity.chain,
+    nativeDecimals: 18,
     normalizeAddress: vi.fn(() => identity),
     fetchWalletData: vi.fn(async () => ({
       nativeBalance: "42",
@@ -49,7 +50,10 @@ function dependencies() {
       signals: []
     }))
   };
-  const providers: ChainProviderRegistry = { get: vi.fn(() => provider) };
+  const providers: ChainProviderRegistry = {
+    get: vi.fn(() => provider),
+    list: vi.fn(() => [provider])
+  };
   const cache: WalletCache = { get: vi.fn(async () => null), set: vi.fn(async () => undefined) };
   const repository: WalletRepository = {
     findLatest: vi.fn(async () => null),

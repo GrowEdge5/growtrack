@@ -1,6 +1,45 @@
 # Growtrack
 
-Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **two read-chain adapters — EVM (Ethereum) and Algorand** — each reading native balance, curated token holdings, and USD valuation behind a shared provider port. On top of the read layer, a pay-per-query **x402 payment layer** (Algorand USDC micropayments via the official GoPlausible facilitator) gates a synchronous `/live` snapshot endpoint. Its `402 → verify → settle` path is implemented, covered by unit + e2e tests against a **mocked** facilitator, verified live on Algorand testnet (2026-09-14), verified live on Algorand **MAINNET** (2026-09-15), and — on **2026-09-15** — was **deployed publicly over HTTPS on Railway and paid live on mainnet by external x402 clients, on BOTH read chains (Algorand and Ethereum)**. _The public instance is currently paused and being restarted for the judging window; the 12+ mainnet settlements against it are permanent on-chain and independently verifiable regardless of instance uptime._ The facilitator tracks the merchant with the `x402-global-challenge` flag set; the public Bazaar listing surface is pending facilitator-side promotion.
+> ## Update — 2026-09-17: Composite entry, four chains, price correction
+>
+> This section supersedes earlier statements below wherever they conflict.
+>
+> - **Four read chains.** Solana (`id 3`) and Bitcoin (`id 4`) providers added alongside Ethereum
+>   and Algorand, plus a shared address detector (`src/modules/chains/domain/address-detection.ts`).
+>   Solana enumerates every SPL token via `getTokenAccountsByOwner` (no curated list) and enriches
+>   names from the verified Jupiter token list; Bitcoin reads an address's UTXO balance from an
+>   Esplora-compatible REST API. Both verified against live mainnet data.
+> - **Composite Entry, not one endpoint.** What was a single paid `/live` route is now three priced
+>   capabilities that all settle to the one `payTo` — so their volume rolls up under one merchant
+>   while each keeps its own Bazaar listing and its own price. Declared in
+>   `src/modules/payments/domain/paid-resource.ts`:
+>
+>   | Route                                  | Price | Caller          |
+>   | -------------------------------------- | ----- | --------------- |
+>   | `GET /v1/wallets/:chain/:address/live` | $0.01 | agents, UI      |
+>   | `GET /v1/portfolio?addresses=`         | $0.02 | agents, UI      |
+>   | `GET /v1/portfolio/report?addresses=`  | $0.05 | UI hero, agents |
+>
+> - **Price corrected from $0.001 to $0.01–$0.05.** Measured against the live Bazaar catalog on
+>   2026-09-17 (2,019 resources, 147 merchants): the dominant band is $0.01–$0.05, only two
+>   endpoints in the whole catalog were priced at $0.001, and the rank-20 line sits near $26 of
+>   all-time volume. Older `0.001 USDC` figures below describe past settlements and remain accurate
+>   for those settlements, but no longer describe the price list.
+> - **New free routes:** `GET /v1/chains`, `GET /v1/chains/detect?address=`. **New agent-facing
+>   surfaces:** `/llms.txt`, `/.well-known/x402`, `/logo.svg`, `/favicon.ico`.
+> - **Config changed:** `X402_PRICE_ATOMIC` is gone (prices are per-endpoint now);
+>   `X402_PUBLIC_BASE_URL` supersedes `X402_RESOURCE_URL` as the canonical origin; `CORS_ORIGIN` is
+>   now a comma-separated list; `SOLANA_*` and `BITCOIN_*` vars added.
+> - **Fixed:** the 402 response body silently dropped `extensions` and `accepts[].resource` because
+>   the zod response schema under-declared them, while the base64 `PAYMENT-REQUIRED` header kept
+>   them. Body and header now agree, and an e2e test asserts it.
+> - **Tests: 69 across 13 files**, all external services mocked (`npm run ci` green).
+>
+> Still outstanding: the GitHub repository is **private** and must be made public for the Electric
+> Capital qualification step; the frontend does not exist yet; the Bazaar directory listing remains
+> facilitator-side.
+
+Growtrack is a multichain wallet intelligence API. The current build provides a production-oriented TypeScript modular monolith with a Fastify API, a BullMQ worker, PostgreSQL persistence, Redis caching, and **four read-chain adapters — EVM (Ethereum), Algorand, Solana and Bitcoin** — each reading native balance, token holdings, and USD valuation behind a shared provider port. On top of the read layer, a pay-per-query **x402 payment layer** (Algorand USDC micropayments via the official GoPlausible facilitator) gates the priced endpoints: a synchronous live snapshot, combined portfolio totals, and a full portfolio report. Its `402 → verify → settle` path is implemented, covered by unit + e2e tests against a **mocked** facilitator, verified live on Algorand testnet (2026-09-14), verified live on Algorand **MAINNET** (2026-09-15), and — on **2026-09-15** — was **deployed publicly over HTTPS on Railway and paid live on mainnet by external x402 clients, on both then-supported read chains (Algorand and Ethereum)**. _The 12+ mainnet settlements against it are permanent on-chain and independently verifiable regardless of instance uptime._ The facilitator tracks the merchant with the `x402-global-challenge` flag set; the public Bazaar listing surface is pending facilitator-side promotion.
 
 ## Development Status
 
@@ -75,7 +114,7 @@ _Last verified: **2026-09-15** — **Phase 5 (public HTTPS go-live) DONE**: the 
 
 - **Token discovery is curated-list-based, not exhaustive.** EVM holdings come from a fixed list of well-known Ethereum ERC-20s (`src/modules/chains/infrastructure/evm/ethereum-token-list.ts`); Algorand holdings come from a curated ASA list — USDC + USDt (`src/modules/chains/infrastructure/algorand/algorand-asset-list.ts`). A token/ASA outside its list is not detected. `status` reflects USD-pricing coverage of discovered assets, not total portfolio completeness. _(By design for now; documented above.)_
 - **`transactions`, `positions`, `signals` are still empty** — unimplemented extension points, not fabricated data. _(Later scope.)_
-- **Read chains: EVM (Ethereum) and Algorand (mainnet) are implemented.** Solana and Bitcoin are not, and Algorand testnet is a later `ALGORAND_API_URL` swap. _(Roadmap.)_
+- **Read chains: EVM (Ethereum), Algorand, Solana and Bitcoin (mainnet) are implemented** (2026-09-17), behind one shared provider port, with address auto-detection routing a bare paste. Coverage differs per chain and is documented rather than papered over: Bitcoin and Solana are complete (Solana excludes unverified airdrop mints and reports the count), Algorand reports every opted-in asset but names only the curated ones, and Ethereum reads a curated token list of 13. Algorand testnet is a later `ALGORAND_API_URL` swap.
 - **x402 payment layer: core implemented, LIVE on testnet + mainnet, and exercised against the public HTTPS deploy on both chains; only the Bazaar directory surface remains (facilitator-side).** The `402 → verify → settle` flow (guard, payment-requirements builder with Bazaar resource + extensions, GoPlausible facilitator HTTP client) is built, covered by unit + e2e tests **against a mocked facilitator**, and **verified live on Algorand testnet (txid `IFDRIUXY…6LOA`), mainnet locally (txid `ARTGFLQK…VFZA`), and 12+ times against the public Railway URL (e.g. `PG2WHBS5…KR6RQ` Algorand route, `N7IKPHLW…OJWZLA` Ethereum route)** — all real 0.001 USDC settles via the live GoPlausible facilitator, USDC received at `payTo`. The facilitator's merchant analytics track the challenge flag, scraped site, and 4 resources; the public Bazaar directory listing awaits facilitator-side promotion.
 - Compiled/production start (`npm start`) expects env vars from the environment; `.env` is auto-loaded only in dev. _(Non-blocker; expected for Docker/prod deployment.)_
 
@@ -85,7 +124,7 @@ Every check below was actually executed.
 
 | Command / check                                             | Result   | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run ci`                                                | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (32 tests / 8 files) ✓ · build ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `npm run ci`                                                | **PASS** | format:check ✓ · eslint ✓ · tsc --noEmit ✓ · vitest (69 tests / 13 files) ✓ · build ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | x402 guard unit tests (mocked facilitator)                  | **PASS** | disabled pass-through, fail-closed 402 (no facilitator), missing/invalid signature → 402, `isValid:false` → 402 (+ never settles), `success:false` → 402, verify throws → 502 (+ never settles), paid happy-path → base64 `PAYMENT-RESPONSE`, `decodePaymentSignature` (10 tests)                                                                                                                                                                                                                                                                                                                 |
 | x402 guard e2e (Fastify + zod, mocked facilitator)          | **PASS** | unpaid → 402 (body + `PAYMENT-REQUIRED` header), disabled → 200, paid verify+settle → 200 `meta.source:"live"` + `PAYMENT-RESPONSE` decodes to the settlement — full route/serializer, zero provider/DB IO (3 tests)                                                                                                                                                                                                                                                                                                                                                                              |
 | Live x402 payment — Algorand **MAINNET** (real GoPlausible) | **PASS** | 2026-09-15, real on-chain: `402` → client-signed `PAYMENT-SIGNATURE` → live facilitator verify + settle → `200` + base64 `PAYMENT-RESPONSE`. Settlement txid `ARTGFLQKZ5ZF4SS7N7OXJYXBXTJ55JSADS45UCKWW4IMD5D4VFZA` — `axfer` 0.001 USDC (ASA `31566704`), `fee 0` (gasless, facilitator-sponsored, atomic group), round `65051266` on `mainnet-v1.0`. Payer `JJNP…TB4` −0.001, `payTo` `F232…DSEA` +0.001, cross-checked by independent mainnet algod reads. Mainnet switch was env-only, zero code change.                                                                                      |

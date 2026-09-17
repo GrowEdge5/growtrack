@@ -17,7 +17,14 @@ const LLAMA_CHAINS: Readonly<Record<number, LlamaChain>> = {
   // Algorand mainnet (Growtrack chain id 2, not EIP-155). ASAs auto-key as
   // algorand:<assetId> through the shared token-key path below; lowercasing a
   // numeric ASA id is a no-op, so the same code prices them without special-casing.
-  2: { slug: "algorand", nativeCoinKey: "coingecko:algorand" }
+  2: { slug: "algorand", nativeCoinKey: "coingecko:algorand" },
+  // Solana mainnet (id 3). Mints are base58 and case-sensitive, but DeFiLlama
+  // resolves a lowercased mint key to the same coin (verified 2026-09-17), so the
+  // shared lowercase key path is safe here too.
+  3: { slug: "solana", nativeCoinKey: "coingecko:solana" },
+  // Bitcoin mainnet (id 4). The native balance is reported in satoshis with 8
+  // decimals, which the shared scaling already handles.
+  4: { slug: "bitcoin", nativeCoinKey: "coingecko:bitcoin" }
 };
 
 // DeFiLlama attaches a 0..1 confidence to each price. Anything below this is

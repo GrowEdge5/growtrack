@@ -2,140 +2,133 @@
 
 > Temporary file — project fully complete hone ke baad DELETE kar dena hai.
 > Track karta hai: Algorand Global x402 Challenge ke liye jo bana hai + jo bacha hai.
+> Detail wala plan `docs/roadmap.md` mein hai (usme market data aur 3 corrections hain).
 
-## 🎯 SPRINT PLAN — Sept 20-22 tak LIVE (compressed)
+## 🚨 AAJ HI KARNA — blocking (code nahi, account/deploy kaam hai)
 
-**Goal:** Sep 20-22 tak poora product (multichain tracker + frontend + paid report) live. Uske baad user marketing pe focus karega.
+- [ ] **Repo ko PUBLIC karo** — `github.com/GrowEdge5/growtrack` abhi PRIVATE hai, aur official guide
+      ka naya qualification step isse explicitly maangta hai: _"Submit your Github repo to Electric
+      Capital... Make sure your repository is publicly accessible and contains the relevant Algorand
+      code."_ Repo private = qualification fail. (Python: settings → change visibility)
+- [ ] **Electric Capital pe repo submit karo** (guide ka step 7 — TASKS mein pehle ye missing tha)
+- [ ] **Submission form bharo** — window abhi open hai, deadline **29 Sept** (rules: 11:45pm ET;
+      guide "through September 30th" kehta hai). Safe date 29 Sept maano.
+- [ ] **Railway pe env vars update karo** (neeche "Environment changes" dekho) + redeploy
+- [ ] Repo description + topics set karo (khali hai abhi)
 
-| Din                    | Kaam                                                                   | Deliverable               |
-| ---------------------- | ---------------------------------------------------------------------- | ------------------------- |
-| **Sep 16 (Day 1)**     | A1 address auto-detect + A2 Solana provider + tests                    | Solana reads working      |
-| **Sep 17 (Day 2)**     | A3 BTC provider + A4 seed + A5 live verify + Railway deploy            | 4 chains API pe live      |
-| **Sep 18 (Day 3)**     | B1 frontend setup + B2 portfolio view (free tier)                      | Tracker UI chal raha      |
-| **Sep 19 (Day 4)**     | C1 paid report endpoint + B3-B4 free/paid split + browser x402 payment | Paid report flow complete |
-| **Sep 20 (Day 5)**     | B5 polish + B6 landing + B7 full deploy                                | 🚀 **PRODUCT LIVE**       |
-| **Sep 21-22 (buffer)** | Bugs, edge cases, README/screenshots, demo video basics                | Submission-ready state    |
+## 🔧 Environment changes (deploy pe update karne hain)
 
-**Scope cuts (deadline ke liye — baad mein add honge):**
+| Variable                                                       | Kya karna                                                                                                                                                       |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X402_PUBLIC_BASE_URL`                                         | **Naya, set karo** — canonical root origin, e.g. `https://api-production-7c303.up.railway.app` (ya custom domain). Isse har paid endpoint ka Bazaar URL banega. |
+| `X402_RESOURCE_URL`                                            | Ab legacy hai (sirf origin use hota hai). `X402_PUBLIC_BASE_URL` set karne ke baad hata sakte ho.                                                               |
+| `X402_PRICE_ATOMIC`                                            | **Hata do** — ab har endpoint ki price code mein hai (`paid-resource.ts`). Zod unknown keys ignore karta hai, to purana rehna harmless hai, par confusing.      |
+| `CORS_ORIGIN`                                                  | Ab comma-separated list. Frontend same domain pe hoga to `https://<root-domain>`                                                                                |
+| `SOLANA_RPC_URL` / `SOLANA_TOKEN_LIST_URL` / `BITCOIN_API_URL` | Naye, defaults theek hain. `BITCOIN_FALLBACK_API_URL` optional.                                                                                                 |
 
-- Koi login/account nahi — sirf localStorage (already planned)
-- Transaction history nahi (transactions/positions/signals extension points hi rahenge)
-- Curated token lists hi (exhaustive discovery nahi) — documented limitation
-- Report = clean printable HTML view (fancy PDF generation baad mein)
-- Demo video polish marketing phase mein (Sep 22 ke baad)
+## ✅ DONE — 2026-09-17 (aaj ka kaam)
 
-**⚠️ Highest-risk item:** B4 (browser se x402 payment — Pera wallet integration). Fallback ready: report endpoint API/MCP se bhi kaam karta hai (agents ke liye), browser flow deadline ke baad polish ho sakta hai. **Isko Day 4 ki subah pehle attack karna.**
-
-## 📅 Deadlines (Algorand Global x402 Challenge)
-
-| Date             | Kya karna hai                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------------- |
-| **Sep 29, 2026** | Project submission form bharna (form inbox mein aayega — `sharmadj4231@gmail.com` pe watch rakhna) |
-| Oct 8, 2026      | Shortlist announce (top 50 leaderboard + submitted projects)                                       |
-| **Nov 2, 2026**  | Final Presentation — Devcon 8 India (virtual, top 10 finalists)                                    |
-| Nov 12, 2026     | Winners                                                                                            |
-
-**Judging criteria (evenly weighted):** (a) Volume — real USDC activity, (b) Use case quality — x402 core flow mein, (c) Sustained potential, (d) Innovation.
-
-**⚠️ RULES WARNING:** "Repeated self-payments / wash transactions / artificial volume" penalized hain. Testing ke liye kuch self-payments theek hain, lekin leaderboard volume **sirf real users** se aani chahiye.
-
----
-
-## ✅ DONE — Foundation (taareekh ke saath)
-
-- [x] Phase 1 — Scaffold + local infrastructure (Docker, Postgres, Redis, Fastify, BullMQ worker) — 2026-08-18
-- [x] EVM read chain — native balance + ERC-20 holdings (Multicall3) + DeFiLlama USD pricing + `totalValueUsd` — 2026-08-22
-- [x] Algorand read chain — ALGO + curated ASA holdings + USD pricing — 2026-08-23
-- [x] x402 payment core — `402 → verify → settle` guard, payment-requirements builder, GoPlausible facilitator HTTP client, unit + e2e tests (mocked facilitator) — 2026-08-31
-- [x] x402 LIVE on testnet — real 0.001 USDC settle (txid `IFDRIUXY…6LOA`) — 2026-09-14
-- [x] x402 LIVE on mainnet — real 0.001 USDC settle (txid `ARTGFLQK…VFZA`) — 2026-09-15
-- [x] Phase 5 — Public HTTPS deploy — Railway (API + worker + Postgres + Redis), `https://api-production-7c303.up.railway.app` — 2026-09-15
-- [x] Public URL pe live mainnet payments — 18+ settles, Algorand AND Ethereum dono routes, sab `200` + live snapshot — 2026-09-15
-- [x] Landing page (`GET /`) og tags ke saath + facilitator site scrape success — 2026-09-15
-- [x] Bazaar cataloging data spec-perfect — resource descriptor + `extensions.bazaar` (info + schema + `queryParams`) accept + payment payload dono pe — 2026-09-15
-- [x] CI green on GitHub Actions (`gh` CLI set up, GrowEdge5 auth) — 2026-09-15
-
-### 🔍 Watch item — Bazaar public directory listing
-
-Merchant (`payTo F232…DSEA`) facilitator analytics mein fully tracked hai: `challenge: true`, site scraped, 4+ resources with URLs/prices, 100% success rate. Public Bazaar directory (`/discovery/resources`) mein listing **facilitator-side merchant promotion** pe pending hai (dusre merchants ko bhi ~2 din lage the — sitelenz: merchant 09-07, catalog 09-09).
-
-- **Check karne ka tarika:** `https://facilitator.goplausible.xyz/discovery/resources?search=growtrack`
-- Agar 2-3 din mein nahi aaya → GoPlausible Open Box form (https://forms.gle/tByShNbBSKbEaQv37) pe follow-up: "merchant F232…DSEA ka bazaar flag kab promote hoga?" (pehla reply aa chuka tha — generic)
-- Listed hote hi README + submission mein link add karna
+- [x] **Solana read chain** (id 3) — `getTokenAccountsByOwner` se **saare** SPL tokens (koi curated
+      list nahi) + Jupiter verified list se names. Live verified: ek real wallet pe 971 mint accounts
+      mile, jinme 862 unverified airdrop the — wo exclude hote hain aur count `signals` mein report
+      hota hai (silently trim nahi).
+- [x] **Bitcoin read chain** (id 4) — Esplora REST (blockstream.info) se UTXO balance, confirmed +
+      mempool dono. Live verified. `mempool.space` is machine se unreachable tha, isliye blockstream
+      primary hai.
+- [x] **Address auto-detect** — `detectAddress()`. Solana vs Bitcoin legacy ka base58 ambiguity
+      **decoded byte length** se resolve hota hai (32 bytes = Solana, 25 = BTC legacy), heuristic guess
+      se nahi. 6 unit tests.
+- [x] **Composite Entry** — ab 3 paid endpoints, ek hi `payTo`, alag-alag price aur alag Bazaar listing
+      (`src/modules/payments/domain/paid-resource.ts`):
+      `/v1/wallets/:chain/:address/live` **$0.01** · `/v1/portfolio` **$0.02** ·
+      `/v1/portfolio/report` **$0.05**
+- [x] **Price correction** — $0.001 → $0.01–$0.05 (live Bazaar catalog data ke against calibrate kiya)
+- [x] **Multichain aggregation** (`GetPortfolioReport`) — multi-address, multichain totals,
+      per-chain/per-wallet/per-holding breakdown, allocation %, aur unpriced positions ki alag list.
+      Bounded concurrency (keyless endpoints rate-limited hain), per-target errors collect hote hain
+      (ek kharab address baaki ko void nahi karta).
+- [x] **402 body bug fix** — zod response schema undeclared fields strip kar raha tha, isliye JSON body
+      se `extensions` aur `accepts[].resource` gayab the (header mein the). Body aur header ab match
+      karte hain; e2e test isko assert karta hai.
+- [x] **Phase 0 metadata** — landing page upgrade (4 chains, price table, og/twitter tags, logo),
+      `/llms.txt`, `/.well-known/x402`, `/logo.svg`, `/favicon.ico`
+- [x] **Free discovery routes** — `GET /v1/chains`, `GET /v1/chains/detect?address=`
+- [x] **CORS** single origin → comma-separated list
+- [x] **Tests 34 → 69** (13 files), `npm run ci` green (format + lint + typecheck + test + build)
 
 ---
 
-## 🚧 PHASE A — Backend: Solana + BTC chains (target: 3-4 din)
+## ⏭️ NEXT — jo bacha hai
 
-Vision: koi bhi user apna **SOL / BTC / EVM / ALGO** address dale → on-chain portfolio track ho.
+### Phase B2 — Frontend (sabse bada bacha hua kaam)
 
-- [ ] **A1. Address auto-detect utility** — format se chain pehchanna (base58/phrases, `0x…` hex, bech32 `bc1…`, Algorand base32 checksum). Ek shared helper jo frontend + API dono use karein
-- [ ] **A2. Solana read provider** (`src/modules/chains/infrastructure/solana/`)
-  - Free public RPC (`https://api.mainnet-beta.solana.com` ya fallback) se SOL native balance
-  - SPL token accounts ( `getTokenAccountsByOwner`) — curated list (USDC, USDT, JUP, BONK…) + decimals handling
-  - DeFiLlama pricing — `coingecko:solana` + `solana:<mint>` chain map entry
-  - Provider port interface implement (`nativeDecimals` = 9 SOL ke liye)
-  - Unit tests (mocked RPC) — algorand-provider.test.ts pattern follow karo
-- [ ] **A3. Bitcoin read provider** (`src/modules/chains/infrastructure/bitcoin/`)
-  - mempool.space ya blockstream.info API se address UTXOs → total BTC balance
-  - Batching/limits ka dhyan (koi API key nahi — rate limits respect karo)
-  - DeFiLlama pricing — `coingecko:bitcoin`
-  - `nativeDecimals` = 8
-  - Unit tests (mocked API)
-- [ ] **A4. Chain registry seed update** — Solana (id 3) + Bitcoin (id 4) rows `prisma/seed.ts` mein
-- [ ] **A5. Live verification** — public SOL + BTC addresses se real snapshots, `status: complete`, totalValueUsd sahi
-- [ ] **A6. npm run ci green + deploy Railway pe**
+- [ ] Next.js (App Router) + Tailwind, `frontend/` folder same repo mein
+- [ ] **Same root domain** — SPA `/` pe, API `/v1/*` pe proxy. Vercel pe alag domain **nahi**
+      (guide: "Each merchant account should be connected to only one root domain")
+- [ ] Address paste → auto-detect → portfolio; multi-address localStorage mein, koi login nahi
+- [ ] Bada total number + per-chain breakdown + holdings list
+- [ ] Paid report flow (Pera wallet / x402 browser pattern) → report render
+- [ ] Mobile-first (Devcon India audience phone pe dekhega), loading/empty/error states
 
-Docs help: `docs/adding-a-chain.md` (pattern already documented hai).
+### Phase B3 — Domain + Bazaar polish
 
----
+- [ ] Custom root domain kharido + attach karo (Railway custom domain ya Cloudflare)
+- [ ] `X402_PUBLIC_BASE_URL` ko us domain pe set karo, redeploy, phir 402 body mein URL verify karo
+- [ ] Merchant NFD (Algorand name service) `payTo` ke liye, agar available ho
+- [ ] `og:image` ko 1200×630 **PNG** banao (abhi SVG hai — kuch social crawlers SVG skip karte hain)
+- [ ] Bazaar resource descriptions ko dobara padho: catalog mein jeetne wale entries 300+ chars likhte
+      hain (kya milta hai, kis data se, kyun trustworthy) — Growtrack ki descriptions already aisi hain,
+      par agents ke liye specific rakho
 
-## 🎨 PHASE B — Frontend: DeBank-style tracker (target: 5-6 din)
+### Phase C — Volume (yahi leaderboard banayega)
 
-Vision: **simple, clean, dark UI** — CoinStats jaisa powerful, DeBank jaisa minimal. Sirf kaam ki cheezein, koi mess nahi.
+- [ ] Algorand Discord (#x402), X/Twitter threads, r/algorand, Devcon India communities
+- [ ] Doston se **unke apne wallets** se pay karwao — rules self-payments/wash transactions pe
+      penalty lagate hain aur admin inauthentic activity exclude kar sakta hai
+- [ ] Leaderboard unannounced October window pe measure hota hai — Sep 29 ke baad bhi chalate raho
 
-- [ ] **B1. Setup** — Next.js (App Router) + Tailwind, `frontend/` folder mein (same repo), Railway pe alag service ya Vercel
-- [ ] **B2. Core screen — Portfolio view**
-  - Address input (paste karo) → auto-detect chain → live snapshot fetch (free tier: cached GET)
-  - Multiple addresses support (session/local storage — koi login nahi!)
-  - Holdings list: token icon/symbol, amount, USD value, per-chain badge
-  - **Total portfolio value** bada sa number + per-chain breakdown card
-- [ ] **B3. Free vs Paid split**
-  - FREE: live portfolio view (cached snapshots — existing free `GET /v1/wallets/:chain/:address`)
-  - PAID: **"Full Portfolio Report"** button → x402 payment (0.001 USDC) → detailed report: allocation %, chain-wise breakdown, per-holding detail, printable/PDF-style view
-- [ ] **B4. x402 payment integration (browser se)** — GoPlausible UC pattern ya Pera Wallet connect; payment flow: `402 challenge → wallet sign → verify+settle → report render`
-- [ ] **B5. Polish** — responsive (mobile-first, kyunki Devcon India audience mobile pe dekhega), loading states, empty states, error handling (invalid address, chain down)
-- [ ] **B6. Landing page upgrade** — abhi wali API landing ko product landing banao (hero: "Track your entire multichain portfolio — EVM, Solana, BTC, Algorand")
-- [ ] **B7. Deploy** — public URL (Railway/Vercel), CORS config API pe
+### Phase D — Submission material
+
+- [ ] Demo video (2-3 min): address paste → portfolio → paid report → explorer txid
+- [ ] README screenshots + architecture diagram refresh
+- [ ] Bazaar listing check: `https://facilitator.goplausible.xyz/discovery/resources?search=growtrack`
 
 ---
 
-## 🧾 PHASE C — Paid Report endpoint (Phase B ke saath parallel ho sakta hai)
+## 📅 Deadlines
 
-- [ ] **C1. `GET /v1/portfolio/report` paid endpoint** — multi-address query (ya session) → aggregated full report (sab chains ka snapshot + totals + allocation) — x402 guard ke piche (0.001 USDC)
-- [ ] **C2. Report response shape** — JSON (frontend render karega) + optional HTML/printable
-- [ ] **C3. Bazaar extensions update** — naye resource URL + description report endpoint ke liye
-- [ ] **C4. E2E test** — unpaid → 402, paid → 200 + report
+| Date             | Kya                                                                              |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Sep 29, 2026** | Project submission form (guide kehta hai "through Sept 30") — **MISS MAT KARNA** |
+| Oct 8, 2026      | Shortlist (top 50 leaderboard)                                                   |
+| Nov 2, 2026      | Final Presentation — Devcon 8 India (virtual)                                    |
+| Nov 12, 2026     | Winners                                                                          |
 
----
-
-## 📤 PHASE D — Submission + real usage (Sep 29 se pehle shuru, Oct tak continue)
-
-- [ ] **D1. Demo video** (2-3 min) — address paste → portfolio view → paid report flow → txid explorer link (script pehle likh lena, screen recording clean)
-- [ ] **D2. README final polish** — product screenshots, architecture diagram, demo GIF, sab txid proofs
-- [ ] **D3. Submission form bharo** (inbox mein aayega) — **Sep 29 deadline, MISS MAT KARNA**
-- [ ] **D4. Real usage drive** (yahi leaderboard volume banayega):
-  - Algorand Discord (#x402 channels), Twitter/X threads, Devcon India communities
-  - Doston se test karwao — **unke wallets se** pay karwao (self-payment nahi!)
-  - Product Hunt / Reddit (r/algorand, r/CryptoCurrency) launch post
-- [ ] **D5. Bazaar listing check** (watch item upar) — aaye to submission mein mention
+**Judging (evenly weighted):** Volume · Use case quality · Technical execution · Sustained
+potential · Innovation. Volume ke liye market calibration: top merchant ~$5.2K, **rank 20 ~$26**,
+rank 50 ~$1 (2026-09-17 ka Bazaar catalog, 2,019 resources / 147 merchants).
 
 ---
 
-## 🧰 Reference — abhi ka state
+## 📊 Market intel (2026-09-17, live Bazaar catalog se)
 
-- **API (Railway):** `https://api-production-7c303.up.railway.app` — health ✓, paid `/live` ✓ (dono chains)
-- **Repo:** `github.com/GrowEdge5/growtrack` — CI green, `gh` CLI authed
-- **Payer wallets (testing):** `JJNP…TB4` (growtrack-mainnet-payer, ~0.43 USDC), `6T4E…ZRGI` (uc-test-payer, 0.05 USDC) — keys `~/.algorand-mcp/wallet.db` mein
-- **payTo (merchant):** `F232…DSEA` — facilitator analytics mein `challenge: true`
-- **Reading material:** `docs/adding-a-chain.md`, `docs/architecture.md`, `docs/provider-strategy.md`
+- **2,019 resources, 147 merchant domains.** Growtrack abhi catalog mein **nahi** hai (verify kiya).
+- Price bands: `$0.01` ×11, `$0.02` ×8, `$0.50` ×6, `$0.03` ×5, `$0.05` ×5 — poore catalog mein
+  sirf **2 endpoints $0.001** pe the. Isliye apna price badla.
+- `agenthub` (rank 4, ~$1.4K, 19 endpoints, ek domain) wahi composite pattern use kar raha hai jo
+  humne adopt kiya.
+- `proofmint.app` rank 3 pe hai sirf **12 settles** se (~$4.2K) — matlab high-value atomic actions
+  bhi kaam karte hain, sirf transaction-count grinding nahi.
+
+---
+
+## 🧰 Reference
+
+- **API (Railway):** `https://api-production-7c303.up.railway.app` — 2026-09-17 ko live check kiya:
+  `/health/ready` → 200, unpaid `/live` → 402
+- **Repo:** `github.com/GrowEdge5/growtrack` — CI green, **PRIVATE (fix karna hai)**
+- **Payer wallets:** `JJNP…TB4` (growtrack-mainnet-payer), `6T4E…ZRGI` (uc-test-payer) — keys
+  `~/.algorand-mcp/wallet.db` mein
+- **payTo (merchant):** `F232…DSEA`
+- **Docs:** `docs/roadmap.md` (plan + market data), `docs/adding-a-chain.md` (ab 6 steps),
+  `docs/architecture.md`, `docs/provider-strategy.md`

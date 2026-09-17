@@ -8,26 +8,15 @@ import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
 import { createX402Guard } from "../../src/http/plugins/x402-guard.js";
-import { PaymentRequirementsBuilder } from "../../src/modules/payments/application/payment-requirements-builder.js";
 import type { PaymentFacilitator } from "../../src/modules/payments/application/ports/payment-facilitator.js";
 import {
   liveWalletResponseSchema,
   paymentRequiredSchema,
   walletParamsSchema
 } from "../../src/http/routes/v1/wallet.schemas.js";
+import { testBuilder } from "../support/x402-fixtures.js";
 
-const builder = new PaymentRequirementsBuilder({
-  network: "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
-  asset: "10458941",
-  assetName: "USDC",
-  assetDecimals: 6,
-  priceAtomic: "1000",
-  payTo: "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
-  feePayer: "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
-  maxTimeoutSeconds: 300,
-  tag: "x402-global-challenge",
-  resourceUrl: "https://growtrack.example/v1/wallets"
-});
+const builder = testBuilder("wallet-live");
 
 // A minimal snapshot matching liveWalletResponseSchema, returned by a stub handler
 // so the guard + zod serializer are exercised with zero provider/DB IO.
@@ -108,10 +97,20 @@ describe("x402 guard on the paid /live route", () => {
     expect(body.x402Version).toBe(2);
     expect(body.accepts[0]?.scheme).toBe("exact");
     expect(body.accepts[0]?.asset).toBe("10458941");
+    // $0.01 per live snapshot — the Composite Entry's cheapest tier.
+    expect(body.accepts[0]?.amount).toBe("10000");
     expect(body.accepts[0]?.extra.tag).toBe("x402-global-challenge");
     expect(body.accepts[0]?.extra.name).toBe("USDC");
-    expect(body.resource?.url).toBe("https://growtrack.example/v1/wallets");
+    expect(body.resource?.url).toBe("https://growtrack.example/v1/wallets/:chain/:address/live");
     expect(body.resource?.mimeType).toBe("application/json");
+
+    // Regression guard: the zod response schema used to under-declare the Bazaar
+    // extension, so the serializer silently dropped it from the BODY while the
+    // base64 header kept it — the cataloging payload the facilitator reads must
+    // survive serialization on both surfaces.
+    expect(body.extensions?.bazaar).toBeDefined();
+    expect(body.accepts[0]?.extensions?.bazaar).toBeDefined();
+    expect(body.accepts[0]?.resource?.url).toBe(body.resource?.url);
 
     // The header carries the same requirements, base64-encoded.
     const header = response.headers["payment-required"];

@@ -8,25 +8,15 @@ import {
   PAYMENT_RESPONSE_HEADER,
   PAYMENT_SIGNATURE_HEADER
 } from "../../../src/http/plugins/x402-guard.js";
-import { PaymentRequirementsBuilder } from "../../../src/modules/payments/application/payment-requirements-builder.js";
 import type {
   PaymentFacilitator,
   SettleResult,
   VerifyResult
 } from "../../../src/modules/payments/application/ports/payment-facilitator.js";
 import type { PaymentRequirements } from "../../../src/modules/payments/domain/payment-requirements.js";
+import { testBuilder } from "../../support/x402-fixtures.js";
 
-const builder = new PaymentRequirementsBuilder({
-  network: "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
-  asset: "10458941",
-  assetName: "USDC",
-  assetDecimals: 6,
-  priceAtomic: "1000",
-  payTo: "VTOEM6527WMLHWPTKRBQNQLO5XWGFJC5Z6T7E25TFBKMWP5NFPDP73ZD4U",
-  feePayer: "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
-  maxTimeoutSeconds: 300,
-  tag: "x402-global-challenge"
-});
+const builder = testBuilder("wallet-live");
 
 // A chainable fake reply capturing the calls the guard makes.
 function fakeReply() {

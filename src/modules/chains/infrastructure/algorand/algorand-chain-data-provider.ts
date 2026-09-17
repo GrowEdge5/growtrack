@@ -27,6 +27,7 @@ interface AlgorandProviderOptions {
 // balances or large-supply assets, which the no-wrong-data rule forbids.
 export class AlgorandChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
+  public readonly nativeDecimals = ALGO_DECIMALS;
   private readonly client: algosdk.Algodv2;
   private readonly timeoutMs: number;
 

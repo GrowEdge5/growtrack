@@ -25,6 +25,33 @@ async function seed(): Promise<void> {
       namespace: "algorand"
     }
   });
+
+  // Ids 3 and 4 are Solana and Bitcoin mainnet (also not EIP-155 chainIds). They
+  // must stay distinct from every configured EVM_CHAIN_ID, and they must match
+  // SOLANA_MAINNET_CHAIN_ID / BITCOIN_MAINNET_CHAIN_ID in
+  // src/modules/chains/infrastructure/chain-ids.ts — the DeFiLlama price map is
+  // keyed by these ids, so a mismatch silently prices the chain at nothing.
+  await prisma.chain.upsert({
+    where: { id: 3 },
+    update: { slug: "solana", displayName: "Solana", namespace: "solana", enabled: true },
+    create: {
+      id: 3,
+      slug: "solana",
+      displayName: "Solana",
+      namespace: "solana"
+    }
+  });
+
+  await prisma.chain.upsert({
+    where: { id: 4 },
+    update: { slug: "bitcoin", displayName: "Bitcoin", namespace: "bitcoin", enabled: true },
+    create: {
+      id: 4,
+      slug: "bitcoin",
+      displayName: "Bitcoin",
+      namespace: "bitcoin"
+    }
+  });
 }
 
 seed()

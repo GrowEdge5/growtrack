@@ -18,6 +18,9 @@ const environmentSchema = z
       .default("info"),
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),
+    // Comma-separated list of allowed browser origins. A list (not a single origin)
+    // because a deploy serves the SPA and the API from one root domain while local
+    // development calls the same API from localhost.
     CORS_ORIGIN: z.string().min(1).default("http://localhost:3000"),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
     CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
@@ -28,6 +31,21 @@ const environmentSchema = z
     EVM_CHAIN_NAME: z.string().min(1).default("ethereum"),
     ALGORAND_API_URL: z.string().url().default("https://mainnet-api.algonode.cloud"),
     ALGORAND_CHAIN_NAME: z.string().min(1).default("algorand"),
+    // Solana JSON-RPC endpoint. The public mainnet RPC needs no key; point this at
+    // a dedicated provider if rate limits become the bottleneck for report traffic.
+    SOLANA_RPC_URL: z.string().url().default("https://api.mainnet-beta.solana.com"),
+    SOLANA_CHAIN_NAME: z.string().min(1).default("solana"),
+    // SPL token metadata (symbol/name) source. Solana has no on-chain ticker, so
+    // names come from this list; balances never depend on it.
+    SOLANA_TOKEN_LIST_URL: z
+      .string()
+      .url()
+      .default("https://lite-api.jup.ag/tokens/v2/tag?query=verified"),
+    // Esplora-compatible Bitcoin REST base. blockstream.info is the verified-working
+    // default; mempool.space is configurable as the fallback.
+    BITCOIN_API_URL: z.string().url().default("https://blockstream.info/api"),
+    BITCOIN_FALLBACK_API_URL: z.string().url().optional(),
+    BITCOIN_CHAIN_NAME: z.string().min(1).default("bitcoin"),
     PRICE_API_BASE_URL: z.string().url().default("https://coins.llama.fi"),
     PRICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
 
@@ -46,11 +64,6 @@ const environmentSchema = z
     X402_ASSET_DECIMALS: z.coerce.number().int().nonnegative().default(6),
     // Human-readable asset name advertised in the 402 accept's extra.name (Bazaar).
     X402_ASSET_NAME: z.string().min(1).default("USDC"),
-    // Price in atomic units. "1000" = $0.001 at 6 decimals.
-    X402_PRICE_ATOMIC: z
-      .string()
-      .regex(/^\d+$/, "X402_PRICE_ATOMIC must be a non-negative integer string")
-      .default("1000"),
     // PUBLIC recipient address. Required only when X402_ENABLED=true; never a key.
     X402_PAY_TO: z.string().min(1).optional(),
     // Facilitator's PUBLIC fee-payer key (gasless settlement). Overridable per env.
@@ -60,11 +73,18 @@ const environmentSchema = z
       .default("ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA"),
     X402_MAX_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(300),
     X402_TAG: z.string().min(1).default("x402-global-challenge"),
-    // Canonical PUBLIC URL of the priced resource, surfaced in the Bazaar listing.
-    // Set on a public deploy; leave unset locally (the 402 then carries no resource).
-    X402_RESOURCE_URL: z.string().url().optional(),
-    // Human-readable Bazaar summary. Falls back to a built-in default when unset.
-    X402_RESOURCE_DESCRIPTION: z.string().min(1).optional()
+    // Canonical PUBLIC origin of the deployment (e.g. "https://growtrack.xyz"),
+    // without a path. Every priced resource's Bazaar listing URL is derived as
+    // origin + the resource's own path template, so all endpoints of the Composite
+    // Entry advertise the ONE root domain the merchant is registered against — the
+    // facilitator groups endpoints by merchant and forbids splitting one payTo
+    // across domains. Leave unset locally (the 402 then carries no resource).
+    X402_PUBLIC_BASE_URL: z.string().url().optional(),
+    // Legacy single-resource URL (the pre-Composite deploy set the full /live URL
+    // here). Accepted so an already-provisioned deployment keeps cataloging without
+    // an env change; only its origin is used, and X402_PUBLIC_BASE_URL wins when both
+    // are set.
+    X402_RESOURCE_URL: z.string().url().optional()
   })
   .superRefine((env, ctx) => {
     // Fail fast at startup rather than shipping a 402 that advertises an empty payTo.

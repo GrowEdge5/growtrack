@@ -4,38 +4,48 @@ import type {
   PaymentRequirements,
   PaymentResource
 } from "../domain/payment-requirements.js";
+import type { PaidResourceDefinition, PaidResourceId } from "../domain/paid-resource.js";
 
-// Configuration for a single priced resource. All values originate from validated
-// environment config (see env.ts). payTo/feePayer are PUBLIC addresses only.
-export interface X402PricingConfig {
+// Merchant-level x402 configuration — everything shared by every priced resource
+// in the Composite Entry. All values originate from validated environment config
+// (see env.ts). payTo/feePayer are PUBLIC addresses only.
+export interface X402MerchantConfig {
   network: string;
   asset: string;
   // Human-readable asset name (e.g. "USDC") advertised in extra.name for the Bazaar.
   assetName: string;
   assetDecimals: number;
-  priceAtomic: string;
   payTo: string;
   feePayer: string;
   maxTimeoutSeconds: number;
   tag: string;
-  // Canonical PUBLIC URL of the priced resource and its human-readable summary,
-  // surfaced in the GoPlausible Bazaar listing. Optional: omitted locally where
-  // there is no stable public URL to advertise (the 402 then carries no resource).
-  resourceUrl?: string;
-  resourceDescription?: string;
+  // Canonical PUBLIC origin of the deployment (e.g. "https://growtrack.xyz"). Each
+  // resource's listing URL is derived as origin + its path template, so every
+  // endpoint of the Composite Entry advertises the ONE root domain the merchant
+  // is registered against. Omitted locally where there is no stable public URL
+  // (the 402 then carries no resource).
+  publicBaseUrl?: string;
+  // Legacy single-resource override: the pre-Composite deploy set the full /live
+  // URL here. When publicBaseUrl is unset, this supplies the origin so an
+  // already-configured deployment keeps cataloging without an env change.
+  legacyResourceUrl?: string;
 }
 
-// The paid resource returns JSON.
+// The paid resources return JSON.
 const RESOURCE_MIME_TYPE = "application/json";
-// Fallback Bazaar summary when X402_RESOURCE_DESCRIPTION is unset but a URL is set.
-export const DEFAULT_RESOURCE_DESCRIPTION =
-  "Growtrack multichain wallet intelligence — live wallet snapshot";
 
-// Pure, transport-agnostic construction of the x402 PaymentRequirements. It knows
-// nothing about HTTP, base64, or Fastify — the guard adapts it to the wire. This
-// keeps the money-shaped logic trivially unit-testable.
+// Pure, transport-agnostic construction of the x402 PaymentRequirements for ONE
+// priced resource. It knows nothing about HTTP, base64, or Fastify — the guard
+// adapts it to the wire. This keeps the money-shaped logic trivially unit-testable.
+//
+// One instance per resource (see createPaymentBuilders): price, description and
+// the advertised input/output contract all come from the resource definition, so
+// the Composite Entry's endpoints cannot accidentally share a price.
 export class PaymentRequirementsBuilder {
-  public constructor(private readonly config: X402PricingConfig) {}
+  public constructor(
+    private readonly merchant: X402MerchantConfig,
+    private readonly resource: PaidResourceDefinition
+  ) {}
 
   // The single "exact" accept describing this priced resource. This IS the
   // canonical x402 `PaymentRequirements` object the facilitator's /verify and
@@ -49,16 +59,16 @@ export class PaymentRequirementsBuilder {
     const extensions = this.buildExtensions();
     return {
       scheme: "exact",
-      network: this.config.network,
-      amount: this.config.priceAtomic,
-      asset: this.config.asset,
-      payTo: this.config.payTo,
-      maxTimeoutSeconds: this.config.maxTimeoutSeconds,
+      network: this.merchant.network,
+      amount: this.resource.priceAtomic,
+      asset: this.merchant.asset,
+      payTo: this.merchant.payTo,
+      maxTimeoutSeconds: this.merchant.maxTimeoutSeconds,
       extra: {
-        name: this.config.assetName,
-        tag: this.config.tag,
-        decimals: this.config.assetDecimals,
-        feePayer: this.config.feePayer
+        name: this.merchant.assetName,
+        tag: this.merchant.tag,
+        decimals: this.merchant.assetDecimals,
+        feePayer: this.merchant.feePayer
       },
       ...(resource !== undefined ? { resource } : {}),
       ...(extensions !== undefined ? { extensions } : {})
@@ -66,58 +76,37 @@ export class PaymentRequirementsBuilder {
   }
 
   public buildResource(): PaymentResource | undefined {
-    if (this.config.resourceUrl === undefined) {
+    const url = this.resourceUrl();
+    if (url === undefined) {
       return undefined;
     }
     return {
-      url: this.config.resourceUrl,
-      description: this.config.resourceDescription ?? DEFAULT_RESOURCE_DESCRIPTION,
+      url,
+      description: this.resource.description,
       mimeType: RESOURCE_MIME_TYPE
     };
   }
 
-  // Bazaar discovery extension: describes the endpoint's input (method + path
-  // params) and output (with an example) so the facilitator can populate the
-  // listing's discoveryInfo. `schema` mirrors `info` (the facilitator validates
-  // info against it); `routeTemplate` declares the :param canonical path for the
-  // dynamic route. Present only alongside a configured resourceUrl.
+  // Bazaar discovery extension: describes the endpoint's input (method + params)
+  // and output (with an example) so the facilitator can populate the listing's
+  // discoveryInfo. `schema` mirrors `info` (the facilitator validates info against
+  // it); `routeTemplate` declares the :param canonical path for the dynamic route.
+  // Present only alongside a configured public URL.
   public buildExtensions(): PaymentExtensions | undefined {
-    if (this.config.resourceUrl === undefined) {
+    if (this.resourceUrl() === undefined) {
       return undefined;
     }
-    const routeTemplate = this.buildRouteTemplate();
     return {
       bazaar: {
         info: {
           input: {
             type: "http",
-            method: "GET",
-            // The Bazaar's GET discovery contract uses `queryParams` (every
-            // cataloged resource describes its parameters there); `pathParams`
-            // is not recognized and silently blocks cataloging. The route's
-            // path segments are described as query params with example values,
-            // matching how other parameterized resources advertise themselves.
-            queryParams: {
-              chain: "ethereum",
-              address: "0xd8dA680F17485f5fE14a58674455179eBBfC1F40"
-            }
+            method: this.resource.method,
+            queryParams: this.resource.queryParams
           },
           output: {
             type: "json",
-            example: {
-              wallet: {
-                chain: { slug: "algorand" },
-                canonicalAddress: "JJNP4JGSR5ICF5NTMVC4TO7CE4KM2FDL7G4LAEEFIK2KVGL6RTPLPGMTB4"
-              },
-              status: "complete",
-              nativeBalance: "3622055",
-              nativeSymbol: "ALGO",
-              totalValueUsd: "0.82",
-              holdings: [{ symbol: "USDC", rawAmount: "480683", valueUsd: "0.48" }],
-              transactions: [],
-              positions: [],
-              signals: []
-            }
+            example: this.resource.outputExample
           }
         },
         schema: {
@@ -128,20 +117,11 @@ export class PaymentRequirementsBuilder {
               type: "object",
               properties: {
                 type: { type: "string", const: "http" },
-                method: { type: "string", enum: ["GET"] },
+                method: { type: "string", enum: [this.resource.method] },
                 queryParams: {
                   type: "object",
-                  properties: {
-                    chain: {
-                      type: "string",
-                      enum: ["ethereum", "algorand"],
-                      description: "Read chain slug — path segment in the resource URL"
-                    },
-                    address: {
-                      type: "string",
-                      description: "On-chain wallet address — path segment in the resource URL"
-                    }
-                  }
+                  properties: this.resource.queryParamsSchema,
+                  additionalProperties: true
                 }
               },
               required: ["type", "method"],
@@ -158,24 +138,11 @@ export class PaymentRequirementsBuilder {
           },
           required: ["input"]
         },
-        ...(routeTemplate !== undefined ? { routeTemplate } : {})
+        // Only dynamic routes advertise a template; a static path would be
+        // redundant with the listing URL itself.
+        ...(this.resource.path.includes(":") ? { routeTemplate: this.resource.path } : {})
       }
     };
-  }
-
-  // When the configured resource URL is a :param template (e.g.
-  // ".../v1/wallets/:chain/:address/live"), expose its path as the canonical
-  // routeTemplate so the Bazaar lists the dynamic route, not one concrete URL.
-  private buildRouteTemplate(): string | undefined {
-    if (this.config.resourceUrl === undefined) {
-      return undefined;
-    }
-    try {
-      const url = new URL(this.config.resourceUrl);
-      return url.pathname.includes(":") ? url.pathname : undefined;
-    } catch {
-      return undefined;
-    }
   }
 
   public build(error?: string): PaymentRequirements {
@@ -189,4 +156,45 @@ export class PaymentRequirementsBuilder {
       accepts: [this.buildAccept()]
     };
   }
+
+  // The absolute public URL this resource is listed under: the merchant's one
+  // canonical root domain plus this resource's path template.
+  private resourceUrl(): string | undefined {
+    const base = this.merchant.publicBaseUrl ?? originOf(this.merchant.legacyResourceUrl);
+    if (base === undefined) {
+      return undefined;
+    }
+    try {
+      return new URL(this.resource.path, ensureTrailingSlash(base)).toString();
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+function ensureTrailingSlash(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
+function originOf(url: string | undefined): string | undefined {
+  if (url === undefined) {
+    return undefined;
+  }
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+// One builder per paid resource, keyed by resource id. The routes pick their
+// builder by id, which is what keeps each endpoint's price and Bazaar description
+// independent while they all settle to the same payTo.
+export function createPaymentBuilders(
+  merchant: X402MerchantConfig,
+  resources: readonly PaidResourceDefinition[]
+): ReadonlyMap<PaidResourceId, PaymentRequirementsBuilder> {
+  return new Map(
+    resources.map((resource) => [resource.id, new PaymentRequirementsBuilder(merchant, resource)])
+  );
 }

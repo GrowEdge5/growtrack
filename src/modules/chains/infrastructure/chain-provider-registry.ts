@@ -19,4 +19,8 @@ export class DefaultChainProviderRegistry implements ChainProviderRegistry {
 
     return provider;
   }
+
+  public list(): readonly ChainDataProvider[] {
+    return [...this.providers.values()];
+  }
 }

@@ -14,6 +14,9 @@ import {
 
 import type { ApplicationContainer } from "./build-container.js";
 import { registerErrorHandler } from "../http/plugins/error-handler.js";
+import { registerDiscoveryRoutes } from "../http/routes/discovery.routes.js";
+import { registerChainRoutes } from "../http/routes/v1/chains.routes.js";
+import { registerPortfolioRoutes } from "../http/routes/v1/portfolio.routes.js";
 import { registerHealthRoutes } from "../http/routes/health.routes.js";
 import { registerLandingRoute } from "../http/routes/landing.routes.js";
 import { registerMetricsRoute } from "../http/routes/metrics.routes.js";
@@ -41,15 +44,34 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
     transform: jsonSchemaTransform
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
-  await app.register(cors, { origin: container.env.CORS_ORIGIN });
+  await app.register(cors, { origin: parseCorsOrigins(container.env.CORS_ORIGIN) });
   await app.register(helmet);
   await app.register(sensible);
   await app.register(rateLimit, { max: container.env.RATE_LIMIT_MAX, timeWindow: "1 minute" });
 
   registerErrorHandler(app);
-  registerLandingRoute(app);
+  registerLandingRoute(app, container);
+  registerDiscoveryRoutes(app, container);
   registerHealthRoutes(app, container);
   registerMetricsRoute(app);
+  registerChainRoutes(app, container);
   registerWalletRoutes(app, container);
+  registerPortfolioRoutes(app, container);
   return app;
+}
+
+// CORS_ORIGIN is a comma-separated list: a deploy serves the SPA and the API from
+// one root domain while local development calls the same API from localhost. "*"
+// is passed through as the wildcard rather than as a one-element allowlist, which
+// browsers would reject.
+export function parseCorsOrigins(value: string): string | string[] {
+  const origins = value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  if (origins.includes("*")) {
+    return "*";
+  }
+  return origins.length === 1 ? (origins[0] as string) : origins;
 }

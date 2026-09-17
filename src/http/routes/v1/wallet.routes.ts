@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
-import type { ApplicationContainer } from "../../../app/build-container.js";
+import { paidResourceBuilder, type ApplicationContainer } from "../../../app/build-container.js";
 import { createX402Guard } from "../../plugins/x402-guard.js";
 import {
   liveWalletResponseSchema,
@@ -53,8 +53,9 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
   );
 
   // Paid (x402) tier: a fresh, synchronous full snapshot returned in the response
-  // body — the agent-native "pay $0.001 → get portfolio JSON" flow. The guard runs
-  // first; when x402 is enabled and unpaid it short-circuits with 402 before this
+  // body — the agent-native "pay $0.01 → get portfolio JSON" flow, and the cheapest
+  // of the Composite Entry's three priced capabilities. The guard runs first; when
+  // x402 is enabled and unpaid it short-circuits with 402 before this
   // (provider-hitting) handler executes. The free GET/refresh routes above are
   // untouched.
   app.get(
@@ -62,7 +63,7 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
     {
       preHandler: createX402Guard({
         enabled: container.env.X402_ENABLED,
-        builder: container.paymentRequirements,
+        builder: paidResourceBuilder(container, "wallet-live"),
         facilitator: container.paymentFacilitator
       }),
       schema: {

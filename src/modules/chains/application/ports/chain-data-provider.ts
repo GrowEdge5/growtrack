@@ -26,10 +26,19 @@ export interface ProviderWalletData {
 
 export interface ChainDataProvider {
   readonly chain: Chain;
+  // Decimals of the chain's native smallest unit (EVM wei = 18, ALGO microAlgos = 6,
+  // SOL lamports = 9, BTC satoshis = 8). Exposed on the provider so callers that
+  // never fetched wallet data — portfolio aggregation, the discovery schemas — can
+  // still scale a native balance correctly.
+  readonly nativeDecimals: number;
   normalizeAddress(address: string): WalletIdentity;
   fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData>;
 }
 
 export interface ChainProviderRegistry {
   get(chainSlug: string): ChainDataProvider;
+  // Every registered provider. Callers that need to enumerate supported chains
+  // (Bazaar discovery schemas, the chain listing route) derive them from here so
+  // the advertised set can never drift from the wired set.
+  list(): readonly ChainDataProvider[];
 }
