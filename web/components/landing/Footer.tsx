@@ -13,7 +13,13 @@ export function Footer() {
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#1A2333] bg-[#0D111A] shadow-md">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#00ECB5]">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-[#00ECB5]"
+                >
                   <path
                     d="M4 19L11 5L15 12L13 15.5L10.5 11L6.5 19H4ZM14 19L20 9L18 5.5L10.5 19H14Z"
                     fill="currentColor"
@@ -30,8 +36,8 @@ export function Footer() {
 
             <p className="text-sm text-[#94A3B8] leading-relaxed max-w-md font-sans">
               Growtrack is an institutional multichain intelligence layer engineered for
-              uncompromising data truthfulness. Built on Algorand payment rails to power
-              autonomous agent finance without subscriptions or synthetic zero-dollar illusions.
+              uncompromising data truthfulness. Built on Algorand payment rails to power autonomous
+              agent finance without subscriptions or synthetic zero-dollar illusions.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -133,7 +139,8 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#1A2333] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#94A3B8]">
           <div>
-            Official Entry for the <strong className="text-white font-normal">Algorand Global x402 Challenge</strong>.
+            Official Entry for the{" "}
+            <strong className="text-white font-normal">Algorand Global x402 Challenge</strong>.
           </div>
           <div className="flex items-center gap-3">
             <span>RFC 9110 HTTP 402</span>

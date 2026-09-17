@@ -12,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${inter.variable} ${mono.variable}`}><body className="font-sans">{children}</body></html>;
+  return (
+    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <body className="font-sans">{children}</body>
+    </html>
+  );
 }

@@ -31,7 +31,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"tokens" | "defi" | "transactions" | "x402">("tokens");
   const [showX402Modal, setShowX402Modal] = useState(false);
-  const [x402State, setX402State] = useState<"idle" | "requesting" | "settling" | "unlocked">("idle");
+  const [x402State, setX402State] = useState<"idle" | "requesting" | "settling" | "unlocked">(
+    "idle"
+  );
 
   const detection = useMemo(() => detectAddressFormat(rawAddress), [rawAddress]);
 
@@ -83,9 +85,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 GROWTRACK
               </span>
               <span className="text-xs font-mono text-[#64748B]">/</span>
-              <span className="text-xs font-mono text-[#00ECB5] font-semibold">
-                Wallet Radar
-              </span>
+              <span className="text-xs font-mono text-[#00ECB5] font-semibold">Wallet Radar</span>
             </div>
           </div>
 
@@ -158,11 +158,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-[#00ECB5]" />
-                  <span>Snapshot Cache: <strong className="text-white font-medium">&lt; 1 min ago</strong></span>
+                  <span>
+                    Snapshot Cache:{" "}
+                    <strong className="text-white font-medium">&lt; 1 min ago</strong>
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Database className="h-3.5 w-3.5 text-[#64748B]" />
-                  <span>Radar State: <strong className="text-white font-medium">Synchronized</strong></span>
+                  <span>
+                    Radar State: <strong className="text-white font-medium">Synchronized</strong>
+                  </span>
                 </div>
               </div>
             </div>
@@ -175,8 +180,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
           <div className="leading-relaxed">
             <strong className="text-white font-semibold">Truthful Valuation Guarantee: </strong>
             Tokens without verified market liquidity or oracle depth are categorized as{" "}
-            <span className="text-amber-400 font-mono font-semibold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Unpriced</span>{" "}
-            rather than deceptively shown as $0.00. Unverified historical charts and fake balances are strictly prohibited.
+            <span className="text-amber-400 font-mono font-semibold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+              Unpriced
+            </span>{" "}
+            rather than deceptively shown as $0.00. Unverified historical charts and fake balances
+            are strictly prohibited.
           </div>
         </div>
 
@@ -296,26 +304,33 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         <div className="flex items-center gap-3">
                           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A2333] p-1">
                             <svg width="16" height="16" viewBox="0 0 784.37 1277.39" fill="none">
-                              <path d="M392.07 0L383.5 29.11V874.74L392.07 883.29L784.13 651.54L392.07 0Z" fill="#8A92B2"/>
-                              <path d="M392.07 0L0 651.54L392.07 883.29V472.33V0Z" fill="#62688F"/>
-                              <path d="M392.07 956.52L387.24 962.41V1277.39L392.07 1277.39L784.37 724.89L392.07 956.52Z" fill="#8A92B2"/>
-                              <path d="M392.07 1277.39V956.52L0 724.89L392.07 1277.39Z" fill="#62688F"/>
+                              <path
+                                d="M392.07 0L383.5 29.11V874.74L392.07 883.29L784.13 651.54L392.07 0Z"
+                                fill="#8A92B2"
+                              />
+                              <path d="M392.07 0L0 651.54L392.07 883.29V472.33V0Z" fill="#62688F" />
+                              <path
+                                d="M392.07 956.52L387.24 962.41V1277.39L392.07 1277.39L784.37 724.89L392.07 956.52Z"
+                                fill="#8A92B2"
+                              />
+                              <path
+                                d="M392.07 1277.39V956.52L0 724.89L392.07 1277.39Z"
+                                fill="#62688F"
+                              />
                             </svg>
                           </div>
                           <div>
-                            <div className="font-sans font-bold text-white text-sm">Ethereum (ETH)</div>
+                            <div className="font-sans font-bold text-white text-sm">
+                              Ethereum (ETH)
+                            </div>
                             <div className="text-[11px] text-[#94A3B8]">Native Coin</div>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-[#94A3B8]">Native</td>
-                      <td className="py-4 px-4 text-right text-white font-medium">
-                        482.1054 ETH
-                      </td>
+                      <td className="py-4 px-4 text-right text-white font-medium">482.1054 ETH</td>
                       <td className="py-4 px-4 text-right text-white">$3,420.12</td>
-                      <td className="py-4 px-4 text-right text-white font-bold">
-                        $1,648,858.33
-                      </td>
+                      <td className="py-4 px-4 text-right text-white font-bold">$1,648,858.33</td>
                       <td className="py-4 px-5 text-center">
                         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-400">
                           <CheckCircle2 className="h-3 w-3" />
@@ -330,11 +345,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#2775CA]/20 p-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                               <circle cx="12" cy="12" r="10" fill="#2775CA" />
-                              <path d="M12.75 6.5C10.68 6.5 9 7.84 9 9.5C9 12.5 15 11.5 15 14.5C15 16.16 13.32 17.5 11.25 17.5C9.72 17.5 8.37 16.74 7.68 15.62L6.15 16.76C7.23 18.35 9.11 19.5 11.25 19.5V21H12.75V19.5C14.82 19.5 16.5 18.16 16.5 16.5C16.5 13.5 10.5 14.5 10.5 11.5C10.5 9.84 12.18 8.5 14.25 8.5C15.54 8.5 16.69 9.09 17.38 10.02L18.82 8.78C17.78 7.37 16.13 6.5 14.25 6.5V5H12.75V6.5Z" fill="white"/>
+                              <path
+                                d="M12.75 6.5C10.68 6.5 9 7.84 9 9.5C9 12.5 15 11.5 15 14.5C15 16.16 13.32 17.5 11.25 17.5C9.72 17.5 8.37 16.74 7.68 15.62L6.15 16.76C7.23 18.35 9.11 19.5 11.25 19.5V21H12.75V19.5C14.82 19.5 16.5 18.16 16.5 16.5C16.5 13.5 10.5 14.5 10.5 11.5C10.5 9.84 12.18 8.5 14.25 8.5C15.54 8.5 16.69 9.09 17.38 10.02L18.82 8.78C17.78 7.37 16.13 6.5 14.25 6.5V5H12.75V6.5Z"
+                                fill="white"
+                              />
                             </svg>
                           </div>
                           <div>
-                            <div className="font-sans font-bold text-white text-sm">USD Coin (USDC)</div>
+                            <div className="font-sans font-bold text-white text-sm">
+                              USD Coin (USDC)
+                            </div>
                             <div className="text-[11px] text-[#94A3B8]">ERC-20 Standard</div>
                           </div>
                         </div>
@@ -344,9 +364,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         194,072.21 USDC
                       </td>
                       <td className="py-4 px-4 text-right text-white">$1.00</td>
-                      <td className="py-4 px-4 text-right text-white font-bold">
-                        $194,072.21
-                      </td>
+                      <td className="py-4 px-4 text-right text-white font-bold">$194,072.21</td>
                       <td className="py-4 px-5 text-center">
                         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-400">
                           <CheckCircle2 className="h-3 w-3" />
@@ -359,7 +377,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00ECB5]/10 border border-[#00ECB5]/30 p-1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[#00ECB5]">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              className="text-[#00ECB5]"
+                            >
                               <path
                                 d="M4 19L11 5L15 12L13 15.5L10.5 11L6.5 19H4ZM14 19L20 9L18 5.5L10.5 19H14Z"
                                 fill="currentColor"
@@ -367,7 +391,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                             </svg>
                           </div>
                           <div>
-                            <div className="font-sans font-bold text-white text-sm">Algorand (ALGO)</div>
+                            <div className="font-sans font-bold text-white text-sm">
+                              Algorand (ALGO)
+                            </div>
                             <div className="text-[11px] text-[#94A3B8]">AVM Native</div>
                           </div>
                         </div>
@@ -377,9 +403,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         150,000.00 ALGO
                       </td>
                       <td className="py-4 px-4 text-right text-white">$0.20</td>
-                      <td className="py-4 px-4 text-right text-[#00ECB5] font-bold">
-                        $30,000.00
-                      </td>
+                      <td className="py-4 px-4 text-right text-[#00ECB5] font-bold">$30,000.00</td>
                       <td className="py-4 px-5 text-center">
                         <span className="inline-flex items-center gap-1 rounded-full border border-[#00ECB5]/30 bg-[#00ECB5]/10 px-2.5 py-0.5 text-[11px] text-[#00ECB5]">
                           <CheckCircle2 className="h-3 w-3" />
@@ -396,24 +420,22 @@ export default function WalletDashboardPage({ params }: PageProps) {
                             !
                           </div>
                           <div>
-                            <div className="font-sans font-bold text-white text-sm">Community Genesis DAO</div>
+                            <div className="font-sans font-bold text-white text-sm">
+                              Community Genesis DAO
+                            </div>
                             <div className="text-[11px] text-amber-400/80">Illiquid Asset</div>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-[#94A3B8]">0x742d...44e1</td>
-                      <td className="py-4 px-4 text-right text-white font-medium">
-                        25,000.00 CGD
-                      </td>
+                      <td className="py-4 px-4 text-right text-white font-medium">25,000.00 CGD</td>
                       <td className="py-4 px-4 text-right">
                         <span className="inline-flex rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-400 font-mono">
                           Unpriced
                         </span>
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <span className="text-amber-400 text-xs font-mono">
-                          Pending Pricing
-                        </span>
+                        <span className="text-amber-400 text-xs font-mono">Pending Pricing</span>
                       </td>
                       <td className="py-4 px-5 text-center">
                         <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] text-amber-400">
@@ -464,7 +486,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
               </h3>
               <p className="text-sm text-[#94A3B8] font-sans leading-relaxed">
                 Raw ledger event ingestion with historical gas auditing is in scheduled deployment.
-                Zero simulated transactions are displayed until real-time WebSocket feeds pass verification.
+                Zero simulated transactions are displayed until real-time WebSocket feeds pass
+                verification.
               </p>
               <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs font-mono text-[#94A3B8]">
                 <span className="rounded-full border border-[#1A2333] bg-[#000000] px-3 py-1">
@@ -486,7 +509,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     GET /v1/wallets/:chain/:address/live
                   </h3>
                   <p className="text-xs text-[#94A3B8] mt-1 font-sans">
-                    Guarded by the Fastify x402 plugin. Returns HTTP 402 until verified micro-settlement on Algorand.
+                    Guarded by the Fastify x402 plugin. Returns HTTP 402 until verified
+                    micro-settlement on Algorand.
                   </p>
                 </div>
                 <button
@@ -506,7 +530,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 </div>
                 <div>Price: 0.010000 USDC (Asset 31566704 on Algorand Mainnet)</div>
                 <div>Rail: Algorand Fast Finality Settlement (&lt; 2.8s)</div>
-                <div>Response: Fresh, non-cached portfolio snapshot with unpriced asset flagging</div>
+                <div>
+                  Response: Fresh, non-cached portfolio snapshot with unpriced asset flagging
+                </div>
               </div>
             </div>
           )}
@@ -577,15 +603,21 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 </div>
 
                 <div className="rounded-xl bg-[#000000] p-4 border border-[#1A2333] text-[11px] font-mono text-white overflow-x-auto">
-                  <pre>{JSON.stringify({
-                    status: "success",
-                    source: "live",
-                    stale: false,
-                    target: rawAddress,
-                    settledRound: 41892105,
-                    settlementTxId: "2J74FXE67PQ...",
-                    capturedAt: new Date().toISOString()
-                  }, null, 2)}</pre>
+                  <pre>
+                    {JSON.stringify(
+                      {
+                        status: "success",
+                        source: "live",
+                        stale: false,
+                        target: rawAddress,
+                        settledRound: 41892105,
+                        settlementTxId: "2J74FXE67PQ...",
+                        capturedAt: new Date().toISOString()
+                      },
+                      null,
+                      2
+                    )}
+                  </pre>
                 </div>
 
                 <button

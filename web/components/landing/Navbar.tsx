@@ -29,11 +29,17 @@ export function Navbar() {
             <span className="text-white font-medium">Algorand Mainnet</span>
           </div>
           <span className="text-[#1A2333]">|</span>
-          <span>Block Time: <strong className="text-[#00ECB5] font-semibold">2.8s</strong></span>
+          <span>
+            Block Time: <strong className="text-[#00ECB5] font-semibold">2.8s</strong>
+          </span>
           <span className="text-[#1A2333]">|</span>
-          <span>Finality: <strong className="text-white font-semibold">Instant</strong></span>
+          <span>
+            Finality: <strong className="text-white font-semibold">Instant</strong>
+          </span>
           <span className="text-[#1A2333]">|</span>
-          <span>Avg Fee: <strong className="text-white font-semibold">&lt;$0.001</strong></span>
+          <span>
+            Avg Fee: <strong className="text-white font-semibold">&lt;$0.001</strong>
+          </span>
           <span className="text-[#1A2333]">|</span>
           <span className="text-[#00ECB5]">x402 Protocol Guard Active</span>
         </div>
@@ -45,7 +51,13 @@ export function Navbar() {
           <Link href="/" className="group flex items-center gap-2.5 text-decoration-none">
             {/* Algorand Angle Geometric Monogram */}
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#1A2333] bg-[#0D111A] group-hover:border-[#00ECB5]/60 transition-all shadow-md group-hover:shadow-[0_0_15px_rgba(0,236,181,0.2)]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#00ECB5]">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-[#00ECB5]"
+              >
                 <path
                   d="M4 19L11 5L15 12L13 15.5L10.5 11L6.5 19H4ZM14 19L20 9L18 5.5L10.5 19H14Z"
                   fill="currentColor"
@@ -69,28 +81,16 @@ export function Navbar() {
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#94A3B8]">
-          <a
-            href="#features"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#features" className="hover:text-white transition-colors">
             Capabilities
           </a>
-          <a
-            href="#supported-chains"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#supported-chains" className="hover:text-white transition-colors">
             Ecosystems
           </a>
-          <a
-            href="#developer-specs"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#developer-specs" className="hover:text-white transition-colors">
             x402 Protocol
           </a>
-          <a
-            href="/docs"
-            className="flex items-center gap-1 hover:text-white transition-colors"
-          >
+          <a href="/docs" className="flex items-center gap-1 hover:text-white transition-colors">
             <span>API Docs</span>
             <ExternalLink className="h-3.5 w-3.5 opacity-60" />
           </a>
@@ -129,8 +129,13 @@ export function Navbar() {
           </div>
 
           <div className="py-2 border-y border-[#1A2333] text-[11px] font-mono text-[#94A3B8] space-y-1">
-            <div>Algorand Block Time: <strong className="text-[#00ECB5]">2.8s</strong></div>
-            <div>Finality: <strong className="text-white">Instant</strong> · Fee: <strong className="text-white">&lt;$0.001</strong></div>
+            <div>
+              Algorand Block Time: <strong className="text-[#00ECB5]">2.8s</strong>
+            </div>
+            <div>
+              Finality: <strong className="text-white">Instant</strong> · Fee:{" "}
+              <strong className="text-white">&lt;$0.001</strong>
+            </div>
           </div>
 
           <nav className="flex flex-col space-y-2 text-sm text-[#94A3B8]">

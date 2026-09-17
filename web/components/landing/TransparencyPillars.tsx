@@ -41,8 +41,8 @@ export function TransparencyPillars() {
             transition={{ delay: 0.2 }}
             className="mt-4 text-base sm:text-lg text-[#94A3B8] leading-relaxed font-sans max-w-2xl mx-auto"
           >
-            Real on-chain telemetry without synthetic zero valuations, slow polling,
-            or recurring subscription lock-ins.
+            Real on-chain telemetry without synthetic zero valuations, slow polling, or recurring
+            subscription lock-ins.
           </motion.p>
         </div>
 
@@ -180,7 +180,8 @@ export function TransparencyPillars() {
                 </h3>
 
                 <p className="mt-2 text-sm text-[#94A3B8] leading-relaxed font-sans">
-                  Most trackers show synthetic zeros. Growtrack protects your actual net worth by verifying oracle depth.
+                  Most trackers show synthetic zeros. Growtrack protects your actual net worth by
+                  verifying oracle depth.
                 </p>
 
                 {/* Sleek Oracle Verification Shield Graphic */}
@@ -223,7 +224,9 @@ export function TransparencyPillars() {
                       </div>
                       <div className="text-right">
                         <div className="text-white font-bold text-sm">$3,450.20</div>
-                        <div className="text-[#00ECB5] text-[11px] font-semibold">100% Reliable</div>
+                        <div className="text-[#00ECB5] text-[11px] font-semibold">
+                          100% Reliable
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -269,8 +272,8 @@ export function TransparencyPillars() {
                 </h3>
 
                 <p className="mt-2 text-sm text-[#94A3B8] leading-relaxed font-sans">
-                  No recurring SaaS fees or credit cards. Unlock deep wallet telemetry and risk profiling
-                  per-query via Algorand micro-rails.
+                  No recurring SaaS fees or credit cards. Unlock deep wallet telemetry and risk
+                  profiling per-query via Algorand micro-rails.
                 </p>
 
                 {/* Interactive x402 Algorand Micropayment Receipt Widget */}
@@ -285,11 +288,19 @@ export function TransparencyPillars() {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${unlockedReceipt ? "bg-[#00ECB5] text-black" : "bg-[#1A2333] text-white"}`}>
-                        {unlockedReceipt ? <Check className="h-4 w-4 stroke-[3]" /> : <Zap className="h-3.5 w-3.5" />}
+                      <div
+                        className={`h-7 w-7 rounded-lg flex items-center justify-center ${unlockedReceipt ? "bg-[#00ECB5] text-black" : "bg-[#1A2333] text-white"}`}
+                      >
+                        {unlockedReceipt ? (
+                          <Check className="h-4 w-4 stroke-[3]" />
+                        ) : (
+                          <Zap className="h-3.5 w-3.5" />
+                        )}
                       </div>
                       <div className="text-left">
-                        <div className="font-bold">{unlockedReceipt ? "Receipt Verified" : "Pay $0.01 USDC"}</div>
+                        <div className="font-bold">
+                          {unlockedReceipt ? "Receipt Verified" : "Pay $0.01 USDC"}
+                        </div>
                         <div className="text-[10px] text-[#94A3B8]">via Algorand Mainnet</div>
                       </div>
                     </div>

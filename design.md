@@ -1,6 +1,7 @@
 # Growtrack Design Tokens - Algorand Official Visual Identity
 
 ## Algorand Core Color Tokens
+
 - Canvas Base: #000000 (Pure Jet Black)
 - Surface Panels: #0D1117 (Matte Carbon Glass) with 1px border #1B2332
 - Primary Text: #FFFFFF (Crisp Pure White)
@@ -13,6 +14,7 @@
   - HTTP 402 Paywall: #7C3AED
 
 ## Typography & Components
+
 - Font: Inter / Geist Sans for sharp typography; JetBrains Mono for addresses and numbers.
 - Buttons: High-visibility Algorand Mint (`bg-[#00ECB5] text-black font-semibold hover:shadow-[0_0_25px_rgba(0,236,181,0.4)]`).
 - Border Radius: Minimal, sharp radii (`rounded-xl` / `rounded-lg`).

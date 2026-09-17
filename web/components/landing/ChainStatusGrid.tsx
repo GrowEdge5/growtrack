@@ -20,7 +20,8 @@ const CHAINS: ChainItem[] = [
     id: "ethereum",
     name: "Ethereum",
     symbol: "Ξ",
-    symbolStyle: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 group-hover:bg-indigo-500 group-hover:text-white",
+    symbolStyle:
+      "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 group-hover:bg-indigo-500 group-hover:text-white",
     status: "live",
     statusLabel: "Live ✓",
     statusBadge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
@@ -31,7 +32,8 @@ const CHAINS: ChainItem[] = [
     id: "algorand",
     name: "Algorand",
     symbol: "A",
-    symbolStyle: "bg-[#00D2B4]/10 text-[#00D2B4] border-[#00D2B4]/30 group-hover:bg-[#00D2B4] group-hover:text-[#090A0F]",
+    symbolStyle:
+      "bg-[#00D2B4]/10 text-[#00D2B4] border-[#00D2B4]/30 group-hover:bg-[#00D2B4] group-hover:text-[#090A0F]",
     status: "live_native",
     statusLabel: "Live Native ✓",
     statusBadge: "border-[#00D2B4]/30 bg-[#00D2B4]/10 text-[#00D2B4]",
@@ -42,7 +44,8 @@ const CHAINS: ChainItem[] = [
     id: "solana",
     name: "Solana",
     symbol: "S",
-    symbolStyle: "bg-purple-500/10 text-purple-400 border-purple-500/30 group-hover:bg-purple-500 group-hover:text-white",
+    symbolStyle:
+      "bg-purple-500/10 text-purple-400 border-purple-500/30 group-hover:bg-purple-500 group-hover:text-white",
     status: "upcoming",
     statusLabel: "Coming Q3",
     statusBadge: "border-[#1E2436] bg-[#090A0F] text-[#94A3B8]",
@@ -53,7 +56,8 @@ const CHAINS: ChainItem[] = [
     id: "bitcoin",
     name: "Bitcoin",
     symbol: "₿",
-    symbolStyle: "bg-amber-500/10 text-amber-400 border-amber-500/30 group-hover:bg-amber-500 group-hover:text-[#090A0F]",
+    symbolStyle:
+      "bg-amber-500/10 text-amber-400 border-amber-500/30 group-hover:bg-amber-500 group-hover:text-[#090A0F]",
     status: "upcoming",
     statusLabel: "Coming Q3",
     statusBadge: "border-[#1E2436] bg-[#090A0F] text-[#94A3B8]",
@@ -66,7 +70,10 @@ export function ChainStatusGrid() {
   const [hoveredChain, setHoveredChain] = useState<string | null>(null);
 
   return (
-    <section id="supported-chains" className="py-16 border-b border-[#1E2436] bg-[#090A0F] relative">
+    <section
+      id="supported-chains"
+      className="py-16 border-b border-[#1E2436] bg-[#090A0F] relative"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Strip Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
@@ -114,9 +121,7 @@ export function ChainStatusGrid() {
 
                   {/* Name & Standard highlight on hover */}
                   <div>
-                    <div className="font-sans font-bold text-white text-sm">
-                      {chain.name}
-                    </div>
+                    <div className="font-sans font-bold text-white text-sm">{chain.name}</div>
                     <div className="text-xs font-mono transition-colors duration-200 text-[#94A3B8] group-hover:text-[#00D2B4]">
                       {chain.standards}
                     </div>

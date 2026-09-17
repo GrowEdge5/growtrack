@@ -78,7 +78,10 @@ export function detectAddressFormat(raw: string): DetectedFormat {
     };
   }
 
-  if (/^(bc1|tb1)[023456789acdefghjklmnpqrstuvwxyz]{8,87}$/i.test(query) || /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(query)) {
+  if (
+    /^(bc1|tb1)[023456789acdefghjklmnpqrstuvwxyz]{8,87}$/i.test(query) ||
+    /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(query)
+  ) {
     return {
       chain: "bitcoin",
       label: "Bitcoin",
@@ -134,10 +137,11 @@ export function HeroSearch() {
   return (
     <section className="relative overflow-hidden pt-20 pb-28 sm:pt-28 sm:pb-36 bg-[#000000] border-b border-[#1A2333]">
       {/* Official Algorand Mint Ambient Radial Glow */}
-      <div 
+      <div
         className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[650px] w-[1100px] opacity-100 blur-[130px]"
         style={{
-          background: "radial-gradient(ellipse at center, rgba(0, 236, 181, 0.12) 0%, rgba(0, 236, 181, 0.04) 40%, transparent 70%)"
+          background:
+            "radial-gradient(ellipse at center, rgba(0, 236, 181, 0.12) 0%, rgba(0, 236, 181, 0.04) 40%, transparent 70%)"
         }}
       />
 
@@ -175,8 +179,8 @@ export function HeroSearch() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-6 text-base sm:text-xl text-[#94A3B8] max-w-2xl mx-auto leading-relaxed font-sans"
         >
-          Real balances, verified oracle pricing, and instant intelligence across Ethereum and Algorand.
-          Zero fake valuations. Zero custody required.
+          Real balances, verified oracle pricing, and instant intelligence across Ethereum and
+          Algorand. Zero fake valuations. Zero custody required.
         </motion.p>
 
         {/* Ingestion Search Box with Algorand Electric Mint CTA */}
@@ -370,12 +374,18 @@ export function HeroSearch() {
                   {/* Authentic Native ETH SVG */}
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1A2333] p-1.5">
                     <svg width="20" height="20" viewBox="0 0 784.37 1277.39" fill="none">
-                      <path d="M392.07 0L383.5 29.11V874.74L392.07 883.29L784.13 651.54L392.07 0Z" fill="#8A92B2"/>
-                      <path d="M392.07 0L0 651.54L392.07 883.29V472.33V0Z" fill="#62688F"/>
-                      <path d="M392.07 956.52L387.24 962.41V1277.39L392.07 1277.39L784.37 724.89L392.07 956.52Z" fill="#8A92B2"/>
-                      <path d="M392.07 1277.39V956.52L0 724.89L392.07 1277.39Z" fill="#62688F"/>
-                      <path d="M392.07 883.29L784.13 651.54L392.07 472.33V883.29Z" fill="#454A75"/>
-                      <path d="M0 651.54L392.07 883.29V472.33L0 651.54Z" fill="#62688F"/>
+                      <path
+                        d="M392.07 0L383.5 29.11V874.74L392.07 883.29L784.13 651.54L392.07 0Z"
+                        fill="#8A92B2"
+                      />
+                      <path d="M392.07 0L0 651.54L392.07 883.29V472.33V0Z" fill="#62688F" />
+                      <path
+                        d="M392.07 956.52L387.24 962.41V1277.39L392.07 1277.39L784.37 724.89L392.07 956.52Z"
+                        fill="#8A92B2"
+                      />
+                      <path d="M392.07 1277.39V956.52L0 724.89L392.07 1277.39Z" fill="#62688F" />
+                      <path d="M392.07 883.29L784.13 651.54L392.07 472.33V883.29Z" fill="#454A75" />
+                      <path d="M0 651.54L392.07 883.29V472.33L0 651.54Z" fill="#62688F" />
                     </svg>
                   </div>
                   <div>
@@ -394,7 +404,13 @@ export function HeroSearch() {
                 <div className="flex items-center gap-3">
                   {/* Official Algorand Vector SVG */}
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00ECB5]/10 border border-[#00ECB5]/20 p-1.5">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#00ECB5]">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="text-[#00ECB5]"
+                    >
                       <path
                         d="M4 19L11 5L15 12L13 15.5L10.5 11L6.5 19H4ZM14 19L20 9L18 5.5L10.5 19H14Z"
                         fill="currentColor"
@@ -419,7 +435,10 @@ export function HeroSearch() {
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2775CA]/15 border border-[#2775CA]/30 p-1.5">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" fill="#2775CA" />
-                      <path d="M12.75 6.5C10.68 6.5 9 7.84 9 9.5C9 12.5 15 11.5 15 14.5C15 16.16 13.32 17.5 11.25 17.5C9.72 17.5 8.37 16.74 7.68 15.62L6.15 16.76C7.23 18.35 9.11 19.5 11.25 19.5V21H12.75V19.5C14.82 19.5 16.5 18.16 16.5 16.5C16.5 13.5 10.5 14.5 10.5 11.5C10.5 9.84 12.18 8.5 14.25 8.5C15.54 8.5 16.69 9.09 17.38 10.02L18.82 8.78C17.78 7.37 16.13 6.5 14.25 6.5V5H12.75V6.5Z" fill="white"/>
+                      <path
+                        d="M12.75 6.5C10.68 6.5 9 7.84 9 9.5C9 12.5 15 11.5 15 14.5C15 16.16 13.32 17.5 11.25 17.5C9.72 17.5 8.37 16.74 7.68 15.62L6.15 16.76C7.23 18.35 9.11 19.5 11.25 19.5V21H12.75V19.5C14.82 19.5 16.5 18.16 16.5 16.5C16.5 13.5 10.5 14.5 10.5 11.5C10.5 9.84 12.18 8.5 14.25 8.5C15.54 8.5 16.69 9.09 17.38 10.02L18.82 8.78C17.78 7.37 16.13 6.5 14.25 6.5V5H12.75V6.5Z"
+                        fill="white"
+                      />
                     </svg>
                   </div>
                   <div>

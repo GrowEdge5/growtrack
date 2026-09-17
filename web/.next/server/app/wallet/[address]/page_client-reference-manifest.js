@@ -1,1 +1,547 @@
-globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/wallet/[address]/page"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{"(app-pages-browser)/./components/landing/ChainStatusGrid.tsx":{"*":{"id":"(ssr)/./components/landing/ChainStatusGrid.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/Footer.tsx":{"*":{"id":"(ssr)/./components/landing/Footer.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/HeroSearch.tsx":{"*":{"id":"(ssr)/./components/landing/HeroSearch.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/Navbar.tsx":{"*":{"id":"(ssr)/./components/landing/Navbar.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/TransparencyPillars.tsx":{"*":{"id":"(ssr)/./components/landing/TransparencyPillars.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx":{"*":{"id":"(ssr)/./components/landing/X402ProtocolFlow.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/builtin/global-error.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/client-page.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/client-segment.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/layout-router.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/metadata/async-metadata.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/render-from-template-context.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js":{"*":{"id":"(ssr)/../node_modules/next/dist/lib/framework/boundary-components.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js":{"*":{"id":"(ssr)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":{"*":{"id":"(ssr)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./app/wallet/[address]/page.tsx":{"*":{"id":"(ssr)/./app/wallet/[address]/page.tsx","name":"*","chunks":[],"async":false}}},"edgeSSRModuleMapping":{},"clientModules":{"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\font\\google\\target.css?{\"path\":\"app\\\\layout.tsx\",\"import\":\"Inter\",\"arguments\":[{\"subsets\":[\"latin\"],\"variable\":\"--font-inter\"}],\"variableName\":\"inter\"}":{"id":"(app-pages-browser)/../node_modules/next/font/google/target.css?{\"path\":\"app\\\\layout.tsx\",\"import\":\"Inter\",\"arguments\":[{\"subsets\":[\"latin\"],\"variable\":\"--font-inter\"}],\"variableName\":\"inter\"}","name":"*","chunks":["app/layout","static/chunks/app/layout.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\font\\google\\target.css?{\"path\":\"app\\\\layout.tsx\",\"import\":\"Geist_Mono\",\"arguments\":[{\"subsets\":[\"latin\"],\"variable\":\"--font-mono\"}],\"variableName\":\"mono\"}":{"id":"(app-pages-browser)/../node_modules/next/font/google/target.css?{\"path\":\"app\\\\layout.tsx\",\"import\":\"Geist_Mono\",\"arguments\":[{\"subsets\":[\"latin\"],\"variable\":\"--font-mono\"}],\"variableName\":\"mono\"}","name":"*","chunks":["app/layout","static/chunks/app/layout.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\app\\globals.css":{"id":"(app-pages-browser)/./app/globals.css","name":"*","chunks":["app/layout","static/chunks/app/layout.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\ChainStatusGrid.tsx":{"id":"(app-pages-browser)/./components/landing/ChainStatusGrid.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\Footer.tsx":{"id":"(app-pages-browser)/./components/landing/Footer.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\HeroSearch.tsx":{"id":"(app-pages-browser)/./components/landing/HeroSearch.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\Navbar.tsx":{"id":"(app-pages-browser)/./components/landing/Navbar.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\TransparencyPillars.tsx":{"id":"(app-pages-browser)/./components/landing/TransparencyPillars.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\X402ProtocolFlow.tsx":{"id":"(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx","name":"*","chunks":["app/page","static/chunks/app/page.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\builtin\\global-error.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\builtin\\global-error.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\client-page.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\client-page.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\client-segment.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\client-segment.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\http-access-fallback\\error-boundary.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\http-access-fallback\\error-boundary.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\layout-router.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\layout-router.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\metadata\\async-metadata.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\metadata\\async-metadata.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\render-from-template-context.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\render-from-template-context.js":{"id":"(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\lib\\framework\\boundary-components.js":{"id":"(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\lib\\framework\\boundary-components.js":{"id":"(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\lib\\metadata\\generate\\icon-mark.js":{"id":"(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\lib\\metadata\\generate\\icon-mark.js":{"id":"(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\next-devtools\\userspace\\app\\segment-explorer-node.js":{"id":"(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\next-devtools\\userspace\\app\\segment-explorer-node.js":{"id":"(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js","name":"*","chunks":["app-pages-internals","static/chunks/app-pages-internals.js"],"async":false},"D:\\programing\\hackathon\\growtrack\\web\\app\\wallet\\[address]\\page.tsx":{"id":"(app-pages-browser)/./app/wallet/[address]/page.tsx","name":"*","chunks":["app/wallet/[address]/page","static/chunks/app/wallet/%5Baddress%5D/page.js"],"async":false}},"entryCSSFiles":{"D:\\programing\\hackathon\\growtrack\\web\\":[],"D:\\programing\\hackathon\\growtrack\\web\\app\\layout":[{"inlined":false,"path":"static/css/app/layout.css"}],"D:\\programing\\hackathon\\growtrack\\web\\app\\page":[],"D:\\programing\\hackathon\\growtrack\\web\\app\\wallet\\[address]\\page":[]},"rscModuleMapping":{"(app-pages-browser)/./app/globals.css":{"*":{"id":"(rsc)/./app/globals.css","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/ChainStatusGrid.tsx":{"*":{"id":"(rsc)/./components/landing/ChainStatusGrid.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/Footer.tsx":{"*":{"id":"(rsc)/./components/landing/Footer.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/HeroSearch.tsx":{"*":{"id":"(rsc)/./components/landing/HeroSearch.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/Navbar.tsx":{"*":{"id":"(rsc)/./components/landing/Navbar.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/TransparencyPillars.tsx":{"*":{"id":"(rsc)/./components/landing/TransparencyPillars.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx":{"*":{"id":"(rsc)/./components/landing/X402ProtocolFlow.tsx","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/builtin/global-error.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/client-page.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/client-segment.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/layout-router.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/metadata/async-metadata.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":{"*":{"id":"(rsc)/../node_modules/next/dist/client/components/render-from-template-context.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js":{"*":{"id":"(rsc)/../node_modules/next/dist/lib/framework/boundary-components.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js":{"*":{"id":"(rsc)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":{"*":{"id":"(rsc)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/./app/wallet/[address]/page.tsx":{"*":{"id":"(rsc)/./app/wallet/[address]/page.tsx","name":"*","chunks":[],"async":false}}},"edgeRscModuleMapping":{"(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/builtin/global-error.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/client-page.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/client-segment.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/layout-router.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/metadata/async-metadata.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":{"*":{"id":"(ssr)/../node_modules/next/dist/client/components/render-from-template-context.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js":{"*":{"id":"(ssr)/../node_modules/next/dist/lib/framework/boundary-components.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js":{"*":{"id":"(ssr)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js","name":"*","chunks":[],"async":false}},"(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":{"*":{"id":"(ssr)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js","name":"*","chunks":[],"async":false}}}}
+globalThis.__RSC_MANIFEST = globalThis.__RSC_MANIFEST || {};
+globalThis.__RSC_MANIFEST["/wallet/[address]/page"] = {
+  moduleLoading: { prefix: "/_next/" },
+  ssrModuleMapping: {
+    "(app-pages-browser)/./components/landing/ChainStatusGrid.tsx": {
+      "*": {
+        id: "(ssr)/./components/landing/ChainStatusGrid.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/./components/landing/Footer.tsx": {
+      "*": { id: "(ssr)/./components/landing/Footer.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/HeroSearch.tsx": {
+      "*": { id: "(ssr)/./components/landing/HeroSearch.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/Navbar.tsx": {
+      "*": { id: "(ssr)/./components/landing/Navbar.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/TransparencyPillars.tsx": {
+      "*": {
+        id: "(ssr)/./components/landing/TransparencyPillars.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx": {
+      "*": {
+        id: "(ssr)/./components/landing/X402ProtocolFlow.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/builtin/global-error.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/client-page.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/client-segment.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/layout-router.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/metadata/async-metadata.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/client/components/render-from-template-context.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/lib/framework/boundary-components.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/./app/wallet/[address]/page.tsx": {
+      "*": { id: "(ssr)/./app/wallet/[address]/page.tsx", name: "*", chunks: [], async: false }
+    }
+  },
+  edgeSSRModuleMapping: {},
+  clientModules: {
+    'D:\\programing\\hackathon\\growtrack\\node_modules\\next\\font\\google\\target.css?{"path":"app\\\\layout.tsx","import":"Inter","arguments":[{"subsets":["latin"],"variable":"--font-inter"}],"variableName":"inter"}':
+      {
+        id: '(app-pages-browser)/../node_modules/next/font/google/target.css?{"path":"app\\\\layout.tsx","import":"Inter","arguments":[{"subsets":["latin"],"variable":"--font-inter"}],"variableName":"inter"}',
+        name: "*",
+        chunks: ["app/layout", "static/chunks/app/layout.js"],
+        async: false
+      },
+    'D:\\programing\\hackathon\\growtrack\\node_modules\\next\\font\\google\\target.css?{"path":"app\\\\layout.tsx","import":"Geist_Mono","arguments":[{"subsets":["latin"],"variable":"--font-mono"}],"variableName":"mono"}':
+      {
+        id: '(app-pages-browser)/../node_modules/next/font/google/target.css?{"path":"app\\\\layout.tsx","import":"Geist_Mono","arguments":[{"subsets":["latin"],"variable":"--font-mono"}],"variableName":"mono"}',
+        name: "*",
+        chunks: ["app/layout", "static/chunks/app/layout.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\web\\app\\globals.css": {
+      id: "(app-pages-browser)/./app/globals.css",
+      name: "*",
+      chunks: ["app/layout", "static/chunks/app/layout.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\ChainStatusGrid.tsx": {
+      id: "(app-pages-browser)/./components/landing/ChainStatusGrid.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\Footer.tsx": {
+      id: "(app-pages-browser)/./components/landing/Footer.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\HeroSearch.tsx": {
+      id: "(app-pages-browser)/./components/landing/HeroSearch.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\Navbar.tsx": {
+      id: "(app-pages-browser)/./components/landing/Navbar.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\TransparencyPillars.tsx": {
+      id: "(app-pages-browser)/./components/landing/TransparencyPillars.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\web\\components\\landing\\X402ProtocolFlow.tsx": {
+      id: "(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx",
+      name: "*",
+      chunks: ["app/page", "static/chunks/app/page.js"],
+      async: false
+    },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\builtin\\global-error.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\builtin\\global-error.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\client-page.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\client-page.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\client-segment.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\client-segment.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\http-access-fallback\\error-boundary.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\http-access-fallback\\error-boundary.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\layout-router.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\layout-router.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\metadata\\async-metadata.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\metadata\\async-metadata.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\client\\components\\render-from-template-context.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\client\\components\\render-from-template-context.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\lib\\framework\\boundary-components.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\lib\\framework\\boundary-components.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\lib\\metadata\\generate\\icon-mark.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\lib\\metadata\\generate\\icon-mark.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\next-devtools\\userspace\\app\\segment-explorer-node.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\node_modules\\next\\dist\\esm\\next-devtools\\userspace\\app\\segment-explorer-node.js":
+      {
+        id: "(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js",
+        name: "*",
+        chunks: ["app-pages-internals", "static/chunks/app-pages-internals.js"],
+        async: false
+      },
+    "D:\\programing\\hackathon\\growtrack\\web\\app\\wallet\\[address]\\page.tsx": {
+      id: "(app-pages-browser)/./app/wallet/[address]/page.tsx",
+      name: "*",
+      chunks: ["app/wallet/[address]/page", "static/chunks/app/wallet/%5Baddress%5D/page.js"],
+      async: false
+    }
+  },
+  entryCSSFiles: {
+    "D:\\programing\\hackathon\\growtrack\\web\\": [],
+    "D:\\programing\\hackathon\\growtrack\\web\\app\\layout": [
+      { inlined: false, path: "static/css/app/layout.css" }
+    ],
+    "D:\\programing\\hackathon\\growtrack\\web\\app\\page": [],
+    "D:\\programing\\hackathon\\growtrack\\web\\app\\wallet\\[address]\\page": []
+  },
+  rscModuleMapping: {
+    "(app-pages-browser)/./app/globals.css": {
+      "*": { id: "(rsc)/./app/globals.css", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/ChainStatusGrid.tsx": {
+      "*": {
+        id: "(rsc)/./components/landing/ChainStatusGrid.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/./components/landing/Footer.tsx": {
+      "*": { id: "(rsc)/./components/landing/Footer.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/HeroSearch.tsx": {
+      "*": { id: "(rsc)/./components/landing/HeroSearch.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/Navbar.tsx": {
+      "*": { id: "(rsc)/./components/landing/Navbar.tsx", name: "*", chunks: [], async: false }
+    },
+    "(app-pages-browser)/./components/landing/TransparencyPillars.tsx": {
+      "*": {
+        id: "(rsc)/./components/landing/TransparencyPillars.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/./components/landing/X402ProtocolFlow.tsx": {
+      "*": {
+        id: "(rsc)/./components/landing/X402ProtocolFlow.tsx",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/client/components/builtin/global-error.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/client/components/client-page.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/client/components/client-segment.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":
+      {
+        "*": {
+          id: "(rsc)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/client/components/layout-router.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/client/components/metadata/async-metadata.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":
+      {
+        "*": {
+          id: "(rsc)/../node_modules/next/dist/client/components/render-from-template-context.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/lib/framework/boundary-components.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js": {
+      "*": {
+        id: "(rsc)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":
+      {
+        "*": {
+          id: "(rsc)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/./app/wallet/[address]/page.tsx": {
+      "*": { id: "(rsc)/./app/wallet/[address]/page.tsx", name: "*", chunks: [], async: false }
+    }
+  },
+  edgeRscModuleMapping: {
+    "(app-pages-browser)/../node_modules/next/dist/client/components/builtin/global-error.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/builtin/global-error.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-page.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/client-page.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/client-segment.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/client-segment.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/client/components/http-access-fallback/error-boundary.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/layout-router.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/layout-router.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/metadata/async-metadata.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/client/components/metadata/async-metadata.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/client/components/render-from-template-context.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/client/components/render-from-template-context.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      },
+    "(app-pages-browser)/../node_modules/next/dist/lib/framework/boundary-components.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/lib/framework/boundary-components.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js": {
+      "*": {
+        id: "(ssr)/../node_modules/next/dist/lib/metadata/generate/icon-mark.js",
+        name: "*",
+        chunks: [],
+        async: false
+      }
+    },
+    "(app-pages-browser)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js":
+      {
+        "*": {
+          id: "(ssr)/../node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js",
+          name: "*",
+          chunks: [],
+          async: false
+        }
+      }
+  }
+};

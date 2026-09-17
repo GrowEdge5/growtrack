@@ -19,7 +19,8 @@ const FLOW_STEPS: StepDetail[] = [
     title: "Client Requests Protected Intelligence",
     badge: "HTTP GET",
     actor: "Client",
-    summary: "The consumer (dApp, agent, or analyst) initiates a call to fetch fresh real-time wallet analytics without needing an API key or monthly SaaS subscription.",
+    summary:
+      "The consumer (dApp, agent, or analyst) initiates a call to fetch fresh real-time wallet analytics without needing an API key or monthly SaaS subscription.",
     codeHeader: "Request (cURL)",
     codeSnippet: `curl -i -X GET "https://api.growtrack.pro/v1/wallets/ethereum/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045/live" \\
   -H "Accept: application/json" \\
@@ -30,7 +31,8 @@ const FLOW_STEPS: StepDetail[] = [
     title: "Server Returns HTTP 402 Payment Required",
     badge: "STATUS 402",
     actor: "Fastify Guard",
-    summary: "The x402 Fastify guard intercepts the unpaid request, returning Algorand settlement requirements directly in RFC-compliant response headers.",
+    summary:
+      "The x402 Fastify guard intercepts the unpaid request, returning Algorand settlement requirements directly in RFC-compliant response headers.",
     codeHeader: "Response Headers",
     codeSnippet: `HTTP/1.1 402 Payment Required
 Content-Type: application/json
@@ -46,7 +48,8 @@ X-402-Challenge: 4f89ac3e-908b-4a77-a641-79e7be9401d4`
     title: "Micro-Settlement Signed via Algorand Rails",
     badge: "AVM TXN",
     actor: "Algorand Rail",
-    summary: "The client's wallet or agent signs a 0.01 USDC micro-transaction on Algorand testnet/mainnet with sub-3s finality and sub-cent network fee.",
+    summary:
+      "The client's wallet or agent signs a 0.01 USDC micro-transaction on Algorand testnet/mainnet with sub-3s finality and sub-cent network fee.",
     codeHeader: "Algorand Transaction Note & Verification",
     codeSnippet: `// Signed via @algorandfoundation/algokit-utils / @perawallet/connect
 const signedPayment = await algodClient.sendRawTransaction({
@@ -63,7 +66,8 @@ const signedPayment = await algodClient.sendRawTransaction({
     title: "Premium Intelligence Payload Dispatched",
     badge: "STATUS 200",
     actor: "Fastify Guard",
-    summary: "With the settlement proof verified on Algorand nodes, the server unlocks the live wallet intelligence payload immediately with zero credit card friction.",
+    summary:
+      "With the settlement proof verified on Algorand nodes, the server unlocks the live wallet intelligence payload immediately with zero credit card friction.",
     codeHeader: "Unlocked JSON Response",
     codeSnippet: `HTTP/1.1 200 OK
 Content-Type: application/json
@@ -113,7 +117,8 @@ export function X402ProtocolFlow() {
             <div className="flex items-center gap-3">
               <Terminal className="h-4 w-4 text-[#00D2B4]" />
               <span className="text-white font-medium text-xs sm:text-sm">
-                [+] Developer Protocol Specifications & Architecture Logs (Fastify, BullMQ, RFC 9110)
+                [+] Developer Protocol Specifications & Architecture Logs (Fastify, BullMQ, RFC
+                9110)
               </span>
             </div>
             {isOpen ? (
@@ -142,9 +147,7 @@ export function X402ProtocolFlow() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#94A3B8]">
-                    {currentStep.codeHeader}
-                  </span>
+                  <span className="font-mono text-xs text-[#94A3B8]">{currentStep.codeHeader}</span>
                   <button
                     type="button"
                     onClick={handleCopy}
@@ -182,7 +185,9 @@ export function X402ProtocolFlow() {
                     >
                       <div className="flex items-center justify-between text-[11px] text-[#64748B] mb-1">
                         <span>0{step.id}</span>
-                        <span className="rounded bg-[#1E2436] px-1.5 py-0.5 text-white">{step.badge}</span>
+                        <span className="rounded bg-[#1E2436] px-1.5 py-0.5 text-white">
+                          {step.badge}
+                        </span>
                       </div>
                       <div className="truncate text-xs font-sans">{step.title}</div>
                     </button>
@@ -193,7 +198,9 @@ export function X402ProtocolFlow() {
               {/* Console Body */}
               <div className="p-6 space-y-4">
                 <div className="text-sm text-[#94A3B8] font-sans bg-[#090A0F] p-4 rounded-xl border border-[#1E2436]">
-                  <strong className="text-[#00D2B4] font-mono">Actor: {currentStep.actor} — </strong>
+                  <strong className="text-[#00D2B4] font-mono">
+                    Actor: {currentStep.actor} —{" "}
+                  </strong>
                   {currentStep.summary}
                 </div>
 
