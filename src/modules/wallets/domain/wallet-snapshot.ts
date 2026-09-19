@@ -47,6 +47,13 @@ export interface WalletSnapshot {
   nativeSymbol: string;
   provider: string;
   blockNumber?: string;
+  // The native balance's own USD value. Carried separately from totalValueUsd so a
+  // reader can show "ALGO $412.19, and here is an unpriced token" without having to
+  // infer which part of the total was priced — an inference that would report a
+  // genuinely unpriced native balance as $0.
+  nativeValueUsd?: string;
+  // Sum of native + all priced holdings, in USD. Omitted when nothing could
+  // be priced (never zero-filled).
   totalValueUsd?: string;
   capturedAt: Date;
   expiresAt: Date;

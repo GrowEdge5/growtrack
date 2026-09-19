@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, use } from "react";
+import React, { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,366 +16,319 @@ import {
   Search,
   CheckCircle2,
   RefreshCw,
-  Share2,
-  SlidersHorizontal,
-  ChevronDown,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Repeat,
+  AlertCircle,
+  Layers,
   Lock,
-  Layers
+  Loader2,
+  Hourglass,
+  X
 } from "lucide-react";
+
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
-import { useWalletModal } from "@/context/WalletModalContext";
 import { GlassSquareIcon } from "@/components/wallet/GlassSquareIcon";
-import { detectAddressFormat } from "@/components/landing/HeroSearch";
+import { PortfolioReportModal } from "@/components/wallet/PortfolioReportModal";
+import { useWalletSession } from "@/context/WalletSessionContext";
+import { useWalletGate } from "@/lib/useWalletGate";
+import { ApiError, analyzeWallet, fetchChains, type AnalyzeResponse, type ChainDescriptor } from "@/lib/api";
+import { detectAddressFormat, explorerName, explorerUrl, chainLabel, coinKeyForSymbol } from "@/lib/address";
+import { formatAmount, formatRelativeTime, formatUsd, shorten, toWholeUnits } from "@/lib/format";
 
 interface PageProps {
   params: Promise<{ address: string }>;
 }
 
-interface TrackedWallet {
-  id: string;
-  name: string;
-  address: string;
-  chain: string;
-  value: number;
-}
-
-interface PortfolioToken {
-  id: string;
-  name: string;
+/** One row of the holdings table: the native coin or a tracked token. */
+interface AssetRow {
+  key: string;
   symbol: string;
-  chain: "ethereum" | "algorand" | "bnb" | "bitcoin" | "hyperliquid";
-  chainName: string;
-  coinKey: string;
-  balance: number;
-  balanceFormatted: string;
-  price: number | null;
-  priceFormatted: string;
-  value: number | null;
-  valueFormatted: string;
-  allocationPercent: number;
-  status: "verified" | "unpriced";
+  name: string;
+  /** Whole units, already scaled from the smallest unit. */
+  amount: string;
+  /** Absent means unpriced — rendered as such, never as $0. */
+  valueUsd?: string;
+  /** Derived unit price, only when both the amount and the value are known. */
+  unitPriceUsd?: string;
+  allocationPct?: number;
+  isNative: boolean;
 }
-
-const INITIAL_PORTFOLIO_TOKENS: PortfolioToken[] = [
-  {
-    id: "eth-1",
-    name: "Ethereum",
-    symbol: "ETH",
-    chain: "ethereum",
-    chainName: "Ethereum",
-    coinKey: "eth",
-    balance: 482.1054,
-    balanceFormatted: "482.1054 ETH",
-    price: 3420.12,
-    priceFormatted: "$3,420.12",
-    value: 1648858.33,
-    valueFormatted: "$1,648,858.33",
-    allocationPercent: 89.47,
-    status: "verified"
-  },
-  {
-    id: "algo-1",
-    name: "Algorand",
-    symbol: "ALGO",
-    chain: "algorand",
-    chainName: "Algorand",
-    coinKey: "algo",
-    balance: 625000,
-    balanceFormatted: "625,000 ALGO",
-    price: 0.185,
-    priceFormatted: "$0.185",
-    value: 115625.0,
-    valueFormatted: "$115,625.00",
-    allocationPercent: 6.27,
-    status: "verified"
-  },
-  {
-    id: "algo-2",
-    name: "USDC (Algorand Standard Asset)",
-    symbol: "USDC",
-    chain: "algorand",
-    chainName: "Algorand",
-    coinKey: "usdc",
-    balance: 45000,
-    balanceFormatted: "45,000.00 USDC",
-    price: 1.0,
-    priceFormatted: "$1.00",
-    value: 45000.0,
-    valueFormatted: "$45,000.00",
-    allocationPercent: 2.44,
-    status: "verified"
-  },
-  {
-    id: "bnb-1",
-    name: "BNB Chain",
-    symbol: "BNB",
-    chain: "bnb",
-    chainName: "BNB Chain",
-    coinKey: "bnb",
-    balance: 35.5,
-    balanceFormatted: "35.50 BNB",
-    price: 590.25,
-    priceFormatted: "$590.25",
-    value: 20953.88,
-    valueFormatted: "$20,953.88",
-    allocationPercent: 1.14,
-    status: "verified"
-  },
-  {
-    id: "btc-1",
-    name: "Bitcoin",
-    symbol: "BTC",
-    chain: "bitcoin",
-    chainName: "Bitcoin",
-    coinKey: "btc",
-    balance: 0.15,
-    balanceFormatted: "0.1500 BTC",
-    price: 64200.0,
-    priceFormatted: "$64,200.00",
-    value: 9630.0,
-    valueFormatted: "$9,630.00",
-    allocationPercent: 0.52,
-    status: "verified"
-  },
-  {
-    id: "hype-1",
-    name: "Hyperliquid",
-    symbol: "HYPE",
-    chain: "hyperliquid",
-    chainName: "Hyperliquid",
-    coinKey: "hype",
-    balance: 100,
-    balanceFormatted: "100.00 HYPE",
-    price: 28.63,
-    priceFormatted: "$28.63",
-    value: 2863.33,
-    valueFormatted: "$2,863.33",
-    allocationPercent: 0.16,
-    status: "verified"
-  },
-  {
-    id: "algo-unpriced-1",
-    name: "AlgoDAO Governance Token",
-    symbol: "AGOV",
-    chain: "algorand",
-    chainName: "Algorand",
-    coinKey: "algo",
-    balance: 24500,
-    balanceFormatted: "24,500 AGOV",
-    price: null,
-    priceFormatted: "Unpriced",
-    value: null,
-    valueFormatted: "Unpriced",
-    allocationPercent: 0,
-    status: "unpriced"
-  },
-  {
-    id: "evm-unpriced-1",
-    name: "Community Early Access Voucher",
-    symbol: "GROWPASS",
-    chain: "ethereum",
-    chainName: "Ethereum",
-    coinKey: "eth",
-    balance: 1,
-    balanceFormatted: "1 GROWPASS",
-    price: null,
-    priceFormatted: "Unpriced",
-    value: null,
-    valueFormatted: "Unpriced",
-    allocationPercent: 0,
-    status: "unpriced"
-  }
-];
 
 export default function WalletDashboardPage({ params }: PageProps) {
-  const resolvedParams = use(params);
-  const rawAddress = decodeURIComponent(resolvedParams.address);
+  const { address } = use(params);
+  const rawAddress = decodeURIComponent(address);
 
-  const { openWalletModal } = useWalletModal();
+  const { session, isConnected } = useWalletSession();
+  const { requireWallet } = useWalletGate();
 
-  // Primary active tabs: Portfolio, NFTs, Transactions, DeFi (DeBank Stream & Badge REMOVED)
+  // The wallet whose data is on screen. Free and anonymous: no connection is needed
+  // to reach this state, which is the whole point of the page.
+  const [selected, setSelected] = useState(rawAddress);
+  // Every wallet the visitor has added. The first is the one they searched for;
+  // adding more is a connect-gated action.
+  const [tracked, setTracked] = useState<string[]>([rawAddress]);
+  const [newWalletInput, setNewWalletInput] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const [snapshot, setSnapshot] = useState<AnalyzeResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<{ message: string; hint?: string } | null>(null);
+
+  const [chains, setChains] = useState<ChainDescriptor[]>([]);
   const [activeTab, setActiveTab] = useState<"portfolio" | "nfts" | "transactions" | "defi">(
     "portfolio"
   );
-
-  const [copied, setCopied] = useState(false);
-  const [searchTokenQuery, setSearchTokenQuery] = useState("");
-  const [selectedChainFilter, setSelectedChainFilter] = useState<string>("all");
+  const [searchToken, setSearchToken] = useState("");
   const [hideUnpriced, setHideUnpriced] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
-  // Multi-wallet state (Replacing DeBank social followers/TVF section)
-  const [trackedWallets, setTrackedWallets] = useState<TrackedWallet[]>([
-    {
-      id: "w-primary",
-      name: rawAddress.startsWith("0x") ? "Primary EVM Vault" : "Primary Algorand Account",
-      address: rawAddress,
-      chain: rawAddress.startsWith("0x") ? "Ethereum" : "Algorand",
-      value: 1842930.54
-    },
-    {
-      id: "w-secondary",
-      name: "Algorand Treasury Vault",
-      address: "F232B4F67D890EAC765D890EAC765D890EAC765D890EAC765D890EACDSEA",
-      chain: "Algorand",
-      value: 210873.0
+  // A new address in the URL is a new primary wallet; reset the tracked set so the
+  // page never mixes two different searches.
+  const lastRouteAddress = useRef(rawAddress);
+  useEffect(() => {
+    if (lastRouteAddress.current !== rawAddress) {
+      lastRouteAddress.current = rawAddress;
+      setTracked([rawAddress]);
+      setSelected(rawAddress);
     }
-  ]);
-  const [selectedWalletId, setSelectedWalletId] = useState<string>("all"); // "all" or specific wallet id
-  const [newWalletInput, setNewWalletInput] = useState("");
-  const [addWalletSuccess, setAddWalletSuccess] = useState(false);
+  }, [rawAddress]);
 
-  // x402 Modal Simulation State
-  const [showX402Modal, setShowX402Modal] = useState(false);
-  const [x402Step, setX402Step] = useState<"ready" | "signing" | "verifying" | "settled">("ready");
+  useEffect(() => {
+    void fetchChains()
+      .then(setChains)
+      .catch(() => setChains([]));
+  }, []);
 
-  const detection = useMemo(() => detectAddressFormat(rawAddress), [rawAddress]);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(rawAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const explorerUrl = useMemo(() => {
-    if (detection.chain === "algorand" || rawAddress.length === 58) {
-      return `https://lora.algokit.io/mainnet/account/${rawAddress}`;
+  const load = useCallback(async (walletAddress: string) => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setSnapshot(await analyzeWallet(walletAddress));
+    } catch (error) {
+      setSnapshot(null);
+      setLoadError(describeLoadError(error, walletAddress));
+    } finally {
+      setLoading(false);
     }
-    if (detection.chain === "evm" || rawAddress.startsWith("0x")) {
-      return `https://etherscan.io/address/${rawAddress}`;
+  }, []);
+
+  useEffect(() => {
+    void load(selected);
+  }, [selected, load]);
+
+  const data = snapshot?.data;
+  const detectedChain = snapshot?.meta.chain ?? null;
+  const nativeDecimals = useMemo(() => {
+    const match = chains.find((chain) => chain.slug === detectedChain);
+    return match?.nativeDecimals ?? null;
+  }, [chains, detectedChain]);
+
+  // Native value is a field the API reports directly, so an unpriced native balance
+  // is never inferred as zero from the portfolio total.
+  const rows = useMemo<AssetRow[]>(() => {
+    if (data === undefined) {
+      return [];
     }
-    return `https://blockchair.com/search?q=${rawAddress}`;
-  }, [detection.chain, rawAddress]);
 
-  // Handle adding a new wallet to the tracked portfolio
-  const handleAddWallet = (e: React.FormEvent) => {
-    e.preventDefault();
-    const addr = newWalletInput.trim();
-    if (!addr) return;
-
-    const detected = detectAddressFormat(addr);
-    const newWallet: TrackedWallet = {
-      id: `w-${Date.now()}`,
-      name: `Tracked Wallet ${trackedWallets.length + 1}`,
-      address: addr,
-      chain: detected.label.split(" ")[0] || "Multichain",
-      value: 125420.0
+    const assets: AssetRow[] = [];
+    const totalValue = data.totalValueUsd === undefined ? null : Number(data.totalValueUsd);
+    const share = (value: string | undefined): number | undefined => {
+      if (totalValue === null || totalValue === 0 || value === undefined) {
+        return undefined;
+      }
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? (numeric / totalValue) * 100 : undefined;
     };
 
-    setTrackedWallets((prev) => [...prev, newWallet]);
-    setNewWalletInput("");
-    setAddWalletSuccess(true);
-    setTimeout(() => setAddWalletSuccess(false), 3000);
-  };
-
-  // Filtered tokens
-  const filteredTokens = useMemo(() => {
-    return INITIAL_PORTFOLIO_TOKENS.filter((token) => {
-      // Chain filter
-      if (selectedChainFilter !== "all" && token.chain !== selectedChainFilter) {
-        return false;
-      }
-      // Hide unpriced
-      if (hideUnpriced && token.status === "unpriced") {
-        return false;
-      }
-      // Search query
-      if (searchTokenQuery.trim()) {
-        const q = searchTokenQuery.toLowerCase().trim();
-        return token.name.toLowerCase().includes(q) || token.symbol.toLowerCase().includes(q);
-      }
-      return true;
-    });
-  }, [selectedChainFilter, hideUnpriced, searchTokenQuery]);
-
-  // Total Portfolio Value calculations
-  const totalValue = useMemo(() => {
-    if (selectedWalletId === "all") {
-      return trackedWallets.reduce((acc, w) => acc + w.value, 0);
+    if (nativeDecimals !== null) {
+      const nativeAmount = toWholeUnits(data.nativeBalance, nativeDecimals);
+      assets.push({
+        key: `native-${data.nativeSymbol}`,
+        symbol: data.nativeSymbol,
+        name: `${chainLabel(data.wallet.chain.slug)} native`,
+        amount: nativeAmount,
+        ...(data.nativeValueUsd !== undefined ? { valueUsd: data.nativeValueUsd } : {}),
+        ...(data.nativeValueUsd !== undefined && Number(nativeAmount) > 0
+          ? { unitPriceUsd: String(Number(data.nativeValueUsd) / Number(nativeAmount)) }
+          : {}),
+        ...(share(data.nativeValueUsd) !== undefined
+          ? { allocationPct: share(data.nativeValueUsd) as number }
+          : {}),
+        isNative: true
+      });
     }
-    const current = trackedWallets.find((w) => w.id === selectedWalletId);
-    return current ? current.value : 1842930.54;
-  }, [selectedWalletId, trackedWallets]);
 
-  // Trigger x402 live payment simulation
-  const handleTriggerX402 = () => {
-    setShowX402Modal(true);
-    setX402Step("ready");
+    for (const holding of data.holdings) {
+      const amount = toWholeUnits(holding.rawAmount, holding.decimals);
+      assets.push({
+        key: `token-${holding.tokenAddress}`,
+        symbol: holding.symbol,
+        name: holding.name,
+        amount,
+        ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {}),
+        ...(holding.valueUsd !== undefined && Number(amount) > 0
+          ? { unitPriceUsd: String(Number(holding.valueUsd) / Number(amount)) }
+          : {}),
+        ...(share(holding.valueUsd) !== undefined
+          ? { allocationPct: share(holding.valueUsd) as number }
+          : {}),
+        isNative: false
+      });
+    }
+
+    // Largest known value first; unpriced assets keep their API order at the end so
+    // they stay visible rather than disappearing below a fold of priced rows.
+    return assets.sort((left, right) => {
+      if (left.valueUsd === undefined && right.valueUsd === undefined) {
+        return 0;
+      }
+      if (left.valueUsd === undefined) {
+        return 1;
+      }
+      if (right.valueUsd === undefined) {
+        return -1;
+      }
+      return Number(right.valueUsd) - Number(left.valueUsd);
+    });
+  }, [data, nativeDecimals]);
+
+  const filteredRows = useMemo(() => {
+    const query = searchToken.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (hideUnpriced && row.valueUsd === undefined) {
+        return false;
+      }
+      if (query.length === 0) {
+        return true;
+      }
+      return row.symbol.toLowerCase().includes(query) || row.name.toLowerCase().includes(query);
+    });
+  }, [rows, hideUnpriced, searchToken]);
+
+  const pricedCount = rows.filter((row) => row.valueUsd !== undefined).length;
+  const unpricedCount = rows.length - pricedCount;
+
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
-  const handleExecuteX402 = () => {
-    setX402Step("signing");
-    setTimeout(() => {
-      setX402Step("verifying");
-      setTimeout(() => {
-        setX402Step("settled");
-      }, 1200);
-    }, 1000);
+  const handleAddWallet = (event: React.FormEvent) => {
+    event.preventDefault();
+    setAddError(null);
+
+    const candidate = newWalletInput.trim();
+    if (candidate.length === 0) {
+      setAddError("Enter a wallet address first.");
+      return;
+    }
+    if (tracked.some((entry) => entry.toLowerCase() === candidate.toLowerCase())) {
+      setAddError("That wallet is already in this list.");
+      return;
+    }
+
+    // The rule: one wallet needs no connection, a second one does. This is a real
+    // constraint rather than a nag — a multi-wallet view is built from the paid
+    // report path, which settles on Algorand and therefore needs a signer.
+    if (!requireWallet("Track more than one wallet and build a consolidated report")) {
+      return;
+    }
+
+    const hint = detectAddressFormat(candidate);
+    if (!hint.isValid) {
+      setAddError(`${hint.label}: ${hint.hint}`);
+      return;
+    }
+
+    setTracked((previous) => [...previous, candidate]);
+    setSelected(candidate);
+    setNewWalletInput("");
   };
+
+  const handleGenerateReport = () => {
+    if (tracked.length < 2) {
+      setAddError(
+        "Add at least one more wallet to build a consolidated report — a single wallet is already fully covered above, free of charge."
+      );
+      return;
+    }
+    if (!requireWallet("Generate the consolidated portfolio report")) {
+      return;
+    }
+    setShowReport(true);
+  };
+
+  const addressHint = detectAddressFormat(selected);
 
   return (
     <div className="site-atmosphere min-h-screen text-navy-800 selection:bg-primary-500 selection:text-white font-sans flex flex-col antialiased relative">
-      {/* Subtle background grid */}
       <div className="subtle-bg-grid absolute inset-0 pointer-events-none z-0" />
-
-      {/* Main App Bar */}
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 z-10 pt-4 pb-20 space-y-6">
-        {/* Top Breadcrumb Navigation */}
-        <div className="flex items-center justify-between">
+        {/* Breadcrumb + provenance */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white border border-white/90 text-xs font-bold text-navy-700 hover:text-primary-600 shadow-sm transition-all"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-primary-500" />
-            <span>Back to Radar</span>
+            <span>Back to search</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-navy-500">
-            <span className="w-2 h-2 rounded-full bg-accentGreen animate-pulse" />
-            <span>Live Synchronized with Algorand x402</span>
-          </div>
+          {snapshot !== null && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-navy-500">
+              <span className="w-2 h-2 rounded-full bg-accentGreen" />
+              <span>
+                {snapshot.meta.source === "live" ? "Read live from chain" : "Served from cache"} ·{" "}
+                {formatRelativeTime(data?.capturedAt ?? "")}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* 1. Wallet Identity Card */}
+        {/* 1. Wallet identity */}
         <section className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            {/* Left: Avatar + Address info + Badges */}
-            <div className="flex items-start sm:items-center gap-4">
-              {/* Glass Squircle Avatar */}
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+            <div className="flex items-start gap-4 min-w-0">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl glass-frosted-tile p-1 flex items-center justify-center border border-white/90 shadow-sm flex-shrink-0">
-                <div className="w-full h-full rounded-[14px] bg-gradient-to-tr from-primary-500 via-primary-600 to-blue-700 flex items-center justify-center text-white text-2xl shadow-inner">
-                  {rawAddress.startsWith("0x") ? "💎" : "⚡"}
+                <div className="w-full h-full rounded-[14px] bg-gradient-to-tr from-primary-500 via-primary-600 to-blue-700 flex items-center justify-center text-white">
+                  <Wallet className="w-7 h-7" />
                 </div>
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
-                    {rawAddress.slice(0, 6)}...{rawAddress.slice(-4)}
+                    {shorten(selected, 8, 6)}
                   </h1>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-100/90 border border-primary-200 text-xs font-black text-primary-600 shadow-xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                    <span>{detection.label || "Multichain Target"}</span>
+                    <span>
+                      {detectedChain !== null ? chainLabel(detectedChain) : addressHint.label}
+                    </span>
                   </span>
-                  <span className="inline-flex items-center text-[11px] font-bold text-navy-500 bg-white/70 border border-white/80 px-2 py-0.5 rounded-full">
-                    Non-Custodial
-                  </span>
+                  {isConnected && session !== null && session.address === selected && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Connected wallet</span>
+                    </span>
+                  )}
                 </div>
 
-                {/* Full Address Row with Actions */}
                 <div className="flex items-center gap-2.5 text-xs text-navy-500 font-mono mt-1.5 flex-wrap">
                   <span className="bg-white/60 px-2 py-0.5 rounded-lg border border-navy-100/50 break-all select-all font-medium text-navy-700">
-                    {rawAddress}
+                    {selected}
                   </span>
 
                   <button
                     type="button"
-                    onClick={handleCopy}
+                    onClick={() => void handleCopy(selected)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold"
                   >
                     {copied ? (
@@ -386,752 +339,608 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     <span>{copied ? "Copied" : "Copy"}</span>
                   </button>
 
-                  <a
-                    href={explorerUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all font-sans text-xs font-bold"
+                  {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
+                    <a
+                      href={explorerUrl(detectedChain, selected) as string}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all font-sans text-xs font-bold"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
+                      <span>{explorerName(detectedChain) ?? "Explorer"}</span>
+                    </a>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => void load(selected)}
+                    disabled={loading}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold disabled:opacity-60"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
-                    <span>Explorer</span>
-                  </a>
+                    <RefreshCw className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`} />
+                    <span>Refresh</span>
+                  </button>
                 </div>
+
+                {data !== undefined && (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-navy-500 font-medium">
+                    <span className="inline-flex items-center gap-1">
+                      <Database className="w-3.5 h-3.5 text-primary-500" />
+                      Read via <code className="font-mono text-navy-700">{data.provider}</code>
+                    </span>
+                    {data.blockNumber !== undefined && (
+                      <span className="inline-flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-primary-500" />
+                        {data.wallet.chain.namespace === "algorand" ? "Round" : "Block"}{" "}
+                        <code className="font-mono text-navy-700">{data.blockNumber}</code>
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-primary-500" />
+                      Snapshot valid until{" "}
+                      {new Date(data.expiresAt).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right: Snapshot Info & Live x402 Action */}
-            <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-3 lg:border-l lg:border-navy-100/60 lg:pl-6">
-              <div className="text-xs text-navy-500 space-y-1 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-primary-500" />
-                  <span>
-                    Snapshot: <strong className="text-navy-800">Synced &lt; 1 min ago</strong>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-primary-500" />
-                  <span>
-                    Protocol: <strong className="text-navy-800">Algorand x402 Rails</strong>
-                  </span>
-                </div>
-              </div>
-
+            {/* The single paid action on this page */}
+            <div className="flex-shrink-0 lg:border-l lg:border-navy-100/60 lg:pl-6">
               <button
                 type="button"
-                onClick={handleTriggerX402}
-                className="btn-connect-wallet text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                onClick={handleGenerateReport}
+                className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
               >
-                <Zap className="w-3.5 h-3.5 fill-white" />
-                <span>Live Refresh ($0.01 via x402)</span>
+                {isConnected ? (
+                  <Zap className="w-3.5 h-3.5 fill-white" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5" />
+                )}
+                <span>Generate full report (USDC via x402)</span>
               </button>
+              <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-[15rem]">
+                Multi-wallet consolidation. You see the exact price before approving anything.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* 2. Truthful Valuation Banner */}
+        {/* 2. Truthful valuation principle */}
         <div className="glass-frosted rounded-2xl p-4 border border-white/90 flex items-start gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-primary-100/90 border border-primary-200 flex items-center justify-center flex-shrink-0 text-primary-600">
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div className="text-xs text-navy-600 leading-relaxed">
-            <strong className="text-navy-900 font-bold">Truthful Valuation Principle: </strong>
-            Tokens without verified market liquidity or reputable oracle pricing depth are displayed
+            <strong className="text-navy-900 font-bold">Truthful valuation: </strong>
+            balances are read from {detectedChain !== null ? chainLabel(detectedChain) : "the chain"}{" "}
+            and priced through a market data feed. Anything without a trustworthy USD price is shown
             as{" "}
             <span className="inline-block font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[11px]">
               Unpriced
             </span>{" "}
-            rather than being deceptively valued at $0.00. Zero synthetic fill or fabricated PnL %
-            charts.
+            and excluded from the total — never valued at $0.00 and never filled in with placeholder
+            numbers.
           </div>
         </div>
 
-        {/* 3. Portfolio Summary Cards Row */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Total Portfolio Value */}
-          <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
-              Total Portfolio Value
-            </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
-              $
-              {totalValue.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-accentGreen">
-              <span className="bg-emerald-50 text-accentGreen px-2 py-0.5 rounded-full border border-emerald-100">
-                ↗ +12.48% (24h)
-              </span>
-            </div>
-          </div>
+        {/* 3. Loading / error / data */}
+        {loading && snapshot === null && <LoadingPanel address={selected} />}
 
-          {/* Card 2: Tracked Assets */}
-          <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
-              Tracked Assets
-            </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
-              8 Holdings
-            </div>
-            <div className="mt-2 text-xs font-semibold text-navy-500">Across 5 Blockchains</div>
-          </div>
+        {loadError !== null && !loading && (
+          <ErrorPanel
+            message={loadError.message}
+            hint={loadError.hint}
+            onRetry={() => void load(selected)}
+            onSearch={(value) => setSelected(value)}
+          />
+        )}
 
-          {/* Card 3: Priced vs Unpriced */}
-          <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
-              Verified vs Unpriced
-            </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
-              6 <span className="text-base text-navy-400 font-bold">/ 2 Unpriced</span>
-            </div>
-            <div className="mt-2 text-xs font-bold text-amber-600 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span>Zero Synthetic Fill</span>
-            </div>
-          </div>
-
-          {/* Card 4: x402 Micropayment Tier */}
-          <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
-              x402 Pay-Per-Query
-            </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-black text-primary-600 tracking-tight">
-              $0.01 <span className="text-sm font-bold text-navy-500">USDC</span>
-            </div>
-            <div className="mt-2 text-xs font-semibold text-primary-700">
-              Algorand GoPlausible Facilitator
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Multi-Wallet Section & Add Wallet Card (Replaces DeBank Social Followers/TVF Area) */}
-        <section className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-navy-100/60">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
-                MULTI-WALLET PORTFOLIO
-              </div>
-              <h2 className="text-lg sm:text-xl font-black text-navy-900 tracking-tight">
-                My Wallets & Consolidated View
-              </h2>
-            </div>
-
-            {/* Wallet Filter Toggle */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setSelectedWalletId("all")}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  selectedWalletId === "all"
-                    ? "bg-primary-500 text-white shadow-sm"
-                    : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
-                }`}
-              >
-                All Wallets (Combined: $2.05M)
-              </button>
-
-              {trackedWallets.map((w, idx) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => setSelectedWalletId(w.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    selectedWalletId === w.id
-                      ? "bg-primary-500 text-white shadow-sm"
-                      : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
-                  }`}
-                >
-                  {w.name} ({w.address.slice(0, 4)}...{w.address.slice(-3)})
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Add Another Wallet Form */}
-          <form onSubmit={handleAddWallet} className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex-1 w-full relative">
-              <input
-                type="text"
-                value={newWalletInput}
-                onChange={(e) => setNewWalletInput(e.target.value)}
-                placeholder="Track another wallet in this portfolio (EVM, Algorand, ENS, or Web3 ID)..."
-                className="w-full px-4 py-2.5 rounded-xl bg-white/90 border border-navy-100 text-navy-900 placeholder-navy-400 text-xs sm:text-sm font-medium outline-none focus:border-primary-400 shadow-xs"
+        {data !== undefined && snapshot !== null && (
+          <>
+            {/* Summary */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SummaryCard
+                label="Wallet value (priced)"
+                value={formatUsd(data.totalValueUsd) ?? "Pending pricing"}
+                note={
+                  data.totalValueUsd === undefined
+                    ? "No trusted price for this wallet's assets yet"
+                    : unpricedCount > 0
+                      ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
+                      : "Every discovered asset is priced"
+                }
+                noteTone={data.totalValueUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
               />
-            </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="submit"
-                className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer flex-1 sm:flex-none"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Wallet</span>
-              </button>
+              <SummaryCard
+                label="Assets found"
+                value={`${rows.length}${rows.length === 1 ? " asset" : " assets"}`}
+                note={`On ${detectedChain !== null ? chainLabel(detectedChain) : "one chain"}`}
+              />
 
-              <button
-                type="button"
-                onClick={openWalletModal}
-                className="glass-frosted px-4 py-2.5 rounded-xl font-bold text-xs text-navy-800 hover:text-primary-600 flex items-center justify-center gap-1.5 border border-white shadow-xs cursor-pointer flex-1 sm:flex-none"
-              >
-                <Wallet className="w-4 h-4 text-primary-500" />
-                <span>Connect Another</span>
-              </button>
-            </div>
-          </form>
+              <SummaryCard
+                label="Priced vs unpriced"
+                value={`${pricedCount} / ${unpricedCount}`}
+                note={unpricedCount > 0 ? "Unpriced assets excluded from value" : "Full pricing coverage"}
+                noteTone={unpricedCount > 0 ? "warn" : "ok"}
+              />
 
-          {addWalletSuccess && (
-            <div className="mt-3 text-xs font-bold text-accentGreen flex items-center gap-1.5 animate-fadeIn">
-              <Check className="w-4 h-4" />
-              <span>Wallet added to portfolio view! Multi-chain balances consolidated.</span>
-            </div>
-          )}
-        </section>
+              <SummaryCard
+                label="Coverage"
+                value={data.status === "complete" ? "Fully priced" : "Partially priced"}
+                note="Curated token list per chain — not exhaustive"
+                noteTone={data.status === "complete" ? "ok" : "warn"}
+              />
+            </section>
 
-        {/* 5. Main Dashboard Navigation Tabs (Portfolio, NFTs, Transactions, DeFi) */}
-        <div className="flex items-center justify-between border-b border-navy-100/80 pt-2 pb-1 text-sm font-bold text-navy-500">
-          <div className="flex items-center gap-6 sm:gap-8">
-            {[
-              { id: "portfolio", label: "Portfolio", count: 8 },
-              { id: "nfts", label: "NFTs", count: 3 },
-              { id: "transactions", label: "Transactions", count: 14 },
-              { id: "defi", label: "DeFi Positions", count: 2 }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`pb-2.5 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === tab.id
-                    ? "text-primary-600 border-b-2 border-primary-500 font-black"
-                    : "hover:text-navy-900"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === tab.id
-                      ? "bg-primary-100 text-primary-700"
-                      : "bg-navy-100 text-navy-600"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-navy-500">
-            <span>Unified EVM & Algorand</span>
-          </div>
-        </div>
-
-        {/* 6. TAB CONTENT: PORTFOLIO */}
-        {activeTab === "portfolio" && (
-          <div className="space-y-6">
-            {/* Filter & Search Bar */}
-            <div className="glass-frosted rounded-2xl p-3.5 border border-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-navy-400" />
-                <input
-                  type="text"
-                  value={searchTokenQuery}
-                  onChange={(e) => setSearchTokenQuery(e.target.value)}
-                  placeholder="Search assets or tokens..."
-                  className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/80 border border-navy-100 text-xs font-medium text-navy-900 placeholder-navy-400 outline-none focus:border-primary-400"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {/* Chain Selector */}
-                <select
-                  value={selectedChainFilter}
-                  onChange={(e) => setSelectedChainFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-white/80 border border-navy-100 text-xs font-bold text-navy-700 outline-none cursor-pointer"
-                >
-                  <option value="all">All Chains</option>
-                  <option value="ethereum">Ethereum</option>
-                  <option value="algorand">Algorand</option>
-                  <option value="bnb">BNB Chain</option>
-                  <option value="bitcoin">Bitcoin</option>
-                  <option value="hyperliquid">Hyperliquid</option>
-                </select>
-
-                {/* Hide Unpriced Toggle */}
-                <label className="inline-flex items-center gap-2 text-xs font-semibold text-navy-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={hideUnpriced}
-                    onChange={(e) => setHideUnpriced(e.target.checked)}
-                    className="rounded border-navy-200 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span>Hide Unpriced</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Asset Table with Glass Square Icon Containers */}
-            <div className="glass-frosted rounded-[28px] overflow-hidden shadow-glass border border-white">
-              {/* Desktop Table Header */}
-              <div className="hidden md:grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider py-3.5 px-6 border-b border-navy-100/60 bg-white/40">
-                <div className="col-span-4">ASSET & CHAIN</div>
-                <div className="col-span-3">BALANCE</div>
-                <div className="col-span-2 text-right">PRICE</div>
-                <div className="col-span-3 text-right">VALUE & ALLOCATION</div>
-              </div>
-
-              {/* Rows */}
-              <div className="divide-y divide-navy-100/40">
-                {filteredTokens.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-navy-400">
-                    No assets matched your filter.
+            {/* 4. Wallets in this view */}
+            <section className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-navy-100/60">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
+                    Wallets
                   </div>
-                ) : (
-                  filteredTokens.map((token) => (
-                    <div
-                      key={token.id}
-                      className="p-4 sm:px-6 md:py-3.5 grid grid-cols-1 md:grid-cols-12 items-center gap-3 hover:bg-white/60 transition-colors"
+                  <h2 className="text-lg sm:text-xl font-black text-navy-900 tracking-tight">
+                    {tracked.length === 1 ? "Watching one wallet" : `Watching ${tracked.length} wallets`}
+                  </h2>
+                  <p className="text-[11px] text-navy-500 font-medium mt-0.5">
+                    Looking up a single wallet is free and needs no connection.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {tracked.map((entry, index) => (
+                    <button
+                      key={entry}
+                      type="button"
+                      onClick={() => setSelected(entry)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        selected === entry
+                          ? "bg-primary-500 text-white shadow-sm"
+                          : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
+                      }`}
+                      title={entry}
                     >
-                      {/* Asset & Chain (Square Glass Container) */}
-                      <div className="md:col-span-4 flex items-center gap-3">
-                        {/* Mandatory Square Glass Icon Container per Rule #11 */}
-                        <GlassSquareIcon coin={token.coinKey} size="md" />
+                      {index === 0 ? "Searched" : `Wallet ${index + 1}`} · {shorten(entry, 4, 3)}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                        <div>
-                          <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5">
-                            <span>{token.name}</span>
-                            <span className="text-[11px] font-extrabold text-navy-400 font-mono">
-                              {token.symbol}
-                            </span>
-                          </div>
-                          <div className="text-[11px] font-semibold text-navy-400">
-                            {token.chainName}
-                          </div>
-                        </div>
+              <form onSubmit={handleAddWallet} className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex-1 w-full relative">
+                  <input
+                    type="text"
+                    value={newWalletInput}
+                    onChange={(event) => {
+                      setNewWalletInput(event.target.value);
+                      if (addError !== null) setAddError(null);
+                    }}
+                    placeholder="Add a wallet to consolidate (EVM, Algorand, Solana or Bitcoin)…"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/90 border border-navy-100 text-navy-900 placeholder-navy-400 text-xs sm:text-sm font-mono outline-none focus:border-primary-400 shadow-xs"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="submit"
+                    className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer flex-1 sm:flex-none"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add wallet</span>
+                  </button>
+                </div>
+              </form>
+
+              {!isConnected && (
+                <p className="mt-2 text-[11px] text-navy-500 font-medium flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-navy-400" />
+                  <span>
+                    Adding a second wallet needs a connected wallet — the consolidated view is built
+                    from the paid report.
+                  </span>
+                </p>
+              )}
+
+              {addError !== null && (
+                <div className="mt-3 text-xs font-semibold text-amber-700 flex items-start gap-1.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{addError}</span>
+                </div>
+              )}
+            </section>
+
+            {/* 5. Tabs */}
+            <div className="flex items-center justify-between border-b border-navy-100/80 pt-2 pb-1 text-sm font-bold text-navy-500">
+              <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto">
+                {(
+                  [
+                    { id: "portfolio", label: "Portfolio", count: rows.length },
+                    { id: "nfts", label: "NFTs", count: null },
+                    { id: "transactions", label: "Transactions", count: data.transactions.length },
+                    { id: "defi", label: "DeFi Positions", count: data.positions.length }
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`pb-2.5 transition-colors relative flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "text-primary-600 border-b-2 border-primary-500 font-black"
+                        : "hover:text-navy-900"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {tab.count !== null && tab.count > 0 && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          activeTab === tab.id
+                            ? "bg-primary-100 text-primary-700"
+                            : "bg-navy-100 text-navy-600"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 6. Portfolio tab */}
+            {activeTab === "portfolio" && (
+              <div className="space-y-4">
+                <div className="glass-frosted rounded-2xl p-3.5 border border-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-navy-400" />
+                    <input
+                      type="text"
+                      value={searchToken}
+                      onChange={(event) => setSearchToken(event.target.value)}
+                      placeholder="Search this wallet's assets…"
+                      className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/80 border border-navy-100 text-xs font-medium text-navy-900 placeholder-navy-400 outline-none focus:border-primary-400"
+                    />
+                  </div>
+
+                  <label className="inline-flex items-center gap-2 text-xs font-semibold text-navy-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={hideUnpriced}
+                      onChange={(event) => setHideUnpriced(event.target.checked)}
+                      className="rounded border-navy-200 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>Hide unpriced</span>
+                  </label>
+                </div>
+
+                <div className="glass-frosted rounded-[28px] overflow-hidden shadow-glass border border-white">
+                  <div className="hidden md:grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider py-3.5 px-6 border-b border-navy-100/60 bg-white/40">
+                    <div className="col-span-4">Asset</div>
+                    <div className="col-span-3">Balance</div>
+                    <div className="col-span-2 text-right">Unit price</div>
+                    <div className="col-span-3 text-right">Value &amp; allocation</div>
+                  </div>
+
+                  <div className="divide-y divide-navy-100/40">
+                    {filteredRows.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-navy-400">
+                        {rows.length === 0
+                          ? "No tracked assets with a balance were found for this wallet."
+                          : "No assets matched your filter."}
                       </div>
-
-                      {/* Balance */}
-                      <div className="md:col-span-3 text-xs font-mono font-bold text-navy-800">
-                        {token.balanceFormatted}
-                      </div>
-
-                      {/* Price */}
-                      <div className="md:col-span-2 md:text-right">
-                        {token.status === "unpriced" ? (
-                          <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                            Unpriced
-                          </span>
-                        ) : (
-                          <div className="text-xs font-mono font-semibold text-navy-700">
-                            {token.priceFormatted}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Value & Allocation */}
-                      <div className="md:col-span-3 flex flex-col md:items-end justify-center">
-                        <div className="text-sm font-black text-navy-900">
-                          {token.status === "unpriced" ? (
-                            <span className="text-xs text-navy-400 font-normal italic">
-                              Pending pricing
-                            </span>
-                          ) : (
-                            token.valueFormatted
-                          )}
-                        </div>
-
-                        {token.status === "verified" && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-navy-500">
-                              {token.allocationPercent.toFixed(1)}%
-                            </span>
-                            <div className="w-16 h-1.5 rounded-full bg-navy-100 overflow-hidden">
-                              <div
-                                className="h-full bg-primary-500 rounded-full"
-                                style={{ width: `${Math.min(token.allocationPercent, 100)}%` }}
-                              />
+                    ) : (
+                      filteredRows.map((row) => (
+                        <div
+                          key={row.key}
+                          className="p-4 sm:px-6 md:py-3.5 grid grid-cols-1 md:grid-cols-12 items-center gap-3 hover:bg-white/60 transition-colors"
+                        >
+                          <div className="md:col-span-4 flex items-center gap-3 min-w-0">
+                            <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="md" />
+                            <div className="min-w-0">
+                              <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
+                                <span>{row.name}</span>
+                                <span className="text-[11px] font-extrabold text-navy-400 font-mono">
+                                  {row.symbol}
+                                </span>
+                                {row.isNative && (
+                                  <span className="text-[9px] font-bold uppercase tracking-wide text-primary-600 bg-primary-50 border border-primary-100 px-1.5 rounded">
+                                    native
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] font-semibold text-navy-400">
+                                {detectedChain !== null ? chainLabel(detectedChain) : ""}
+                              </div>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
+
+                          <div className="md:col-span-3 text-xs font-mono font-bold text-navy-800">
+                            {formatAmount(row.amount) ?? row.amount}{" "}
+                            <span className="text-navy-400 font-semibold">{row.symbol}</span>
+                          </div>
+
+                          <div className="md:col-span-2 md:text-right">
+                            {row.unitPriceUsd === undefined ? (
+                              <UnpricedTag />
+                            ) : (
+                              <div className="text-xs font-mono font-semibold text-navy-700">
+                                {formatUsd(row.unitPriceUsd)}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="md:col-span-3 flex flex-col md:items-end justify-center">
+                            {row.valueUsd === undefined ? (
+                              <span className="text-xs text-navy-400 font-normal italic">
+                                Pending pricing
+                              </span>
+                            ) : (
+                              <div className="text-sm font-black text-navy-900">
+                                {formatUsd(row.valueUsd)}
+                              </div>
+                            )}
+
+                            {row.allocationPct !== undefined && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-bold text-navy-500">
+                                  {row.allocationPct.toFixed(2)}%
+                                </span>
+                                <div className="w-16 h-1.5 rounded-full bg-navy-100 overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary-500 rounded-full"
+                                    style={{ width: `${Math.min(row.allocationPct, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-navy-400 font-medium leading-relaxed">
+                  Discovered from a curated token list for{" "}
+                  {detectedChain !== null ? chainLabel(detectedChain) : "this chain"}. Assets outside
+                  that list are not read yet, so this is a priced view of what Growtrack tracks —
+                  not a claim of complete on-chain coverage.
+                </p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* 7. TAB CONTENT: NFTS */}
-        {activeTab === "nfts" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {[
-                {
-                  id: "nft-1",
-                  name: "Algorand Governor Pass #1204",
-                  collection: "Algorand Governance OG",
-                  chain: "algorand",
-                  coinKey: "algo",
-                  floor: "450 ALGO (~$83.25)",
-                  badge: "Active Governance"
-                },
-                {
-                  id: "nft-2",
-                  name: "Pera Pioneer Badge #089",
-                  collection: "Pera Ecosystem Series",
-                  chain: "algorand",
-                  coinKey: "algo",
-                  floor: "180 ALGO (~$33.30)",
-                  badge: "Ecosystem"
-                },
-                {
-                  id: "nft-3",
-                  name: "ENS Decentralized Identity",
-                  collection: "Ethereum Name Service",
-                  chain: "ethereum",
-                  coinKey: "eth",
-                  floor: "0.08 ETH (~$273.60)",
-                  badge: "Web3 ID"
-                }
-              ].map((nft) => (
-                <div
-                  key={nft.id}
-                  className="glass-frosted rounded-[26px] p-5 shadow-glass border border-white flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="w-full h-36 rounded-2xl bg-gradient-to-tr from-primary-100 via-blue-50 to-primary-200 border border-white/90 flex items-center justify-center text-4xl shadow-inner mb-4">
-                      🎨
-                    </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <GlassSquareIcon coin={nft.coinKey} size="sm" />
-                      <span className="text-[11px] font-bold text-navy-400 uppercase">
-                        {nft.collection}
-                      </span>
-                    </div>
-                    <h3 className="font-extrabold text-base text-navy-900 leading-snug">
-                      {nft.name}
-                    </h3>
-                  </div>
+            {/* 7. Honest not-yet-supported tabs */}
+            {activeTab === "nfts" && (
+              <ComingSoon
+                title="NFT positions"
+                description="The read layer returns an explicit empty collection for NFTs; there is no indexer wired for it yet."
+                detail="Rather than render placeholder cards that look like real holdings, this tab stays empty until a real NFT data source is connected. Your token and native balances above are unaffected."
+              />
+            )}
 
-                  <div className="mt-4 pt-3 border-t border-navy-100/60 flex items-center justify-between text-xs">
-                    <span className="font-medium text-navy-500">Estimated Floor:</span>
-                    <span className="font-bold text-navy-900">{nft.floor}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+            {activeTab === "transactions" && (
+              <ComingSoon
+                title="Transaction history"
+                description="This wallet's on-chain history is not read yet — the API returns an empty transaction list by design."
+                detail={`${data.transactions.length === 0 ? "No transactions are available to display." : ""} A history view needs a chain indexer, which is a separate integration from the balance reads powering the rest of this page.`}
+              />
+            )}
 
-        {/* 8. TAB CONTENT: TRANSACTIONS */}
-        {activeTab === "transactions" && (
-          <div className="glass-frosted rounded-[28px] overflow-hidden shadow-glass border border-white">
-            <div className="hidden md:grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider py-3.5 px-6 border-b border-navy-100/60 bg-white/40">
-              <div className="col-span-2">TIME & ACTION</div>
-              <div className="col-span-4">ASSET & CHAIN</div>
-              <div className="col-span-3">AMOUNT & VALUE</div>
-              <div className="col-span-3 text-right">TRANSACTION HASH</div>
-            </div>
-
-            <div className="divide-y divide-navy-100/40">
-              {[
-                {
-                  id: "tx-1",
-                  time: "14 mins ago",
-                  action: "Receive",
-                  type: "in",
-                  asset: "ALGO",
-                  chain: "Algorand",
-                  coinKey: "algo",
-                  amount: "+25,000 ALGO",
-                  value: "$4,625.00",
-                  txHash: "PG2WHBS5KJV...R6RQ"
-                },
-                {
-                  id: "tx-2",
-                  time: "2 hours ago",
-                  action: "x402 Settle",
-                  type: "x402",
-                  asset: "USDC",
-                  chain: "Algorand",
-                  coinKey: "usdc",
-                  amount: "-0.01 USDC",
-                  value: "$0.01",
-                  txHash: "F232B4F67D8...DSEA"
-                },
-                {
-                  id: "tx-3",
-                  time: "1 day ago",
-                  action: "Swap",
-                  type: "swap",
-                  asset: "ETH → USDC",
-                  chain: "Ethereum",
-                  coinKey: "eth",
-                  amount: "2.5 ETH → $8,550",
-                  value: "$8,550.00",
-                  txHash: "0x98f4e2d...41a9"
-                },
-                {
-                  id: "tx-4",
-                  time: "3 days ago",
-                  action: "Folks Staking",
-                  type: "stake",
-                  asset: "ALGO",
-                  chain: "Algorand",
-                  coinKey: "algo",
-                  amount: "100,000 ALGO",
-                  value: "$18,500.00",
-                  txHash: "LK83ND62P01...99XZ"
-                }
-              ].map((tx) => (
-                <div
-                  key={tx.id}
-                  className="p-4 sm:px-6 md:py-3.5 grid grid-cols-1 md:grid-cols-12 items-center gap-3 hover:bg-white/60 transition-colors"
-                >
-                  <div className="md:col-span-2 flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center flex-shrink-0">
-                      {tx.type === "in" ? (
-                        <ArrowDownLeft className="w-4 h-4 text-accentGreen" />
-                      ) : tx.type === "x402" ? (
-                        <Zap className="w-4 h-4 text-primary-500 fill-primary-500" />
-                      ) : (
-                        <ArrowUpRight className="w-4 h-4 text-primary-500" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-navy-900">{tx.action}</div>
-                      <div className="text-[10px] text-navy-400">{tx.time}</div>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-4 flex items-center gap-2.5">
-                    <GlassSquareIcon coin={tx.coinKey} size="sm" />
-                    <div>
-                      <span className="font-bold text-xs text-navy-900">{tx.asset}</span>
-                      <span className="text-[11px] text-navy-400 ml-1.5">({tx.chain})</span>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3 text-xs">
-                    <div className="font-bold font-mono text-navy-900">{tx.amount}</div>
-                    <div className="text-[11px] text-navy-400">{tx.value}</div>
-                  </div>
-
-                  <div className="md:col-span-3 md:text-right">
-                    <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100">
-                      <span>{tx.txHash}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 9. TAB CONTENT: DEFI POSITIONS */}
-        {activeTab === "defi" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Position 1: Folks Finance (Algorand) */}
-            <div className="glass-frosted rounded-[28px] p-6 shadow-glass border border-white flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <GlassSquareIcon coin="algo" size="md" />
-                    <div>
-                      <h3 className="font-black text-base text-navy-900">Folks Finance</h3>
-                      <p className="text-xs text-navy-400">Algorand Native Lending Market</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-accentGreen bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                    Health Factor: 2.85
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 my-4 p-4 rounded-2xl bg-white/70 border border-navy-100/40">
-                  <div>
-                    <div className="text-[11px] font-semibold text-navy-400">
-                      Supplied Collateral
-                    </div>
-                    <div className="text-lg font-black text-navy-900 mt-0.5">350,000 ALGO</div>
-                    <div className="text-xs text-navy-500">$64,750.00 (5.8% APY)</div>
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] font-semibold text-navy-400">Borrowed</div>
-                    <div className="text-lg font-black text-navy-900 mt-0.5">15,000.00 USDC</div>
-                    <div className="text-xs text-navy-500">$15,000.00 (6.2% APY)</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-navy-100/60 flex items-center justify-between text-xs">
-                <span className="font-bold text-navy-600">Net Position Value: $49,750.00</span>
-                <span className="text-primary-600 font-bold flex items-center gap-1">
-                  Verified On-chain <CheckCircle2 className="w-3.5 h-3.5 text-accentGreen" />
-                </span>
-              </div>
-            </div>
-
-            {/* Position 2: Tinyman Liquidity Pool (Algorand) */}
-            <div className="glass-frosted rounded-[28px] p-6 shadow-glass border border-white flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <GlassSquareIcon coin="usdc" size="md" />
-                    <div>
-                      <h3 className="font-black text-base text-navy-900">Tinyman AMM</h3>
-                      <p className="text-xs text-navy-400">ALGO / USDC Concentrated Liquidity</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-100">
-                    LP Pool #5526
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 my-4 p-4 rounded-2xl bg-white/70 border border-navy-100/40">
-                  <div>
-                    <div className="text-[11px] font-semibold text-navy-400">Pooled Assets</div>
-                    <div className="text-lg font-black text-navy-900 mt-0.5">ALGO + USDC</div>
-                    <div className="text-xs text-navy-500">120,000 ALGO • 22,200 USDC</div>
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] font-semibold text-navy-400">Earned Fees</div>
-                    <div className="text-lg font-black text-accentGreen mt-0.5">+$1,482.10</div>
-                    <div className="text-xs text-navy-500">14.2% Estimated APR</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-navy-100/60 flex items-center justify-between text-xs">
-                <span className="font-bold text-navy-600">Total LP Value: $44,400.00</span>
-                <span className="text-primary-600 font-bold flex items-center gap-1">
-                  Verified On-chain <CheckCircle2 className="w-3.5 h-3.5 text-accentGreen" />
-                </span>
-              </div>
-            </div>
-          </div>
+            {activeTab === "defi" && (
+              <ComingSoon
+                title="DeFi positions"
+                description="Lending, staking and liquidity positions are not decoded yet; the API returns an empty positions list."
+                detail="Showing invented protocol positions would be worse than showing none, so this stays empty until the protocols are actually read on-chain."
+              />
+            )}
+          </>
         )}
       </main>
 
-      {/* x402 Payment Flow Modal */}
-      {showX402Modal && (
-        <div
-          onClick={() => setShowX402Modal(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A2350]/[0.25] backdrop-blur-[6px]"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg glass-frosted rounded-[32px] p-6 sm:p-7 shadow-2xl border border-white relative"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-navy-100/60 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
-                  <Zap className="w-4 h-4 fill-primary-600" />
-                </div>
-                <div>
-                  <h3 className="font-black text-base text-navy-900">x402 Payment Required</h3>
-                  <p className="text-[11px] text-navy-400">Algorand Native Micropayment Protocol</p>
-                </div>
-              </div>
-
-              <span className="text-[10px] font-mono font-bold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-100">
-                HTTP 402
-              </span>
-            </div>
-
-            <div className="space-y-3 text-xs text-navy-600">
-              <div className="p-3.5 rounded-xl bg-white/80 border border-navy-100/50 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-navy-400">Endpoint:</span>
-                  <span className="font-mono font-bold text-navy-900">/v1/wallets/live</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-navy-400">Cost:</span>
-                  <span className="font-mono font-bold text-primary-600">$0.01 USDC</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-navy-400">Merchant PayTo:</span>
-                  <span className="font-mono text-navy-800">F232...DSEA</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-navy-400">Facilitator:</span>
-                  <span className="font-semibold text-navy-800">GoPlausible Sponsored Group</span>
-                </div>
-              </div>
-
-              {x402Step === "ready" && (
-                <div className="text-navy-500 text-[11px] leading-relaxed">
-                  Click below to authorize a micropayment of <strong>0.01 USDC</strong> on Algorand
-                  rails. Zero recurring subscription. Pay strictly per live query.
-                </div>
-              )}
-
-              {x402Step === "signing" && (
-                <div className="p-3 rounded-xl bg-primary-50 text-primary-700 font-semibold flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-primary-600" />
-                  <span>Constructing & signing Algorand atomic transaction...</span>
-                </div>
-              )}
-
-              {x402Step === "verifying" && (
-                <div className="p-3 rounded-xl bg-blue-50 text-blue-700 font-semibold flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                  <span>Verifying on-chain settlement with facilitator...</span>
-                </div>
-              )}
-
-              {x402Step === "settled" && (
-                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>200 OK — Payment settled & live snapshot delivered!</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex items-center gap-3">
-              {x402Step === "ready" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowX402Modal(false)}
-                    className="flex-1 py-2.5 rounded-full border border-navy-200 text-xs font-bold text-navy-600 hover:bg-white cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleExecuteX402}
-                    className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-white" />
-                    <span>Pay 0.01 USDC</span>
-                  </button>
-                </>
-              ) : x402Step === "settled" ? (
-                <button
-                  type="button"
-                  onClick={() => setShowX402Modal(false)}
-                  className="w-full btn-connect-wallet text-white py-2.5 rounded-full text-xs font-bold shadow-sm cursor-pointer"
-                >
-                  Done
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="w-full py-2.5 rounded-full bg-navy-100 text-navy-400 text-xs font-bold cursor-not-allowed"
-                >
-                  Processing...
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      {showReport && (
+        <PortfolioReportModal addresses={tracked} onClose={() => setShowReport(false)} />
       )}
 
-      {/* Light Glass Footer */}
       <Footer />
     </div>
   );
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+  noteTone = "neutral"
+}: {
+  label: string;
+  value: string;
+  note: string;
+  noteTone?: "ok" | "warn" | "neutral";
+}) {
+  const toneClass =
+    noteTone === "ok"
+      ? "text-accentGreen"
+      : noteTone === "warn"
+        ? "text-amber-600"
+        : "text-navy-500";
+
+  return (
+    <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
+      <div className="text-xs font-bold uppercase tracking-wider text-navy-400">{label}</div>
+      <div className="mt-2 text-2xl sm:text-3xl font-black text-navy-900 tracking-tight break-words">
+        {value}
+      </div>
+      <div className={`mt-2 text-xs font-semibold ${toneClass} flex items-center gap-1.5`}>
+        {noteTone === "warn" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+        <span>{note}</span>
+      </div>
+    </div>
+  );
+}
+
+function UnpricedTag() {
+  return (
+    <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+      Unpriced
+    </span>
+  );
+}
+
+function LoadingPanel({ address }: { address: string }) {
+  return (
+    <div className="glass-frosted rounded-[28px] p-10 border border-white shadow-glass flex flex-col items-center gap-3 text-center">
+      <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+      <div className="text-sm font-bold text-navy-800">Reading {shorten(address, 8, 6)}</div>
+      <div className="text-xs text-navy-500 font-medium max-w-sm leading-relaxed">
+        Balances and token holdings are read live from the chain, then priced. This can take a few
+        seconds on a first lookup.
+      </div>
+    </div>
+  );
+}
+
+function ErrorPanel({
+  message,
+  hint,
+  onRetry,
+  onSearch
+}: {
+  message: string;
+  hint?: string;
+  onRetry: () => void;
+  onSearch: (value: string) => void;
+}) {
+  const [candidate, setCandidate] = useState("");
+
+  return (
+    <div className="glass-frosted rounded-[28px] p-6 sm:p-8 border border-white shadow-glass space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center flex-shrink-0 text-rose-600">
+          <AlertCircle className="w-4 h-4" />
+        </div>
+        <div>
+          <h2 className="text-sm font-black text-navy-900">Could not read that wallet</h2>
+          <p className="mt-1 text-xs text-navy-600 leading-relaxed">{message}</p>
+          {hint !== undefined && (
+            <p className="mt-1 text-[11px] text-navy-500 leading-relaxed">{hint}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+        <input
+          type="text"
+          value={candidate}
+          onChange={(event) => setCandidate(event.target.value)}
+          placeholder="Try a different address…"
+          className="flex-1 w-full px-4 py-2.5 rounded-xl bg-white/90 border border-navy-100 text-navy-900 placeholder-navy-400 text-xs font-mono outline-none focus:border-primary-400"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const value = candidate.trim();
+            if (value.length > 0) {
+              onSearch(value);
+              setCandidate("");
+            }
+          }}
+          className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer w-full sm:w-auto"
+        >
+          Analyze
+        </button>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="px-4 py-2.5 rounded-xl bg-white/80 hover:bg-white border border-navy-100 text-navy-700 font-bold text-xs cursor-pointer w-full sm:w-auto inline-flex items-center justify-center gap-1.5"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-primary-500" />
+          <span>Retry</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ComingSoon({
+  title,
+  description,
+  detail
+}: {
+  title: string;
+  description: string;
+  detail: string;
+}) {
+  return (
+    <div className="glass-frosted rounded-[28px] p-6 sm:p-10 border border-white shadow-glass">
+      <div className="flex flex-col items-center text-center gap-3 max-w-xl mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+          <Hourglass className="w-5 h-5" />
+        </div>
+        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+          <X className="w-3 h-3" />
+          Not supported yet
+        </div>
+        <h3 className="text-lg font-black text-navy-900">{title}</h3>
+        <p className="text-xs text-navy-600 leading-relaxed">{description}</p>
+        <p className="text-[11px] text-navy-500 leading-relaxed">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Turns an API failure into something the visitor can act on. The address-shaped
+ * failures (unrecognized, ambiguous, invalid checksum) are the common ones and get
+ * specific guidance rather than a generic error.
+ */
+function describeLoadError(error: unknown, address: string): { message: string; hint?: string } {
+  if (error instanceof ApiError) {
+    if (error.isNetworkError) {
+      return {
+        message:
+          "The Growtrack API is unreachable right now. If you are running this locally, make sure the API process is running.",
+        hint: "Nothing was displayed because no data could be read — no placeholder figures are shown in its place."
+      };
+    }
+    switch (error.code) {
+      case "UNRECOGNIZED_ADDRESS":
+        return {
+          message: `"${shorten(address, 10, 8)}" is not an address Growtrack recognizes.`,
+          hint:
+            "Supported forms: EVM (0x + 40 hex), Algorand (58-character base32), Solana (base58), Bitcoin (bech32 or legacy)."
+        };
+      case "AMBIGUOUS_ADDRESS":
+        return {
+          message: `"${shorten(address, 10, 8)}" matches more than one supported chain.`,
+          hint: error.message
+        };
+      case "INVALID_WALLET_ADDRESS":
+        return {
+          message: `That address failed validation for the chain it matched.`,
+          hint: "Algorand addresses carry a checksum, so a single wrong character invalidates them."
+        };
+      case "UNSUPPORTED_CHAIN":
+        return { message: error.message, hint: "Only the chains listed by the API can be read." };
+      case "VALIDATION_ERROR":
+        return { message: "That address could not be accepted by the API.", hint: error.message };
+      default:
+        if (error.status === 429) {
+          return {
+            message: "Too many lookups from this browser in the last minute.",
+            hint: "Free lookups hit public chain endpoints, so they are rate limited. Wait a moment and retry."
+          };
+        }
+        return { message: error.message };
+    }
+  }
+
+  if (error instanceof Error) {
+    return { message: error.message };
+  }
+  return { message: "An unexpected error occurred while reading that wallet." };
 }

@@ -158,7 +158,7 @@ async function buildApp(options: {
   await app.register(cors, { origin: ["http://localhost:3000"] });
   const deps = container(options);
   registerLandingRoute(app, deps);
-  registerDashboardRoute(app);
+  registerDashboardRoute(app, deps);
   registerDiscoveryRoutes(app, deps);
   registerChainRoutes(app, deps);
   registerPortfolioRoutes(app, deps);
@@ -296,16 +296,15 @@ describe("public surface end to end", () => {
     await app.close();
   });
 
-  it("serves the interactive portfolio demo", async () => {
+  // /demo redirects to the real dashboard. It used to serve an HTML page of invented
+  // balances and P&L, so the assertion is now that no fabricated markup is served.
+  it("redirects /demo to the real dashboard instead of serving mock data", async () => {
     const app = await buildApp({ x402Enabled: true });
 
     const response = await app.inject({ method: "GET", url: "/demo" });
 
-    expect(response.statusCode).toBe(200);
-    expect(response.headers["content-type"]).toContain("text/html");
-    expect(response.body).toContain("Connect Pera Wallet");
-    expect(response.body).toContain("Generate full portfolio report");
-    expect(response.body).toContain("DEMO DATA");
+    expect(response.statusCode).toBe(302);
+    expect(response.headers.location).toBe("/");
 
     await app.close();
   });

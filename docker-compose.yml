@@ -28,14 +28,16 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      target: api
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0
       PORT: 3000
       DATABASE_URL: postgresql://growtrack:growtrack@postgres:5432/growtrack?schema=public
       REDIS_URL: redis://redis:6379
-      CORS_ORIGIN: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3001,http://localhost:3000
       EVM_RPC_URL: https://ethereum-rpc.publicnode.com
       EVM_CHAIN_ID: 1
       EVM_CHAIN_NAME: ethereum
@@ -49,7 +51,9 @@ services:
     command: ["node", "dist/main.js"]
 
   worker:
-    build: .
+    build:
+      context: .
+      target: api
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://growtrack:growtrack@postgres:5432/growtrack?schema=public
@@ -63,6 +67,19 @@ services:
       redis:
         condition: service_healthy
     command: ["node", "dist/worker.js"]
+
+  web:
+    build:
+      context: .
+      target: web
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PROXY_TARGET: http://api:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
 
 volumes:
   growtrack-postgres:

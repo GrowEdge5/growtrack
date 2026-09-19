@@ -2,17 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  Copy,
-  Check,
-  Calendar,
-  Trophy,
-  ExternalLink,
-  ChevronDown,
-  Info,
-  HelpCircle,
-  Users
-} from "lucide-react";
+import { Copy, Check, Calendar, Trophy, ExternalLink, Info, HelpCircle, Users } from "lucide-react";
 import {
   AlgorandCoinImg,
   BitcoinCoinImg,
@@ -22,20 +12,21 @@ import {
   CurvedArrowDoodle
 } from "./CryptoIcons";
 
+// The example cards below link to REAL, readable accounts, so "View Wallet" opens
+// actual on-chain data instead of a malformed address. The figures inside the cards
+// stay illustrative — as the section's own label states.
+const EXAMPLE_EVM = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+const EXAMPLE_ALGO = "JJNP4JGSR5ICF5NTMVC4TO7CE4KM2FDL7G4LAEEFIK2KVGL6RTPLPGMTB4";
+const EXAMPLE_EVM_SHORT = `${EXAMPLE_EVM.slice(0, 6)}...${EXAMPLE_EVM.slice(-4)}`;
+const EXAMPLE_ALGO_SHORT = `${EXAMPLE_ALGO.slice(0, 5)}...${EXAMPLE_ALGO.slice(-4)}`;
+
 export function WhaleTracking() {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
-  const [activeTabLeft, setActiveTabLeft] = useState("Portfolio");
-  const [activeTabRight, setActiveTabRight] = useState("Portfolio");
-  const [followedWhales, setFollowedWhales] = useState<Record<string, boolean>>({});
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAddress(text);
     setTimeout(() => setCopiedAddress(null), 2000);
-  };
-
-  const toggleFollow = (name: string) => {
-    setFollowedWhales((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
   return (
@@ -55,8 +46,17 @@ export function WhaleTracking() {
             Tracking any <span className="text-primary-500">Whale's Portfolio</span>
           </h2>
           <p className="mt-3 text-base sm:text-lg text-navy-500 font-normal">
-            Enter any wallet address and get a complete, real-time view across all chains.
+            Enter any wallet address and get its real balances and USD valuation — no wallet
+            connection needed.
           </p>
+
+          {/* The profile cards below are a LAYOUT EXAMPLE. Every figure in them is fixed
+              sample data: not live, and not any real account's holdings. The addresses
+              they link to are real, so "View Wallet" opens genuinely readable data. */}
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-[11px] font-bold text-amber-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>Example profiles — sample figures, not live data</span>
+          </div>
         </div>
 
         {/* Flanking Floating 3D Elements */}
@@ -87,7 +87,7 @@ export function WhaleTracking() {
                   <h3 className="font-extrabold text-lg text-navy-900 leading-tight">
                     nmstarchild
                   </h3>
-                  <p className="text-xs text-navy-400 font-mono mt-0.5">0x7b1...e2d6</p>
+                  <p className="text-xs text-navy-400 font-mono mt-0.5">{EXAMPLE_EVM_SHORT}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -139,7 +139,7 @@ export function WhaleTracking() {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-lg text-navy-900 leading-tight">an0n</h3>
-                  <p className="text-xs text-navy-400 font-mono mt-0.5">0x7bfe...c060</p>
+                  <p className="text-xs text-navy-400 font-mono mt-0.5">{EXAMPLE_ALGO_SHORT}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -203,15 +203,15 @@ export function WhaleTracking() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-navy-400 mt-1 font-mono">
                       <button
-                        onClick={() => copyToClipboard("0x7b1c3a7d9018e2d6")}
+                        onClick={() => copyToClipboard(EXAMPLE_EVM)}
                         className="flex items-center gap-1 hover:text-primary-600 transition-colors"
                       >
-                        {copiedAddress === "0x7b1c3a7d9018e2d6" ? (
+                        {copiedAddress === EXAMPLE_EVM ? (
                           <Check className="w-3.5 h-3.5 text-accentGreen" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
-                        <span>0x7b1...e2d6</span>
+                        <span>{EXAMPLE_EVM_SHORT}</span>
                       </button>
                       <span className="flex items-center gap-1 font-sans text-navy-500">
                         <Calendar className="w-3.5 h-3.5" /> On-chain since 2021
@@ -237,15 +237,6 @@ export function WhaleTracking() {
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-100 shadow-sm">
                   <Trophy className="w-3.5 h-3.5 text-primary-500" /> Top 1%
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  𝕏
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  👾
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  ✈
                 </span>
                 <span className="text-xs font-semibold text-navy-600 bg-white/80 border border-navy-100 px-2.5 py-1 rounded-full">
                   1804 days
@@ -298,42 +289,20 @@ export function WhaleTracking() {
               {/* Action Buttons */}
               <div className="flex items-center gap-3 my-4">
                 <button
-                  onClick={() => toggleFollow("nmstarchild")}
+                  type="button"
+                  onClick={() => copyToClipboard(EXAMPLE_EVM)}
                   className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  <Users className="w-4 h-4" />
-                  <span>{followedWhales["nmstarchild"] ? "Following" : "Follow"}</span>
+                  {copiedAddress === EXAMPLE_EVM ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedAddress === EXAMPLE_EVM ? "Copied" : "Copy address"}</span>
                 </button>
                 <Link
-                  href="/wallet/0x7b1c3a7d9018e2d6"
+                  href={`/wallet/${EXAMPLE_EVM}`}
                   className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>View Wallet</span>
                   <ExternalLink className="w-4 h-4 text-primary-500" />
                 </Link>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex items-center justify-between border-b border-navy-100/70 pt-2 pb-1 text-xs font-bold text-navy-500">
-                <div className="flex items-center gap-6">
-                  {["Portfolio", "NFTs", "Transactions", "Defi"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTabLeft(tab)}
-                      className={`pb-2 transition-colors relative cursor-pointer ${
-                        activeTabLeft === tab
-                          ? "text-primary-500 border-b-2 border-primary-500 font-black"
-                          : "hover:text-navy-800"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-navy-600 hover:text-navy-900 cursor-pointer pb-2 font-semibold">
-                  <span>All Chains</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </div>
               </div>
 
               {/* Asset Allocation Table */}
@@ -425,15 +394,15 @@ export function WhaleTracking() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-navy-400 mt-1 font-mono">
                       <button
-                        onClick={() => copyToClipboard("0x7bfe294c06019a")}
+                        onClick={() => copyToClipboard(EXAMPLE_ALGO)}
                         className="flex items-center gap-1 hover:text-primary-600 transition-colors"
                       >
-                        {copiedAddress === "0x7bfe294c06019a" ? (
+                        {copiedAddress === EXAMPLE_ALGO ? (
                           <Check className="w-3.5 h-3.5 text-accentGreen" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
-                        <span>0x7bfe...c060</span>
+                        <span>{EXAMPLE_ALGO_SHORT}</span>
                       </button>
                       <span className="flex items-center gap-1 font-sans text-navy-500">
                         <Calendar className="w-3.5 h-3.5" /> On-chain since 2018
@@ -459,15 +428,6 @@ export function WhaleTracking() {
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-100 shadow-sm">
                   <Trophy className="w-3.5 h-3.5 text-primary-500" /> Top 0.1%
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  𝕏
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  👾
-                </span>
-                <span className="w-7 h-7 rounded-full bg-white/80 border border-navy-100 flex items-center justify-center text-xs font-bold text-navy-700 cursor-pointer hover:border-primary-300 transition-colors">
-                  ✈
                 </span>
                 <span className="text-xs font-semibold text-navy-600 bg-white/80 border border-navy-100 px-2.5 py-1 rounded-full">
                   2497 days
@@ -520,42 +480,20 @@ export function WhaleTracking() {
               {/* Action Buttons */}
               <div className="flex items-center gap-3 my-4">
                 <button
-                  onClick={() => toggleFollow("an0n")}
+                  type="button"
+                  onClick={() => copyToClipboard(EXAMPLE_ALGO)}
                   className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  <Users className="w-4 h-4" />
-                  <span>{followedWhales["an0n"] ? "Following" : "Follow"}</span>
+                  {copiedAddress === EXAMPLE_ALGO ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedAddress === EXAMPLE_ALGO ? "Copied" : "Copy address"}</span>
                 </button>
                 <Link
-                  href="/wallet/0x7bfe294c06019a"
+                  href={`/wallet/${EXAMPLE_ALGO}`}
                   className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>View Wallet</span>
                   <ExternalLink className="w-4 h-4 text-primary-500" />
                 </Link>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex items-center justify-between border-b border-navy-100/70 pt-2 pb-1 text-xs font-bold text-navy-500">
-                <div className="flex items-center gap-6">
-                  {["Portfolio", "NFTs", "Transactions", "Defi"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTabRight(tab)}
-                      className={`pb-2 transition-colors relative cursor-pointer ${
-                        activeTabRight === tab
-                          ? "text-primary-500 border-b-2 border-primary-500 font-black"
-                          : "hover:text-navy-800"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-navy-600 hover:text-navy-900 cursor-pointer pb-2 font-semibold">
-                  <span>All Chains</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </div>
               </div>
 
               {/* Asset Allocation Table */}

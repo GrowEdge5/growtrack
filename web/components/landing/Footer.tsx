@@ -27,57 +27,49 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Center: Social Links */}
+        {/* Center: Social Links. Only destinations that actually exist are links;
+            the community channels have no accounts yet, so they are shown as
+            unavailable rather than sending people to a platform homepage. */}
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-navy-500 mr-1">Find us on</span>
 
-          {/* Discord */}
-          <a
-            href="https://discord.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Discord"
-            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs transition-all hover:scale-110"
+          <span
+            aria-label="Discord — not available yet"
+            title="No community server yet"
+            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs cursor-not-allowed opacity-70"
           >
             👾
-          </a>
+          </span>
 
-          {/* X / Twitter */}
-          <a
-            href="https://x.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="X"
-            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs font-bold transition-all hover:scale-110"
+          <span
+            aria-label="X — not available yet"
+            title="No X account yet"
+            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs font-bold cursor-not-allowed opacity-70"
           >
             𝕏
-          </a>
+          </span>
 
-          {/* GitHub */}
           <a
-            href="https://github.com"
+            href="https://github.com/GrowEdge5/growtrack"
             target="_blank"
             rel="noreferrer"
-            aria-label="GitHub"
+            aria-label="GitHub repository"
+            title="Growtrack on GitHub"
             className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs font-bold transition-all hover:scale-110"
           >
             🐙
           </a>
 
-          {/* Telegram */}
-          <a
-            href="https://telegram.org"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Telegram"
-            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs font-bold transition-all hover:scale-110"
+          <span
+            aria-label="Telegram — not available yet"
+            title="No Telegram channel yet"
+            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs font-bold cursor-not-allowed opacity-70"
           >
             ✈
-          </a>
+          </span>
 
-          {/* Email */}
           <a
-            href="mailto:contact@growtrack.io"
+            href="mailto:contact@growtrack.pro"
             aria-label="Email"
             className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs transition-all hover:scale-110"
           >
@@ -85,14 +77,14 @@ export function Footer() {
           </a>
         </div>
 
-        {/* Right: Legal & Assets */}
+        {/* Right: developer entry points that actually exist */}
         <div className="flex items-center gap-4 text-xs font-semibold text-navy-500">
-          <Link href="#capabilities" className="hover:text-primary-600 transition-colors">
-            Brand Assets
+          <Link href="#x402" className="hover:text-primary-600 transition-colors">
+            x402 Protocol
           </Link>
           <span className="text-navy-300">|</span>
-          <Link href="#whales" className="hover:text-primary-600 transition-colors">
-            Terms of Service
+          <Link href="#capabilities" className="hover:text-primary-600 transition-colors">
+            Capabilities
           </Link>
         </div>
       </div>

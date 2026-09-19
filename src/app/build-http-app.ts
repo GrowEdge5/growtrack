@@ -1,10 +1,7 @@
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
-import fastifyStatic from "@fastify/static";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyInstance } from "fastify";
@@ -24,6 +21,7 @@ import { registerHealthRoutes } from "../http/routes/health.routes.js";
 import { registerLandingRoute } from "../http/routes/landing.routes.js";
 import { registerDashboardRoute } from "../http/routes/dashboard.routes.js";
 import { registerMetricsRoute } from "../http/routes/metrics.routes.js";
+import { registerPaymentRoutes } from "../http/routes/v1/payments.routes.js";
 import { registerWalletRoutes } from "../http/routes/v1/wallet.routes.js";
 
 export async function buildHttpApp(container: ApplicationContainer): Promise<FastifyInstance> {
@@ -53,23 +51,19 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
   await app.register(sensible);
   await app.register(rateLimit, { max: container.env.RATE_LIMIT_MAX, timeWindow: "1 minute" });
 
-  // The production React build is optional during API-only development, but is
-  // served by the same origin in Railway whenever it is present.
-  const webRoot = resolve(process.cwd(), "web", "dist");
-  if (existsSync(webRoot)) {
-    await app.register(fastifyStatic, { root: webRoot, prefix: "/app/" });
-    app.get("/app", async (_request, reply) => reply.redirect("/app/"));
-  }
+  // The user-facing app is the Next.js service (deployed separately, see README);
+  // this process serves the API plus its own landing/docs/discovery surfaces.
 
   registerErrorHandler(app);
   registerLandingRoute(app, container);
-  registerDashboardRoute(app);
+  registerDashboardRoute(app, container);
   registerDiscoveryRoutes(app, container);
   registerHealthRoutes(app, container);
   registerMetricsRoute(app);
   registerChainRoutes(app, container);
   registerWalletRoutes(app, container);
   registerPortfolioRoutes(app, container);
+  registerPaymentRoutes(app, container);
   return app;
 }
 

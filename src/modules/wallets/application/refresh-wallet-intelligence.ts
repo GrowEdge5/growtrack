@@ -36,6 +36,7 @@ export class RefreshWalletIntelligence {
       nativeSymbol: data.nativeSymbol,
       provider: data.provider,
       ...(data.blockNumber !== undefined ? { blockNumber: data.blockNumber } : {}),
+      ...(priced.nativeValueUsd !== undefined ? { nativeValueUsd: priced.nativeValueUsd } : {}),
       ...(priced.totalValueUsd !== undefined ? { totalValueUsd: priced.totalValueUsd } : {}),
       holdings: priced.holdings,
       transactions: data.transactions,

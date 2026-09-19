@@ -18,6 +18,8 @@ export interface PriceableWallet {
 export interface PricedSnapshot {
   status: SnapshotStatus;
   holdings: TokenHolding[];
+  // Present only when the native currency itself was priced.
+  nativeValueUsd?: string;
   totalValueUsd?: string;
 }
 
@@ -41,8 +43,13 @@ export function applyUsdPricing(wallet: PriceableWallet, quote: PriceQuote): Pri
   };
 
   const nativePriced = quote.nativeUsd !== undefined;
+  let nativeValueUsd: string | undefined;
   if (quote.nativeUsd !== undefined) {
-    addToTotal(toWholeUnits(wallet.nativeBalance, wallet.nativeDecimals).mul(quote.nativeUsd));
+    const nativeValue = toWholeUnits(wallet.nativeBalance, wallet.nativeDecimals).mul(
+      quote.nativeUsd
+    );
+    nativeValueUsd = nativeValue.toFixed(USD_SCALE);
+    addToTotal(nativeValue);
   }
 
   let allHoldingsPriced = true;
@@ -59,9 +66,13 @@ export function applyUsdPricing(wallet: PriceableWallet, quote: PriceQuote): Pri
 
   const status: SnapshotStatus = nativePriced && allHoldingsPriced ? "complete" : "partial";
 
-  return total === undefined
-    ? { status, holdings }
-    : { status, holdings, totalValueUsd: total.toFixed(USD_SCALE) };
+  const priced: PricedSnapshot = {
+    status,
+    holdings,
+    ...(nativeValueUsd !== undefined ? { nativeValueUsd } : {})
+  };
+
+  return total === undefined ? priced : { ...priced, totalValueUsd: total.toFixed(USD_SCALE) };
 }
 
 function toWholeUnits(rawAmount: string, decimals: number): Decimal {

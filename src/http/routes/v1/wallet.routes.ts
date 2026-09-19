@@ -1,8 +1,11 @@
 import type { FastifyInstance } from "fastify";
 
 import { paidResourceBuilder, type ApplicationContainer } from "../../../app/build-container.js";
+import type { WalletSnapshot } from "../../../modules/wallets/domain/wallet-snapshot.js";
 import { createX402Guard } from "../../plugins/x402-guard.js";
 import {
+  analyzeQuerySchema,
+  analyzeResponseSchema,
   liveWalletResponseSchema,
   paymentRequiredSchema,
   refreshResponseSchema,
@@ -10,7 +13,47 @@ import {
   walletResponseSchema
 } from "./wallet.schemas.js";
 
+// A snapshot's Date fields are not JSON-serializable as-is; every route that returns
+// one renders them as ISO strings so the wire shape matches the response schema.
+function serializeSnapshot(snapshot: WalletSnapshot) {
+  return {
+    ...snapshot,
+    capturedAt: snapshot.capturedAt.toISOString(),
+    expiresAt: snapshot.expiresAt.toISOString()
+  };
+}
+
 export function registerWalletRoutes(app: FastifyInstance, container: ApplicationContainer): void {
+  // The free, anonymous read: paste an address, get that wallet's real balances and
+  // USD valuation. No account, no wallet connection, no payment. Deliberately the
+  // narrowest possible entry point — it is what makes the "look up one wallet before
+  // you connect anything" rule possible.
+  //
+  // Rate limited harder than the default because a cache miss here performs a live
+  // upstream read against keyless public endpoints, unlike the cached GET below.
+  app.get(
+    "/v1/wallets/analyze",
+    {
+      config: {
+        rateLimit: { max: container.env.ANALYZE_RATE_LIMIT_MAX, timeWindow: "1 minute" }
+      },
+      schema: {
+        tags: ["wallets"],
+        summary: "Analyze any address for free (no account, no payment)",
+        querystring: analyzeQuerySchema,
+        response: { 200: analyzeResponseSchema }
+      }
+    },
+    async (request) => {
+      const { address, chain } = analyzeQuerySchema.parse(request.query);
+      const result = await container.analyzeWallet.execute(address, chain);
+      return {
+        data: serializeSnapshot(result.snapshot),
+        meta: { chain: result.chain, source: result.source, stale: result.stale }
+      };
+    }
+  );
+
   app.get(
     "/v1/wallets/:chain/:address",
     {
@@ -25,11 +68,7 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
       const { chain, address } = walletParamsSchema.parse(request.params);
       const result = await container.getWalletIntelligence.execute(chain, address);
       return {
-        data: {
-          ...result.snapshot,
-          capturedAt: result.snapshot.capturedAt.toISOString(),
-          expiresAt: result.snapshot.expiresAt.toISOString()
-        },
+        data: serializeSnapshot(result.snapshot),
         meta: { source: result.source, stale: result.stale }
       };
     }
@@ -77,11 +116,7 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
       const { chain, address } = walletParamsSchema.parse(request.params);
       const snapshot = await container.refreshWalletIntelligence.execute(chain, address);
       return {
-        data: {
-          ...snapshot,
-          capturedAt: snapshot.capturedAt.toISOString(),
-          expiresAt: snapshot.expiresAt.toISOString()
-        },
+        data: serializeSnapshot(snapshot),
         meta: { source: "live" as const, stale: false as const }
       };
     }

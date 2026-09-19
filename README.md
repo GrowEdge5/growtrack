@@ -1,32 +1,24 @@
 # Growtrack
 
-> ## Progress Report — 2026-09-19: Wallet Portfolio Dashboard Redesign
+> ## Progress Report — 2026-09-19: Live API Integration, Single-Wallet Free Tier & x402 Handshake
 >
-> 1. **What was completed**: Rebuilt the wallet detail page (`/wallet/[address]`) from the dark-mode terminal layout into the official Growtrack light frosted-glass design system with DeBank-inspired information architecture.
-> 2. **Wallet dashboard features implemented**:
->    - Unified Header (`Navbar`) with persistent Connect Wallet modal trigger.
->    - Wallet Identity card with detected chain badge, copy button, and block explorer direct link.
->    - Truthful Valuation banner enforcing "Unpriced" classification for illiquid assets instead of fake $0.00 valuations.
->    - Metric summary cards: Total Portfolio Value (with 24h change), Tracked Assets count, Verified vs Unpriced counts, and x402 $0.01 pay-per-query tier.
->    - Multi-Wallet Portfolio Management: consolidated view across multiple wallets, wallet switcher, and "+ Add Wallet" interactive client state.
->    - 4 Core Tabs: Portfolio, NFTs, Transactions, and DeFi.
->    - Mandatory Square Frosted Glass Containers (`GlassSquareIcon`) for every single crypto/token logo across the entire dashboard.
->    - Interactive x402 payment modal simulation with 4-step HTTP 402 verification lifecycle.
-> 3. **DeBank-inspired elements removed**:
->    - Completely eliminated Stream, Badge, TVF, Followers, Following, Earnings, "Say Hi", and social/community profile metrics.
->    - Replaced with the institutional multi-wallet tracking section and truthful on-chain analytics.
-> 4. **Growtrack-specific features added**:
->    - Multi-Wallet consolidated portfolio aggregation across EVM and Algorand.
->    - Native x402 pay-per-query micropayment execution flow ($0.01 USDC on Algorand rails).
->    - Explicit "Unpriced" labeling for zero-oracle-depth assets.
-> 5. **Problems or limitations remaining**:
->    - Live on-chain balances currently map through mock/synced data on the frontend; future phase will connect client RPC hooks directly to the Fastify `/v1/wallets/:chain/:address/live` backend.
-> 6. **Tests/checks performed**:
->    - `npm run typecheck:web` (TypeScript strict check).
->    - HTTP status verification on `/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` (EVM) and `/wallet/F232...DSEA` (Algorand).
->    - Visual consistency check against landing page glassmorphism tokens.
-> 7. **Whether tests passed**: All tests passed with code `0` and HTTP status `200 OK`.
-> 8. **Exact next recommended step**: Wire frontend portfolio queries directly to the Railway backend API endpoints (`/v1/portfolio`) using the x402 payment client.
+> 1. **What was completed**: Full end-to-end wiring between the Next.js frontend (`web/`) and the Fastify backend API (`src/`). All fabricated mock dashboard data has been replaced with live on-chain reads across EVM (Ethereum) and Algorand, with Solana and Bitcoin adapters verified on the backend.
+> 2. **Product Access Rule Implemented**:
+>    - **Single-Wallet Free Lookups**: Any visitor can look up and analyze 1 wallet completely free and anonymously with zero account creation, zero wallet connection, and zero payment.
+>    - **Connect-Gated Second Wallet & Consolidated Report**: Adding a 2nd wallet to track or requesting a consolidated multi-wallet report triggers the wallet connection requirement (Pera, Defly, Lute) and initiates the real Algorand x402 micropayment handshake ($0.05 USDC).
+> 3. **Backend API Endpoints Added**:
+>    - `GET /v1/wallets/analyze?address=&chain=`: Free guest live read that auto-detects chain, executes live upstream RPC read on cache miss, and reports holdings with native USD value. Rate limited via `ANALYZE_RATE_LIMIT_MAX` (20 req/min).
+>    - `GET /v1/payments/algorand/params`: Provides client-side payment parameters (genesis ID, genesis hash, fee floor) ensuring browser transactions target the correct Algorand network.
+>    - `nativeValueUsd`: Stored explicitly in snapshot domain, pricing, API schema, and PostgreSQL via Prisma migration `20260919130912_add_native_value_usd` to guarantee unpriced native balances are never rendered as $0.00.
+> 4. **Frontend Truthfulness & Integrity**:
+>    - Token pricing: unpriced assets render an explicit `Unpriced` or `Pending pricing` status and are excluded from the total portfolio valuation rather than defaulting to $0.00.
+>    - Honest placeholder tabs: NFTs, Transactions, and DeFi positions display structured `Coming Soon` panels rather than simulated mock cards.
+>    - Connect Modal: lists 5 wallets with real Algorand connectors (Pera, Defly, Lute) while honestly disabling unsupported options (Trust Wallet, Ledger) with clear explanations.
+> 5. **Quality & Test Checks Passed**:
+>    - Root TypeScript (`npx tsc --noEmit`): 0 errors.
+>    - Web TypeScript (`npx tsc --noEmit -p web/tsconfig.json`): 0 errors.
+>    - Test suite (`npx vitest run`): 79 of 79 tests passing.
+>    - Production standalone build (`npx next build web`): succeeded.
 
 > ## Update — 2026-09-17: Composite entry, four chains, price correction
 >
@@ -249,18 +241,30 @@ Start the worker in a second terminal:
 npm run dev:worker
 ```
 
-The API is served at `http://localhost:3000`.
+The Fastify API is served at `http://localhost:3000`.
+The Next.js Web Frontend is served at `http://localhost:3001` (proxies `/v1/*` to the API).
 
+### Free & Unauthenticated Endpoints
 - Liveness: `GET /health/live`
 - Readiness: `GET /health/ready`
 - Metrics: `GET /metrics`
-- OpenAPI UI: `http://localhost:3000/docs`
-- Wallet snapshot (EVM): `GET /v1/wallets/ethereum/:address`
-- Queue refresh (EVM): `POST /v1/wallets/ethereum/:address/refresh`
-- Wallet snapshot (Algorand): `GET /v1/wallets/algorand/:address`
-- Queue refresh (Algorand): `POST /v1/wallets/algorand/:address/refresh`
+- OpenAPI Documentation: `http://localhost:3000/docs`
+- Supported Chains: `GET /v1/chains`
+- Chain Detection: `GET /v1/chains/detect?address=:address`
+- **Free Guest Wallet Analysis**: `GET /v1/wallets/analyze?address=:address&chain=`
+  - Single-wallet lookups require zero wallet connection or account.
+  - Automatically identifies chain format, performs live upstream RPC read on cache miss, and includes native USD valuations.
+  - Rate limited independently via `ANALYZE_RATE_LIMIT_MAX` (default 20/min).
+- **Algorand Payment Parameters**: `GET /v1/payments/algorand/params`
+  - Returns current network, genesis ID, genesis hash, and fee floor so clients build correct transactions.
+- Stored Wallet Snapshot: `GET /v1/wallets/:chain/:address`
+- Queue Refresh: `POST /v1/wallets/:chain/:address/refresh`
 
-The route is chain-generic — the `:chain` segment selects the registered provider, so no per-chain route code exists. Algorand addresses are case-sensitive; pass them verbatim (never lowercased).
+### x402-Gated Paid Endpoints (Algorand USDC Rails)
+- Live On-Demand Snapshot: `GET /v1/wallets/:chain/:address/live` ($0.01 USDC)
+- Multi-Wallet Portfolio Totals: `GET /v1/portfolio?addresses=:addr1,:addr2` ($0.02 USDC)
+- Consolidated Portfolio Report: `GET /v1/portfolio/report?addresses=:addr1,:addr2` ($0.05 USDC)
+  - Returns unified multi-wallet report with cross-chain breakdown, unpriced asset segregation, and JSON structure. Requires connected Algorand signer.
 
 ## Quality checks
 
@@ -306,9 +310,11 @@ The Next.js web application (`web/`) delivers a high-fidelity Web3 fintech exper
    - Translucent glass footer with Algorand badge, `GROWTRACK Powered by Algorand x402`, social icons (Discord, X, GitHub, Telegram, Email), `Brand Assets`, and `Terms of Service`.
 
 ### Local Development Routes
-
-- **Landing Page**: `http://localhost:3000`
-- **Wallet Intelligence View**: `http://localhost:3000/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+ 
+- **Next.js Web Frontend**: `http://localhost:3001`
+- **Fastify Backend API**: `http://localhost:3000`
+- **Wallet Intelligence View**: `http://localhost:3001/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` (EVM)
+- **Algorand Wallet View**: `http://localhost:3001/wallet/JJNP4JGSR5ICF5NTMVC4TO7CE4KM2FDL7G4LAEEFIK2KVGL6RTPLPGMTB4` (Algorand)
 
 ---
 

@@ -47,6 +47,8 @@ export interface PortfolioWalletReport {
   // The same balance in whole units, so a caller can show "0.0445 SOL" without
   // needing to know the chain's decimals.
   nativeAmount: string;
+  // The native balance's own USD value, when the native currency could be priced.
+  nativeValueUsd?: string;
   totalValueUsd?: string;
   allocationPct?: string;
   holdings: PortfolioHoldingLine[];
@@ -243,6 +245,9 @@ export class GetPortfolioReport {
           snapshot.nativeBalance,
           this.providers.get(snapshot.wallet.chain.slug).nativeDecimals
         ).toString(),
+        ...(snapshot.nativeValueUsd !== undefined
+          ? { nativeValueUsd: snapshot.nativeValueUsd }
+          : {}),
         ...(snapshot.totalValueUsd !== undefined ? { totalValueUsd: snapshot.totalValueUsd } : {}),
         holdings: lines
       };

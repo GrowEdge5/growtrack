@@ -1,38 +1,43 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+
+// Controls the connect-wallet modal, and — just as importantly — carries WHY it was
+// opened. A modal that says "connect a wallet" when the user asked for a second
+// wallet or a portfolio report is the mismatch this exists to prevent: the user
+// should be told which action needs a signer before being asked for one.
 
 interface WalletModalContextType {
   isWalletModalOpen: boolean;
-  openWalletModal: () => void;
+  /** `reason` is shown in the modal, e.g. "Add a second wallet". */
+  openWalletModal: (reason?: string) => void;
   closeWalletModal: () => void;
-  selectedWallet: string | null;
-  selectWallet: (walletName: string) => void;
+  /** The action that triggered the modal, or null when opened unprompted. */
+  reason: string | null;
 }
 
 const WalletModalContext = createContext<WalletModalContextType | undefined>(undefined);
 
 export function WalletModalProvider({ children }: { children: ReactNode }) {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
 
-  const openWalletModal = () => setIsWalletModalOpen(true);
-  const closeWalletModal = () => setIsWalletModalOpen(false);
-  const selectWallet = (walletName: string) => setSelectedWallet(walletName);
+  const openWalletModal = useCallback((nextReason?: string) => {
+    setReason(nextReason ?? null);
+    setIsWalletModalOpen(true);
+  }, []);
 
-  return (
-    <WalletModalContext.Provider
-      value={{
-        isWalletModalOpen,
-        openWalletModal,
-        closeWalletModal,
-        selectedWallet,
-        selectWallet
-      }}
-    >
-      {children}
-    </WalletModalContext.Provider>
+  const closeWalletModal = useCallback(() => {
+    setIsWalletModalOpen(false);
+    setReason(null);
+  }, []);
+
+  const value = useMemo(
+    () => ({ isWalletModalOpen, openWalletModal, closeWalletModal, reason }),
+    [isWalletModalOpen, openWalletModal, closeWalletModal, reason]
   );
+
+  return <WalletModalContext.Provider value={value}>{children}</WalletModalContext.Provider>;
 }
 
 export function useWalletModal() {

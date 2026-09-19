@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Wallet, BarChart3, Globe } from "lucide-react";
+import { Search, Wallet, BarChart3, Globe, AlertCircle, CheckCircle2 } from "lucide-react";
+
 import { useWalletModal } from "@/context/WalletModalContext";
 import { AnimatedChainText } from "./AnimatedChainText";
+import { detectAddressFormat } from "@/lib/address";
 import {
   BrandLogoIcon,
   AlgorandCoinImg,
@@ -19,15 +21,28 @@ export function Hero() {
   const router = useRouter();
   const { openWalletModal } = useWalletModal();
   const [address, setAddress] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const detection = useMemo(() => detectAddressFormat(address), [address]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = address.trim();
-    if (query) {
-      router.push(`/wallet/${encodeURIComponent(query)}`);
-    } else {
-      router.push("/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+
+    // An empty search must not silently analyse someone else's wallet: the user
+    // asked for nothing, so they are told that rather than navigated somewhere
+    // unrelated.
+    if (query.length === 0) {
+      setError("Enter a wallet address to analyse.");
+      return;
     }
+    if (!detection.isValid) {
+      setError(detection.hint);
+      return;
+    }
+
+    setError(null);
+    router.push(`/wallet/${encodeURIComponent(query)}`);
   };
 
   return (
@@ -94,7 +109,10 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Central Front-Facing Glass Dashboard */}
+          {/* Central Front-Facing Glass Dashboard.
+              The figures in this preview are a fixed illustration of the product's
+              layout, NOT live data and not any particular wallet — the label below
+              says so, because unlabelled sample numbers read as a real portfolio. */}
           <div className="w-full max-w-2xl glass-frosted rounded-[30px] p-4 sm:p-5 shadow-glass border border-white/90 relative z-10">
             {/* Dashboard Window Header */}
             <div className="flex items-center justify-between pb-3 border-b border-navy-100/60 mb-3.5">
@@ -103,9 +121,10 @@ export function Hero() {
                 <span className="font-bold text-sm text-navy-900 tracking-tight">Growtrack</span>
               </div>
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="h-1.5 sm:h-2 w-12 sm:w-14 bg-primary-200/60 rounded-full" />
-                <div className="h-1.5 sm:h-2 w-8 sm:w-10 bg-primary-100/80 rounded-full" />
-                <div className="h-1.5 sm:h-2 w-8 sm:w-10 bg-navy-100/60 rounded-full" />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-500 bg-white/80 border border-navy-100/70 px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accentOrange" />
+                  Sample layout
+                </span>
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-100/80 border border-primary-200 flex items-center justify-center text-[10px] font-bold text-primary-700">
                   👤
                 </div>
@@ -123,17 +142,18 @@ export function Hero() {
                   <span className="text-xl sm:text-2xl lg:text-3xl font-black text-navy-900 tracking-tight">
                     $24,532.18
                   </span>
-                  <span className="inline-flex items-center text-[11px] font-bold text-accentGreen bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                    ↗ +12.4%
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                    illustrative
                   </span>
                 </div>
 
-                {/* Simulated Sparkline Chart with Real Data Real Growth pill */}
+                {/* Decorative chart shape. It is not derived from any wallet's history,
+                    so it is not presented as growth. */}
                 <div className="relative mt-3 h-24 sm:h-26 w-full">
                   {/* Floating tooltip */}
-                  <div className="absolute top-1 right-2 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-xl shadow-md border border-primary-100 text-[10px] font-semibold text-primary-600 flex items-center gap-1.5 z-10">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-                    <span>Real Data • Real Growth</span>
+                  <div className="absolute top-1 right-2 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-xl shadow-md border border-primary-100 text-[10px] font-semibold text-navy-500 flex items-center gap-1.5 z-10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-navy-300" />
+                    <span>Example layout, not live data</span>
                   </div>
 
                   {/* SVG Chart */}
@@ -230,8 +250,8 @@ export function Hero() {
                 </div>
 
                 <div className="pt-1.5 text-center border-t border-navy-100/60">
-                  <span className="text-[10px] font-bold text-primary-600 hover:text-primary-700 cursor-pointer">
-                    + More Chains
+                  <span className="text-[10px] font-medium text-navy-400">
+                    Ethereum · Algorand · Solana · Bitcoin
                   </span>
                 </div>
               </div>
@@ -269,9 +289,14 @@ export function Hero() {
                 id="search-input"
                 type="text"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  if (error !== null) setError(null);
+                }}
                 placeholder="Search address/Web3 ID"
-                className="w-full bg-transparent text-navy-900 placeholder-navy-400 text-sm sm:text-base outline-none font-medium"
+                autoComplete="off"
+                spellCheck="false"
+                className="w-full bg-transparent text-navy-900 placeholder-navy-400 text-sm sm:text-base outline-none font-mono"
               />
             </div>
 
@@ -287,7 +312,7 @@ export function Hero() {
             {/* Connect Wallet Button */}
             <button
               type="button"
-              onClick={openWalletModal}
+              onClick={() => openWalletModal()}
               className="btn-connect-wallet text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 cursor-pointer flex-shrink-0"
             >
               <Wallet className="w-4 h-4" />
@@ -295,10 +320,40 @@ export function Hero() {
             </button>
           </form>
 
+          {/* Live format feedback: the address family is recognized as it is typed, so
+              a malformed paste is caught before it becomes a request. */}
+          <div className="mt-2 flex items-center justify-center gap-2 text-xs font-medium min-h-[1.25rem]">
+            {error !== null ? (
+              <span className="inline-flex items-center gap-1.5 text-amber-700">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{error}</span>
+              </span>
+            ) : address.trim().length > 0 ? (
+              <span
+                className={`inline-flex items-center gap-1.5 ${
+                  detection.isValid ? "text-accentGreen" : "text-amber-700"
+                }`}
+              >
+                {detection.isValid ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {detection.label} — {detection.hint}
+                </span>
+              </span>
+            ) : (
+              <span className="text-navy-400">
+                One wallet is free to look up — no wallet connection needed.
+              </span>
+            )}
+          </div>
+
           {/* Under Search Prompt & Carousel Indicator */}
           <div className="mt-2.5 text-center">
             <div className="text-xs sm:text-sm font-semibold text-navy-800 tracking-tight">
-              enter add and see the power of x402
+              enter address and see the power of x402
             </div>
             <div className="flex items-center justify-center gap-1.5 mt-1.5">
               <span className="w-5 h-1.5 rounded-full bg-navy-200" />

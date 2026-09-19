@@ -52,6 +52,8 @@ const walletReportSchema = z.object({
   nativeSymbol: z.string(),
   nativeBalance: z.string(),
   nativeAmount: z.string(),
+  // The native balance's own USD value, when the native currency could be priced.
+  nativeValueUsd: z.string().optional(),
   totalValueUsd: z.string().optional(),
   allocationPct: z.string().optional(),
   holdings: z.array(holdingLineSchema)

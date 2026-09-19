@@ -62,6 +62,7 @@ model WalletSnapshot {
   status          SnapshotStatus       @default(PENDING)
   nativeBalance   String?
   nativeSymbol    String?
+  nativeValueUsd  Decimal?             @db.Decimal(36, 8)
   totalValueUsd   Decimal?             @db.Decimal(36, 8)
   provider        String
   blockNumber     String?

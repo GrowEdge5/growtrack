@@ -17,12 +17,14 @@ import { BitcoinChainDataProvider } from "../modules/chains/infrastructure/bitco
 import { SolanaChainDataProvider } from "../modules/chains/infrastructure/solana/solana-chain-data-provider.js";
 import { SolanaTokenMetadataSource } from "../modules/chains/infrastructure/solana/solana-token-metadata.js";
 import { ViemChainDataProvider } from "../modules/chains/infrastructure/evm/viem-chain-data-provider.js";
+import { AnalyzeWallet } from "../modules/wallets/application/analyze-wallet.js";
 import { GetPortfolioReport } from "../modules/wallets/application/get-portfolio-report.js";
 import { GetWalletIntelligence } from "../modules/wallets/application/get-wallet-intelligence.js";
 import { RefreshWalletIntelligence } from "../modules/wallets/application/refresh-wallet-intelligence.js";
 import { RequestWalletRefresh } from "../modules/wallets/application/request-wallet-refresh.js";
 import { createPaymentBuilders } from "../modules/payments/application/payment-requirements-builder.js";
 import type { PaymentRequirementsBuilder } from "../modules/payments/application/payment-requirements-builder.js";
+import { GetAlgorandPaymentParams } from "../modules/payments/application/get-algorand-payment-params.js";
 import {
   buildPaidResources,
   type PaidResourceDefinition,
@@ -44,6 +46,9 @@ export interface ApplicationContainer {
   // deployment actually supports instead of hardcoding a chain list.
   chainProviders: ChainProviderRegistry;
   getWalletIntelligence: GetWalletIntelligence;
+  // The free/guest read path: an address with no chain hint and no payment, which
+  // falls through to a live upstream read when nothing is cached or stored.
+  analyzeWallet: AnalyzeWallet;
   requestWalletRefresh: RequestWalletRefresh;
   refreshWalletIntelligence: RefreshWalletIntelligence;
   getPortfolioReport: GetPortfolioReport;
@@ -56,6 +61,9 @@ export interface ApplicationContainer {
   paidResources: readonly PaidResourceDefinition[];
   paymentBuilders: ReadonlyMap<PaidResourceId, PaymentRequirementsBuilder>;
   paymentFacilitator: PaymentFacilitator;
+  // Suggested params for the network this deployment charges on, handed to browser
+  // clients so a signed payment can only ever be built for the priced network.
+  getAlgorandPaymentParams: GetAlgorandPaymentParams;
   connect(): Promise<void>;
   close(): Promise<void>;
 }
@@ -182,6 +190,12 @@ export function buildContainer(env: Environment): ApplicationContainer {
     systemClock,
     env.WALLET_FRESHNESS_SECONDS
   );
+  const getWalletIntelligence = new GetWalletIntelligence(
+    providers,
+    cache,
+    repository,
+    systemClock
+  );
 
   return {
     env,
@@ -190,7 +204,8 @@ export function buildContainer(env: Environment): ApplicationContainer {
     refreshQueue,
     chainProviders: providers,
     paidResources,
-    getWalletIntelligence: new GetWalletIntelligence(providers, cache, repository, systemClock),
+    getWalletIntelligence,
+    analyzeWallet: new AnalyzeWallet(providers, getWalletIntelligence, refreshWalletIntelligence),
     requestWalletRefresh: new RequestWalletRefresh(providers, refreshQueue, systemClock),
     refreshWalletIntelligence,
     // Aggregates the same refresh path across several wallets/chains — the
@@ -198,6 +213,11 @@ export function buildContainer(env: Environment): ApplicationContainer {
     getPortfolioReport: new GetPortfolioReport(providers, refreshWalletIntelligence, systemClock),
     paymentBuilders,
     paymentFacilitator,
+    getAlgorandPaymentParams: new GetAlgorandPaymentParams({
+      apiUrl: env.ALGORAND_API_URL,
+      timeoutMs: env.PROVIDER_TIMEOUT_MS,
+      network: env.X402_NETWORK
+    }),
     async connect() {
       // BullMQ shares this ioredis client and eagerly initiates its connection during
       // Queue construction, so an unconditional redis.connect() here throws

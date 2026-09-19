@@ -33,6 +33,9 @@ const walletDataSchema = z.object({
   nativeSymbol: z.string(),
   provider: z.string(),
   blockNumber: z.string().optional(),
+  // The native balance's own USD value; absent when the native currency could not
+  // be priced (distinct from a priced native balance worth nothing).
+  nativeValueUsd: z.string().optional(),
   // Sum of native + all priced holdings, in USD. Omitted when nothing could
   // be priced (never zero-filled).
   totalValueUsd: z.string().optional(),
@@ -122,5 +125,24 @@ export const refreshResponseSchema = z.object({
   data: z.object({
     jobId: z.string(),
     status: z.literal("queued")
+  })
+});
+
+// The free/guest read: an address on its own, with an optional explicit chain for
+// the genuinely ambiguous base58 cases (Solana vs Bitcoin legacy).
+export const analyzeQuerySchema = z.object({
+  address: z.string().min(1),
+  chain: z.string().min(1).optional()
+});
+
+// Same wallet shape as the snapshot routes, plus the chain the address was routed
+// to and the provenance of the read. `source: "live"` means the values in this
+// response were read from the chain for this request.
+export const analyzeResponseSchema = z.object({
+  data: walletDataSchema,
+  meta: z.object({
+    chain: z.string(),
+    source: z.enum(["cache", "database", "live"]),
+    stale: z.boolean()
   })
 });

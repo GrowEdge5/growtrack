@@ -153,10 +153,10 @@ export function Capabilities() {
               </div>
               <div className="mt-5 pt-3 border-t border-navy-100/60">
                 <Link
-                  href="#portfolio"
+                  href="#x402"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors group"
                 >
-                  <span>Our Data Sources</span>
+                  <span>How valuation works</span>
                   <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                     <ArrowRight className="w-3 h-3 text-primary-600" />
                   </div>
@@ -186,7 +186,7 @@ export function Capabilities() {
               </div>
               <div className="mt-5 pt-3 border-t border-navy-100/60">
                 <Link
-                  href="/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+                  href="#x402"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors group"
                 >
                   <span>Learn about x402</span>
@@ -211,6 +211,10 @@ export function Capabilities() {
                   <p className="text-xs text-navy-400 mt-0.5">
                     Track, analyse and grow — powered by real on-chain data.
                   </p>
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Sample allocation — not live data
+                  </span>
                 </div>
               </div>
 
@@ -389,7 +393,7 @@ export function Capabilities() {
             {/* Bottom Primary CTA */}
             <div className="mt-6 pt-2">
               <Link
-                href="/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+                href="#portfolio"
                 className="w-full btn-connect-wallet text-white py-3.5 rounded-full font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Start Tracking Your Portfolio</span>
