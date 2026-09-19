@@ -1,8 +1,0 @@
-{
-  "c": ["app/layout", "app/wallet/[address]/page", "webpack"],
-  "r": [],
-  "m": [
-    "(app-pages-browser)/../node_modules/lucide-react/dist/esm/icons/activity.js",
-    "(app-pages-browser)/../node_modules/lucide-react/dist/esm/icons/triangle-alert.js"
-  ]
-}
