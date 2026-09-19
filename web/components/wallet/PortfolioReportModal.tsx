@@ -22,7 +22,13 @@ import {
   type PaymentRequirements,
   type PortfolioReport
 } from "@/lib/api";
-import { formatAtomicAmount, payAndRetry, requestQuote, X402Error, type PaymentStage } from "@/lib/x402";
+import {
+  formatAtomicAmount,
+  payAndRetry,
+  requestQuote,
+  X402Error,
+  type PaymentStage
+} from "@/lib/x402";
 import { explorerUrl, transactionUrl } from "@/lib/address";
 import { formatUsd, shorten } from "@/lib/format";
 
@@ -288,8 +294,8 @@ function QuotePanel({
 
       <p className="text-[11px] text-navy-500 leading-relaxed">
         Approving opens your wallet to sign one Algorand transaction. The network fee is sponsored
-        by the facilitator, so you pay only the amount above — no subscription, no recurring
-        charge. If you decline, nothing is sent and no report is generated.
+        by the facilitator, so you pay only the amount above — no subscription, no recurring charge.
+        If you decline, nothing is sent and no report is generated.
       </p>
 
       <div className="flex items-center gap-3">
@@ -351,7 +357,8 @@ function ReportView({
           <div className="flex items-center gap-2 font-bold">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>
-              Payment settled on Algorand — {formatAtomicAmount(accept.amount, accept.extra.decimals)}{" "}
+              Payment settled on Algorand —{" "}
+              {formatAtomicAmount(accept.amount, accept.extra.decimals)}{" "}
               {accept.extra.name ?? "asset"}
             </span>
           </div>
@@ -392,9 +399,7 @@ function ReportView({
 
       {/* Per chain */}
       <div className="space-y-2">
-        <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">
-          By chain
-        </h4>
+        <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">By chain</h4>
         <div className="rounded-2xl border border-navy-100/60 overflow-hidden bg-white/70">
           {report.chains.map((chain) => (
             <div
@@ -418,9 +423,7 @@ function ReportView({
 
       {/* Per wallet */}
       <div className="space-y-2">
-        <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">
-          By wallet
-        </h4>
+        <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">By wallet</h4>
         <div className="space-y-2">
           {report.wallets.map((wallet) => {
             const link = explorerUrl(wallet.chain, wallet.address);
@@ -432,7 +435,8 @@ function ReportView({
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-navy-900 capitalize">
-                      {wallet.chain} · {wallet.status === "complete" ? "Fully priced" : "Partially priced"}
+                      {wallet.chain} ·{" "}
+                      {wallet.status === "complete" ? "Fully priced" : "Partially priced"}
                     </div>
                     <div className="font-mono text-[10px] text-navy-400 break-all">
                       {wallet.address}

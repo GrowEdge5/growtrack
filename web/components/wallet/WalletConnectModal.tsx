@@ -148,13 +148,17 @@ export function WalletConnectModal() {
                           <div>
                             <span
                               className={`font-bold text-sm tracking-tight ${
-                                supported ? "text-navy-900 group-hover:text-primary-600" : "text-navy-600"
+                                supported
+                                  ? "text-navy-900 group-hover:text-primary-600"
+                                  : "text-navy-600"
                               }`}
                             >
                               {wallet.name}
                             </span>
                             <p className="text-[11px] text-navy-400 font-medium">
-                              {supported ? wallet.subtext : (wallet.unsupportedReason ?? "Not supported yet")}
+                              {supported
+                                ? wallet.subtext
+                                : (wallet.unsupportedReason ?? "Not supported yet")}
                             </p>
                           </div>
                         </div>

@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode
+} from "react";
 
 // Controls the connect-wallet modal, and — just as importantly — carries WHY it was
 // opened. A modal that says "connect a wallet" when the user asked for a second

@@ -40,11 +40,7 @@ export interface AlgorandPaymentParams {
 }
 
 /** What the UI shows while the payment is in flight. */
-export type PaymentStage =
-  | "requesting"
-  | "awaiting-signature"
-  | "settling"
-  | "settled";
+export type PaymentStage = "requesting" | "awaiting-signature" | "settling" | "settled";
 
 export interface SettlementReceipt {
   transactionId: string;

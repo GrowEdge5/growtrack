@@ -10,7 +10,8 @@ export default tseslint.config(
       "node_modules/**",
       "prisma/migrations/**",
       "*.config.js",
-      "web/**"
+      "web/**",
+      "tests/unit/web/**"
     ]
   },
   eslint.configs.recommended,

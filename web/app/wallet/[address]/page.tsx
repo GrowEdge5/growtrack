@@ -30,8 +30,20 @@ import { GlassSquareIcon } from "@/components/wallet/GlassSquareIcon";
 import { PortfolioReportModal } from "@/components/wallet/PortfolioReportModal";
 import { useWalletSession } from "@/context/WalletSessionContext";
 import { useWalletGate } from "@/lib/useWalletGate";
-import { ApiError, analyzeWallet, fetchChains, type AnalyzeResponse, type ChainDescriptor } from "@/lib/api";
-import { detectAddressFormat, explorerName, explorerUrl, chainLabel, coinKeyForSymbol } from "@/lib/address";
+import {
+  ApiError,
+  analyzeWallet,
+  fetchChains,
+  type AnalyzeResponse,
+  type ChainDescriptor
+} from "@/lib/api";
+import {
+  detectAddressFormat,
+  explorerName,
+  explorerUrl,
+  chainLabel,
+  coinKeyForSymbol
+} from "@/lib/address";
 import { formatAmount, formatRelativeTime, formatUsd, shorten, toWholeUnits } from "@/lib/format";
 
 interface PageProps {
@@ -357,7 +369,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     disabled={loading}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold disabled:opacity-60"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`} />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`}
+                    />
                     <span>Refresh</span>
                   </button>
                 </div>
@@ -416,9 +430,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
           </div>
           <div className="text-xs text-navy-600 leading-relaxed">
             <strong className="text-navy-900 font-bold">Truthful valuation: </strong>
-            balances are read from {detectedChain !== null ? chainLabel(detectedChain) : "the chain"}{" "}
-            and priced through a market data feed. Anything without a trustworthy USD price is shown
-            as{" "}
+            balances are read from{" "}
+            {detectedChain !== null ? chainLabel(detectedChain) : "the chain"} and priced through a
+            market data feed. Anything without a trustworthy USD price is shown as{" "}
             <span className="inline-block font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[11px]">
               Unpriced
             </span>{" "}
@@ -465,7 +479,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
               <SummaryCard
                 label="Priced vs unpriced"
                 value={`${pricedCount} / ${unpricedCount}`}
-                note={unpricedCount > 0 ? "Unpriced assets excluded from value" : "Full pricing coverage"}
+                note={
+                  unpricedCount > 0
+                    ? "Unpriced assets excluded from value"
+                    : "Full pricing coverage"
+                }
                 noteTone={unpricedCount > 0 ? "warn" : "ok"}
               />
 
@@ -485,7 +503,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     Wallets
                   </div>
                   <h2 className="text-lg sm:text-xl font-black text-navy-900 tracking-tight">
-                    {tracked.length === 1 ? "Watching one wallet" : `Watching ${tracked.length} wallets`}
+                    {tracked.length === 1
+                      ? "Watching one wallet"
+                      : `Watching ${tracked.length} wallets`}
                   </h2>
                   <p className="text-[11px] text-navy-500 font-medium mt-0.5">
                     Looking up a single wallet is free and needs no connection.
@@ -511,7 +531,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <form onSubmit={handleAddWallet} className="flex flex-col sm:flex-row items-center gap-3">
+              <form
+                onSubmit={handleAddWallet}
+                className="flex flex-col sm:flex-row items-center gap-3"
+              >
                 <div className="flex-1 w-full relative">
                   <input
                     type="text"
@@ -707,9 +730,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
                 <p className="text-[11px] text-navy-400 font-medium leading-relaxed">
                   Discovered from a curated token list for{" "}
-                  {detectedChain !== null ? chainLabel(detectedChain) : "this chain"}. Assets outside
-                  that list are not read yet, so this is a priced view of what Growtrack tracks —
-                  not a claim of complete on-chain coverage.
+                  {detectedChain !== null ? chainLabel(detectedChain) : "this chain"}. Assets
+                  outside that list are not read yet, so this is a priced view of what Growtrack
+                  tracks — not a claim of complete on-chain coverage.
                 </p>
               </div>
             )}
@@ -911,8 +934,7 @@ function describeLoadError(error: unknown, address: string): { message: string; 
       case "UNRECOGNIZED_ADDRESS":
         return {
           message: `"${shorten(address, 10, 8)}" is not an address Growtrack recognizes.`,
-          hint:
-            "Supported forms: EVM (0x + 40 hex), Algorand (58-character base32), Solana (base58), Bitcoin (bech32 or legacy)."
+          hint: "Supported forms: EVM (0x + 40 hex), Algorand (58-character base32), Solana (base58), Bitcoin (bech32 or legacy)."
         };
       case "AMBIGUOUS_ADDRESS":
         return {

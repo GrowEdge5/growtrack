@@ -1,7 +1,5 @@
 import type { FastifyInstance } from "fastify";
 
-import type { ApplicationContainer } from "../../app/build-container.js";
-
 // `/demo` used to serve a self-contained HTML dashboard full of hardcoded balances,
 // a fabricated P&L curve and addresses that were not even valid — which meant the
 // most prominent link on the landing page led to invented numbers. It now redirects
@@ -22,7 +20,8 @@ function resolveDashboardTarget(): string {
 
 export function registerDashboardRoute(
   app: FastifyInstance,
-  _container: ApplicationContainer
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _container?: unknown
 ): void {
   app.get("/demo", async (_request, reply) => {
     // 302 rather than 301: the target depends on how this process was deployed, so it

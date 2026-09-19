@@ -245,6 +245,7 @@ The Fastify API is served at `http://localhost:3000`.
 The Next.js Web Frontend is served at `http://localhost:3001` (proxies `/v1/*` to the API).
 
 ### Free & Unauthenticated Endpoints
+
 - Liveness: `GET /health/live`
 - Readiness: `GET /health/ready`
 - Metrics: `GET /metrics`
@@ -261,6 +262,7 @@ The Next.js Web Frontend is served at `http://localhost:3001` (proxies `/v1/*` t
 - Queue Refresh: `POST /v1/wallets/:chain/:address/refresh`
 
 ### x402-Gated Paid Endpoints (Algorand USDC Rails)
+
 - Live On-Demand Snapshot: `GET /v1/wallets/:chain/:address/live` ($0.01 USDC)
 - Multi-Wallet Portfolio Totals: `GET /v1/portfolio?addresses=:addr1,:addr2` ($0.02 USDC)
 - Consolidated Portfolio Report: `GET /v1/portfolio/report?addresses=:addr1,:addr2` ($0.05 USDC)
@@ -310,7 +312,7 @@ The Next.js web application (`web/`) delivers a high-fidelity Web3 fintech exper
    - Translucent glass footer with Algorand badge, `GROWTRACK Powered by Algorand x402`, social icons (Discord, X, GitHub, Telegram, Email), `Brand Assets`, and `Terms of Service`.
 
 ### Local Development Routes
- 
+
 - **Next.js Web Frontend**: `http://localhost:3001`
 - **Fastify Backend API**: `http://localhost:3000`
 - **Wallet Intelligence View**: `http://localhost:3001/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` (EVM)

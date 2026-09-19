@@ -112,11 +112,7 @@ describe("buildPaymentGroup", () => {
   });
 
   it("carries the exact atomic amount and asset from the requirements", () => {
-    const group = buildPaymentGroup(
-      params(),
-      accept({ amount: "1", asset: "10458941" }),
-      PAYER
-    );
+    const group = buildPaymentGroup(params(), accept({ amount: "1", asset: "10458941" }), PAYER);
     const payment = decode(group.paymentBase64);
 
     expect(Number(payment.assetTransfer?.amount ?? -1n)).toBe(1);
@@ -178,7 +174,9 @@ describe("parseSettlement", () => {
   it("returns null rather than an empty receipt when nothing settled", () => {
     expect(parseSettlement(null)).toBeNull();
     expect(parseSettlement("")).toBeNull();
-    expect(parseSettlement(Buffer.from(JSON.stringify({ success: false })).toString("base64"))).toBeNull();
+    expect(
+      parseSettlement(Buffer.from(JSON.stringify({ success: false })).toString("base64"))
+    ).toBeNull();
     expect(parseSettlement("not-base64-json")).toBeNull();
   });
 });

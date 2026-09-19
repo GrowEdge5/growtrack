@@ -159,7 +159,11 @@ interface Connector {
    * client passes only its own payment transaction and reassembles the group
    * afterwards. Returns one entry per input: base64 signed blob, or null if declined.
    */
-  sign(transactions: readonly string[], signer: string, network: NetworkContext): Promise<(string | null)[]>;
+  sign(
+    transactions: readonly string[],
+    signer: string,
+    network: NetworkContext
+  ): Promise<(string | null)[]>;
 }
 
 function decodeGroup(
@@ -288,9 +292,7 @@ export async function reconnectWallet(
     return null;
   }
 
-  const addresses = await CONNECTORS[id]
-    .reconnect(network)
-    .catch(() => null);
+  const addresses = await CONNECTORS[id].reconnect(network).catch(() => null);
   const address = addresses?.[0];
   if (address === undefined || address.length === 0) {
     return null;

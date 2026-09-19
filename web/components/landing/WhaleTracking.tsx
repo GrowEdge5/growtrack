@@ -293,7 +293,11 @@ export function WhaleTracking() {
                   onClick={() => copyToClipboard(EXAMPLE_EVM)}
                   className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  {copiedAddress === EXAMPLE_EVM ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiedAddress === EXAMPLE_EVM ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
                   <span>{copiedAddress === EXAMPLE_EVM ? "Copied" : "Copy address"}</span>
                 </button>
                 <Link
@@ -484,7 +488,11 @@ export function WhaleTracking() {
                   onClick={() => copyToClipboard(EXAMPLE_ALGO)}
                   className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  {copiedAddress === EXAMPLE_ALGO ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiedAddress === EXAMPLE_ALGO ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
                   <span>{copiedAddress === EXAMPLE_ALGO ? "Copied" : "Copy address"}</span>
                 </button>
                 <Link
