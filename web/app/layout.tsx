@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
+import { WalletModalProvider } from "@/context/WalletModalContext";
+import { WalletConnectModal } from "@/components/wallet/WalletConnectModal";
 
 import "./globals.css";
 
@@ -14,7 +16,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <WalletModalProvider>
+          {children}
+          <WalletConnectModal />
+        </WalletModalProvider>
+      </body>
     </html>
   );
 }

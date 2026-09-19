@@ -1,21 +1,33 @@
 import React from "react";
 import { Navbar } from "@/components/landing/Navbar";
-import { HeroSearch } from "@/components/landing/HeroSearch";
-import { ChainStatusGrid } from "@/components/landing/ChainStatusGrid";
-import { TransparencyPillars } from "@/components/landing/TransparencyPillars";
-import { X402ProtocolFlow } from "@/components/landing/X402ProtocolFlow";
+import { Hero } from "@/components/landing/Hero";
+import { WhaleTracking } from "@/components/landing/WhaleTracking";
+import { Capabilities } from "@/components/landing/Capabilities";
+import { WhatNext } from "@/components/landing/WhatNext";
 import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-canvas text-ink selection:bg-algorand selection:text-canvas font-sans flex flex-col">
+    <div className="site-atmosphere min-h-screen text-navy-800 selection:bg-primary-500 selection:text-white font-sans flex flex-col antialiased overflow-x-hidden">
+      {/* Main App Bar */}
       <Navbar />
-      <main className="flex-1">
-        <HeroSearch />
-        <ChainStatusGrid />
-        <TransparencyPillars />
-        <X402ProtocolFlow />
+
+      {/* Main Content Sections Matching Visual Source of Truth */}
+      <main className="flex-1 relative z-10">
+        {/* Section 1: Hero & Perspective Showcase (Ref: IMAGE 5) */}
+        <Hero />
+
+        {/* Section 2: Whale Portfolio Tracking */}
+        <WhaleTracking />
+
+        {/* Section 3: Institutional Capabilities Bento & Donut Analytics */}
+        <Capabilities />
+
+        {/* Section 4: What's Next & Feature Preview */}
+        <WhatNext />
       </main>
+
+      {/* Light Glass Footer */}
       <Footer />
     </div>
   );

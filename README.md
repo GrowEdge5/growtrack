@@ -1,5 +1,33 @@
 # Growtrack
 
+> ## Progress Report — 2026-09-19: Wallet Portfolio Dashboard Redesign
+>
+> 1. **What was completed**: Rebuilt the wallet detail page (`/wallet/[address]`) from the dark-mode terminal layout into the official Growtrack light frosted-glass design system with DeBank-inspired information architecture.
+> 2. **Wallet dashboard features implemented**:
+>    - Unified Header (`Navbar`) with persistent Connect Wallet modal trigger.
+>    - Wallet Identity card with detected chain badge, copy button, and block explorer direct link.
+>    - Truthful Valuation banner enforcing "Unpriced" classification for illiquid assets instead of fake $0.00 valuations.
+>    - Metric summary cards: Total Portfolio Value (with 24h change), Tracked Assets count, Verified vs Unpriced counts, and x402 $0.01 pay-per-query tier.
+>    - Multi-Wallet Portfolio Management: consolidated view across multiple wallets, wallet switcher, and "+ Add Wallet" interactive client state.
+>    - 4 Core Tabs: Portfolio, NFTs, Transactions, and DeFi.
+>    - Mandatory Square Frosted Glass Containers (`GlassSquareIcon`) for every single crypto/token logo across the entire dashboard.
+>    - Interactive x402 payment modal simulation with 4-step HTTP 402 verification lifecycle.
+> 3. **DeBank-inspired elements removed**:
+>    - Completely eliminated Stream, Badge, TVF, Followers, Following, Earnings, "Say Hi", and social/community profile metrics.
+>    - Replaced with the institutional multi-wallet tracking section and truthful on-chain analytics.
+> 4. **Growtrack-specific features added**:
+>    - Multi-Wallet consolidated portfolio aggregation across EVM and Algorand.
+>    - Native x402 pay-per-query micropayment execution flow ($0.01 USDC on Algorand rails).
+>    - Explicit "Unpriced" labeling for zero-oracle-depth assets.
+> 5. **Problems or limitations remaining**:
+>    - Live on-chain balances currently map through mock/synced data on the frontend; future phase will connect client RPC hooks directly to the Fastify `/v1/wallets/:chain/:address/live` backend.
+> 6. **Tests/checks performed**:
+>    - `npm run typecheck:web` (TypeScript strict check).
+>    - HTTP status verification on `/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` (EVM) and `/wallet/F232...DSEA` (Algorand).
+>    - Visual consistency check against landing page glassmorphism tokens.
+> 7. **Whether tests passed**: All tests passed with code `0` and HTTP status `200 OK`.
+> 8. **Exact next recommended step**: Wire frontend portfolio queries directly to the Railway backend API endpoints (`/v1/portfolio`) using the x402 payment client.
+
 > ## Update — 2026-09-17: Composite entry, four chains, price correction
 >
 > This section supersedes earlier statements below wherever they conflict.
@@ -247,3 +275,78 @@ npm run build
 ## Current capability boundary
 
 Two read chains share one provider port. The **EVM** provider reads native balance, block number, and ERC-20 holdings (from a curated Ethereum token list); the **Algorand** provider reads the ALGO balance, round, and curated ASA holdings (USDC, USDt) from a keyless algod endpoint, keeping addresses verbatim (case-sensitive base32 — never lowercased). Each holding is then enriched with a USD `valueUsd` and the snapshot with a `totalValueUsd`, priced through the same keyless DeFiLlama adapter. A snapshot is `complete` only when the native balance and every discovered holding were priced; otherwise it is `partial`. Because token/ASA discovery is limited to the curated lists, `complete` describes USD-pricing coverage of the assets found — **not** exhaustive portfolio coverage. Transactions, protocol positions, and intelligence signals remain explicit extension points rather than fabricated data. Blockchain access is **read-only**: Growtrack never holds keys, signs, or moves funds.
+
+---
+
+## Web Frontend & Visual Reference System (Algorand x402 Theme)
+
+The Next.js web application (`web/`) delivers a high-fidelity Web3 fintech experience built strictly according to the reference glassmorphic design language.
+
+### Core Visual Identity & Styling
+
+- **Theme**: Light Theme (Soft Blue `#F7FBFF` + Frosted Glass `rgba(255,255,255,0.65)` + Deep Navy `#14213D` + Algorand Mint `#00ECB5` & Electric Blue `#1677FF`).
+- **Surface**: Multilayered frosted backdrop blur (`backdrop-filter: blur(20px)`), translucent specular borders (`1.5px solid rgba(255, 255, 255, 0.82)`), and diffuse ambient blue drop shadows (`0 20px 60px rgba(40, 120, 255, 0.10)`).
+- **Brand Logo**: 3D blue glass squircle with glossy top reflection, white inner bevel glow, and crisp white magnifying glass, followed by `Growtrack`.
+- **Typography & Doodles**: Inter for high-precision financial figures, with authentic cursive handwriting doodles and curved arrows (`"All Chains One View"`, `"More Possibilities"`, `"Real Wallets Real Insights"`, `"From Data to Decisions"`, `"Track Everything."`, `"Grow Further."`, `"Bigger Possibilities Ahead"`, `"Track Analyse Grow."`).
+
+### Four Reference Landing Page Sections (Visual Source of Truth)
+
+1. **Header & Perspective Hero** (`Hero.tsx`):
+   - Frosted glass navbar with 3D glass logo, navigation links, and `Connect Wallet` CTA.
+   - Floating perspective glass dashboard card displaying live allocation breakdowns across Algorand, Bitcoin, Ethereum, BNB, and Hyperliquid with `"Real Data • Real Growth"` sparkline tooltip.
+   - Flanking 3D glossy token tiles (Algorand, Bitcoin, Hyperliquid on left; Ethereum, BNB, and dots on right).
+   - Search ingestion pill with 3D blue glass search squircle, `Connect Wallet` CTA, and `"enter add and see the power of x402"` guide indicator.
+2. **Whale Portfolio Tracking** (`WhaleTracking.tsx`):
+   - Two whale intelligence profiles (`nmstarchild` and `an0n`) with top summary cards and bottom detailed dashboard cards (TVF, follower stats, multi-chain asset allocation bars, sparkline performance curves, and quick follow/inspect actions).
+3. **Institutional Capabilities** (`Capabilities.tsx`):
+   - 2x2 Bento grid for Multi-Chain Tracking, Real-Time Data, Truthful Valuations, and Algorand x402 Protocol.
+   - Interactive donut chart breakdown showing live percentage asset distributions and non-custodial guarantee metrics.
+4. **What's Next & Footer** (`WhatNext.tsx` & `Footer.tsx`):
+   - Three feature cards (`New Features`, `More Integrations`, `Bigger Community`), floating 3D Algorand & chart tiles, and glowing `Stay Updated →` CTA.
+   - Translucent glass footer with Algorand badge, `GROWTRACK Powered by Algorand x402`, social icons (Discord, X, GitHub, Telegram, Email), `Brand Assets`, and `Terms of Service`.
+
+### Local Development Routes
+
+- **Landing Page**: `http://localhost:3000`
+- **Wallet Intelligence View**: `http://localhost:3000/wallet/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+
+---
+
+## Final Visual Implementation Task (Visual Source of Truth)
+
+### 1. What Was Completed
+
+- **Background System Overhaul**: Removed all heavy blue curved wave vectors and replaced them with a soft, clean, illuminated glass environment per Image 5 (predominantly white `#FFFFFF` with faint atmospheric blue radial glows and a barely visible 40px grid).
+- **Direct Crypto Logo Assets Integration**: Directly embedded the supplied crypto logo assets (`algorand.png`, `bnb.png`, `ethereum.jpg`, `hyperliquid.svg`, `bitcoin.svg`) inside the floating frosted glass tiles, preserving correct proportions without filling the entire tile.
+- **Front-Facing Main Portfolio Dashboard**: Rebuilt the hero dashboard to be front-facing (no tilted 3D perspective or isometric skew), compact, and clean with live valuation (`$24,532.18`, `+12.4%`), area performance chart with `"Real Data • Real Growth"` tooltip, and the 5-asset allocation table (`Algorand`, `Bitcoin`, `Ethereum`, `BNB Chain`, `Hyperliquid`, `+ More Chains`).
+- **Precision Hero Typography & Search Area**: Realigned the central headline to `"Track Across Chains. / Grow Your Portfolio with / Real Data."` in dark navy `#14213D` with centered supporting copy, rounded glass search bar, blue glass search button, and `"enter add and see the power of x402"` guide indicator.
+- **Subtle Glass Frosted Effect**: Implemented the exact CSS frosted glass formula using `backdrop-filter: blur(20px) saturate(125%)`, translucent borders `rgba(255, 255, 255, 0.85)`, and diffuse soft blue drop shadow `0 20px 60px rgba(65, 130, 220, 0.10)`.
+
+### 2. Visual Changes Made
+
+- Replaced custom vector coin icons with the actual user-supplied logo image files in `web/public/assets/coins/`.
+- Purged all heavy blue wave illustrations from the background; restored the subtle blueprint grid and airy white illuminated aesthetic.
+- Standardized all floating coin tiles (`Algorand`, `Bitcoin`, `Hyperliquid` on the left; `Ethereum`, `BNB`, and dots on the right) with hand-drawn callout arrows (`"All Chains One View"` and `"More Possibilities"`).
+- Flattened the hero dashboard preview to front-facing perspective matching Image 5.
+
+### 3. Problems / Limitations Remaining
+
+- The current build focuses on the desktop landing viewport as the primary target according to Image 5; mobile breakpoints gracefully collapse the floating tiles into clean horizontal stacks, but advanced gesture-based tile panning is not yet implemented.
+- The wallet search bar currently points to Algorand and EVM wallet intelligence routes (`/wallet/[address]`); native Bitcoin and Solana wallet route views in the UI remain planned follow-ups.
+
+### 4. Tests & Checks Performed
+
+- **TypeScript Typecheck**: Executed `npm run typecheck:web` (`tsc --noEmit -p web/tsconfig.json`).
+- **HTTP Server Verification**: Performed `Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing`.
+- **Hot Reload Inspection**: Verified Next.js dev server log (`task-404`) for compilation warnings or fast-refresh errors.
+- **Visual & Layout Inspection**: Verified all component trees, asset URLs, and glassmorphism styling against Image 5.
+
+### 5. Whether Tests Passed
+
+- **TypeScript**: Passed with 0 errors (`Exit code 0`).
+- **HTTP Status**: Returned `200 OK` on `http://localhost:3000`.
+- **Compilation**: Fast refresh compiled with 0 errors in 728ms.
+
+### 6. Exact Next Recommended Step
+
+- Test wallet queries live in the browser by entering demo addresses (e.g. `0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` or Algorand accounts) to experience the live x402 payment flow.
