@@ -403,11 +403,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
             </div>
 
             {/* The single paid action on this page */}
-            <div className="flex-shrink-0 lg:border-l lg:border-navy-100/60 lg:pl-6">
+            <div className="flex-shrink-0 lg:border-l lg:border-navy-100/60 lg:pl-6 w-full lg:w-auto mt-2 lg:mt-0">
               <button
                 type="button"
                 onClick={handleGenerateReport}
-                className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                className="btn-connect-wallet text-white px-4 py-3 sm:py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer w-full sm:w-auto"
               >
                 {isConnected ? (
                   <Zap className="w-3.5 h-3.5 fill-white" />
@@ -416,7 +416,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 )}
                 <span>Generate full report (USDC via x402)</span>
               </button>
-              <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-[15rem]">
+              <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-full lg:max-w-[15rem] text-center lg:text-left">
                 Multi-wallet consolidation. You see the exact price before approving anything.
               </p>
             </div>
@@ -658,69 +658,128 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       </div>
                     ) : (
                       filteredRows.map((row) => (
-                        <div
-                          key={row.key}
-                          className="p-4 sm:px-6 md:py-3.5 grid grid-cols-1 md:grid-cols-12 items-center gap-3 hover:bg-white/60 transition-colors"
-                        >
-                          <div className="md:col-span-4 flex items-center gap-3 min-w-0">
-                            <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="md" />
-                            <div className="min-w-0">
-                              <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
-                                <span>{row.name}</span>
-                                <span className="text-[11px] font-extrabold text-navy-400 font-mono">
-                                  {row.symbol}
-                                </span>
-                                {row.isNative && (
-                                  <span className="text-[9px] font-bold uppercase tracking-wide text-primary-600 bg-primary-50 border border-primary-100 px-1.5 rounded">
-                                    native
+                        <div key={row.key} className="hover:bg-white/60 transition-colors">
+                          {/* Mobile View (< md) */}
+                          <div className="md:hidden p-3.5 space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="sm" />
+                                <div className="min-w-0">
+                                  <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
+                                    <span className="truncate">{row.name}</span>
+                                    <span className="text-[11px] font-extrabold text-navy-400 font-mono">
+                                      {row.symbol}
+                                    </span>
+                                    {row.isNative && (
+                                      <span className="text-[9px] font-bold uppercase tracking-wide text-primary-600 bg-primary-50 border border-primary-100 px-1 rounded">
+                                        native
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] font-semibold text-navy-400">
+                                    {detectedChain !== null ? chainLabel(detectedChain) : ""}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right flex-shrink-0">
+                                {row.valueUsd === undefined ? (
+                                  <span className="text-xs text-navy-400 italic">
+                                    Pending pricing
                                   </span>
+                                ) : (
+                                  <div className="text-sm font-black text-navy-900">
+                                    {formatUsd(row.valueUsd)}
+                                  </div>
                                 )}
                               </div>
-                              <div className="text-[11px] font-semibold text-navy-400">
-                                {detectedChain !== null ? chainLabel(detectedChain) : ""}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-navy-100/40 text-xs">
+                              <div className="font-mono font-bold text-navy-700">
+                                {formatAmount(row.amount) ?? row.amount}{" "}
+                                <span className="text-navy-400 font-semibold">{row.symbol}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {row.unitPriceUsd === undefined ? (
+                                  <UnpricedTag />
+                                ) : (
+                                  <span className="font-mono text-[11px] font-semibold text-navy-500">
+                                    {formatUsd(row.unitPriceUsd)}
+                                  </span>
+                                )}
+                                {row.allocationPct !== undefined && (
+                                  <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                                    {row.allocationPct.toFixed(1)}%
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          <div className="md:col-span-3 text-xs font-mono font-bold text-navy-800">
-                            {formatAmount(row.amount) ?? row.amount}{" "}
-                            <span className="text-navy-400 font-semibold">{row.symbol}</span>
-                          </div>
-
-                          <div className="md:col-span-2 md:text-right">
-                            {row.unitPriceUsd === undefined ? (
-                              <UnpricedTag />
-                            ) : (
-                              <div className="text-xs font-mono font-semibold text-navy-700">
-                                {formatUsd(row.unitPriceUsd)}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="md:col-span-3 flex flex-col md:items-end justify-center">
-                            {row.valueUsd === undefined ? (
-                              <span className="text-xs text-navy-400 font-normal italic">
-                                Pending pricing
-                              </span>
-                            ) : (
-                              <div className="text-sm font-black text-navy-900">
-                                {formatUsd(row.valueUsd)}
-                              </div>
-                            )}
-
-                            {row.allocationPct !== undefined && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] font-bold text-navy-500">
-                                  {row.allocationPct.toFixed(2)}%
-                                </span>
-                                <div className="w-16 h-1.5 rounded-full bg-navy-100 overflow-hidden">
-                                  <div
-                                    className="h-full bg-primary-500 rounded-full"
-                                    style={{ width: `${Math.min(row.allocationPct, 100)}%` }}
-                                  />
+                          {/* Desktop View (md+) */}
+                          <div className="hidden md:grid grid-cols-12 items-center gap-3 p-4 sm:px-6 md:py-3.5">
+                            <div className="md:col-span-4 flex items-center gap-3 min-w-0">
+                              <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="md" />
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
+                                  <span>{row.name}</span>
+                                  <span className="text-[11px] font-extrabold text-navy-400 font-mono">
+                                    {row.symbol}
+                                  </span>
+                                  {row.isNative && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wide text-primary-600 bg-primary-50 border border-primary-100 px-1.5 rounded">
+                                      native
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] font-semibold text-navy-400">
+                                  {detectedChain !== null ? chainLabel(detectedChain) : ""}
                                 </div>
                               </div>
-                            )}
+                            </div>
+
+                            <div className="md:col-span-3 text-xs font-mono font-bold text-navy-800">
+                              {formatAmount(row.amount) ?? row.amount}{" "}
+                              <span className="text-navy-400 font-semibold">{row.symbol}</span>
+                            </div>
+
+                            <div className="md:col-span-2 md:text-right">
+                              {row.unitPriceUsd === undefined ? (
+                                <UnpricedTag />
+                              ) : (
+                                <div className="text-xs font-mono font-semibold text-navy-700">
+                                  {formatUsd(row.unitPriceUsd)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="md:col-span-3 flex flex-col md:items-end justify-center">
+                              {row.valueUsd === undefined ? (
+                                <span className="text-xs text-navy-400 font-normal italic">
+                                  Pending pricing
+                                </span>
+                              ) : (
+                                <div className="text-sm font-black text-navy-900">
+                                  {formatUsd(row.valueUsd)}
+                                </div>
+                              )}
+
+                              {row.allocationPct !== undefined && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] font-bold text-navy-500">
+                                    {row.allocationPct.toFixed(2)}%
+                                  </span>
+                                  <div className="w-16 h-1.5 rounded-full bg-navy-100 overflow-hidden">
+                                    <div
+                                      className="h-full bg-primary-500 rounded-full"
+                                      style={{ width: `${Math.min(row.allocationPct, 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))

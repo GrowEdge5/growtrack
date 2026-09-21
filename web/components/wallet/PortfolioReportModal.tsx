@@ -131,11 +131,11 @@ export function PortfolioReportModal({ addresses, onClose }: Props) {
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-8 bg-[#0A2350]/[0.25] backdrop-blur-[6px] overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 md:p-8 bg-[#0A2350]/[0.25] backdrop-blur-[6px] overflow-y-auto"
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-3xl glass-frosted rounded-[32px] p-6 sm:p-7 shadow-2xl border border-white my-4"
+        className="w-full max-w-3xl glass-frosted rounded-[24px] sm:rounded-[32px] p-4 sm:p-7 shadow-2xl border border-white my-2 sm:my-4"
       >
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-navy-100/60">
@@ -298,18 +298,18 @@ function QuotePanel({
         If you decline, nothing is sent and no report is generated.
       </p>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2.5 rounded-full border border-navy-200 text-xs font-bold text-navy-600 hover:bg-white cursor-pointer"
+          className="w-full sm:flex-1 py-2.5 rounded-full border border-navy-200 text-xs font-bold text-navy-600 hover:bg-white cursor-pointer order-2 sm:order-1"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={onPay}
-          className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full text-xs font-bold shadow-sm cursor-pointer inline-flex items-center justify-center gap-1.5"
+          className="w-full sm:flex-1 btn-connect-wallet text-white py-2.5 rounded-full text-xs font-bold shadow-sm cursor-pointer inline-flex items-center justify-center gap-1.5 order-1 sm:order-2"
         >
           <Zap className="w-3.5 h-3.5 fill-white" />
           <span>{connected ? "Approve payment in wallet" : "Connect wallet & pay"}</span>
@@ -404,18 +404,22 @@ function ReportView({
           {report.chains.map((chain) => (
             <div
               key={chain.chain}
-              className="flex items-center justify-between px-4 py-2.5 text-xs border-b border-navy-100/40 last:border-b-0"
+              className="flex items-center justify-between px-3.5 sm:px-4 py-2.5 text-xs border-b border-navy-100/40 last:border-b-0 gap-2 flex-wrap sm:flex-nowrap"
             >
-              <span className="font-bold text-navy-800 capitalize">{chain.chain}</span>
-              <span className="text-navy-500 font-medium">
-                {chain.walletCount} wallet{chain.walletCount === 1 ? "" : "s"}
-              </span>
-              <span className="font-mono font-bold text-navy-900">
-                {formatUsd(chain.totalValueUsd) ?? "Unpriced"}
-              </span>
-              <span className="font-mono text-[11px] text-navy-500">
-                {chain.allocationPct === undefined ? "—" : `${chain.allocationPct}%`}
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-bold text-navy-800 capitalize">{chain.chain}</span>
+                <span className="text-navy-400 font-medium text-[11px]">
+                  ({chain.walletCount} {chain.walletCount === 1 ? "wallet" : "wallets"})
+                </span>
+              </div>
+              <div className="flex items-center gap-3 ml-auto">
+                <span className="font-mono font-bold text-navy-900">
+                  {formatUsd(chain.totalValueUsd) ?? "Unpriced"}
+                </span>
+                <span className="font-mono text-[11px] text-navy-500 min-w-[36px] text-right">
+                  {chain.allocationPct === undefined ? "—" : `${chain.allocationPct}%`}
+                </span>
+              </div>
             </div>
           ))}
         </div>

@@ -287,11 +287,11 @@ export function WhaleTracking() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3 my-4">
+              <div className="flex items-center gap-2.5 sm:gap-3 my-4">
                 <button
                   type="button"
                   onClick={() => copyToClipboard(EXAMPLE_EVM)}
-                  className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-sm"
                 >
                   {copiedAddress === EXAMPLE_EVM ? (
                     <Check className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function WhaleTracking() {
                 </button>
                 <Link
                   href={`/wallet/${EXAMPLE_EVM}`}
-                  className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                 >
                   <span>View Wallet</span>
                   <ExternalLink className="w-4 h-4 text-primary-500" />
@@ -310,67 +310,71 @@ export function WhaleTracking() {
               </div>
 
               {/* Asset Allocation Table */}
-              <div className="mt-4 space-y-3">
-                <div className="grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider pb-1">
-                  <div className="col-span-4">ASSET</div>
-                  <div className="col-span-3">AMOUNT</div>
-                  <div className="col-span-2 text-right">VALUE</div>
-                  <div className="col-span-3 text-right">ALLOCATION</div>
-                </div>
-
-                {/* Row 1: Ethereum */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <EthereumCoinImg className="w-5 h-5" />
-                    <span>Ethereum</span>
+              <div className="mt-4 overflow-x-auto pb-1">
+                <div className="min-w-[320px] space-y-3">
+                  <div className="grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider pb-1">
+                    <div className="col-span-4">ASSET</div>
+                    <div className="col-span-3">AMOUNT</div>
+                    <div className="col-span-2 text-right">VALUE</div>
+                    <div className="col-span-3 text-right">ALLOCATION</div>
                   </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">4.2300 ETH</div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$8,924.34</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">42.3%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-primary-500 rounded-full"
-                        style={{ width: "42.3%" }}
-                      />
+
+                  {/* Row 1: Ethereum */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <EthereumCoinImg className="w-5 h-5" />
+                      <span>Ethereum</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">4.2300 ETH</div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">$8,924.34</div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">42.3%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-primary-500 rounded-full"
+                          style={{ width: "42.3%" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Row 2: Algorand */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <AlgorandCoinImg className="w-5 h-5" />
-                    <span>Algorand</span>
-                  </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">125,000 ALGO</div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$7,500.00</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">35.6%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-400 rounded-full"
-                        style={{ width: "35.6%" }}
-                      />
+                  {/* Row 2: Algorand */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <AlgorandCoinImg className="w-5 h-5" />
+                      <span>Algorand</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">
+                      125,000 ALGO
+                    </div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">$7,500.00</div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">35.6%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full"
+                          style={{ width: "35.6%" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Row 3: Bitcoin */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <BitcoinCoinImg className="w-5 h-5" />
-                    <span>Bitcoin</span>
-                  </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">0.0850 BTC</div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$5,420.21</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">12.8%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{ width: "12.8%" }}
-                      />
+                  {/* Row 3: Bitcoin */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <BitcoinCoinImg className="w-5 h-5" />
+                      <span>Bitcoin</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">0.0850 BTC</div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">$5,420.21</div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">12.8%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 rounded-full"
+                          style={{ width: "12.8%" }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -482,11 +486,11 @@ export function WhaleTracking() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3 my-4">
+              <div className="flex items-center gap-2.5 sm:gap-3 my-4">
                 <button
                   type="button"
                   onClick={() => copyToClipboard(EXAMPLE_ALGO)}
-                  className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="flex-1 btn-connect-wallet text-white py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-sm"
                 >
                   {copiedAddress === EXAMPLE_ALGO ? (
                     <Check className="w-4 h-4" />
@@ -497,7 +501,7 @@ export function WhaleTracking() {
                 </button>
                 <Link
                   href={`/wallet/${EXAMPLE_ALGO}`}
-                  className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 glass-frosted text-navy-800 py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                 >
                   <span>View Wallet</span>
                   <ExternalLink className="w-4 h-4 text-primary-500" />
@@ -505,71 +509,75 @@ export function WhaleTracking() {
               </div>
 
               {/* Asset Allocation Table */}
-              <div className="mt-4 space-y-3">
-                <div className="grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider pb-1">
-                  <div className="col-span-4">ASSET</div>
-                  <div className="col-span-3">AMOUNT</div>
-                  <div className="col-span-2 text-right">VALUE</div>
-                  <div className="col-span-3 text-right">ALLOCATION</div>
-                </div>
-
-                {/* Row 1: Ethereum */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <EthereumCoinImg className="w-5 h-5" />
-                    <span>Ethereum</span>
+              <div className="mt-4 overflow-x-auto pb-1">
+                <div className="min-w-[320px] space-y-3">
+                  <div className="grid grid-cols-12 text-[11px] font-bold text-navy-400 uppercase tracking-wider pb-1">
+                    <div className="col-span-4">ASSET</div>
+                    <div className="col-span-3">AMOUNT</div>
+                    <div className="col-span-2 text-right">VALUE</div>
+                    <div className="col-span-3 text-right">ALLOCATION</div>
                   </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">102.50 ETH</div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$168,240.20</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">50.4%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-primary-500 rounded-full"
-                        style={{ width: "50.4%" }}
-                      />
+
+                  {/* Row 1: Ethereum */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <EthereumCoinImg className="w-5 h-5" />
+                      <span>Ethereum</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">102.50 ETH</div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">$168,240.20</div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">50.4%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-primary-500 rounded-full"
+                          style={{ width: "50.4%" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Row 2: Algorand */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <AlgorandCoinImg className="w-5 h-5" />
-                    <span>Algorand</span>
-                  </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">
-                    1,250,000 ALGO
-                  </div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$250,000.00</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">28.1%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-400 rounded-full"
-                        style={{ width: "28.1%" }}
-                      />
+                  {/* Row 2: Algorand */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5 border-b border-navy-100/40">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <AlgorandCoinImg className="w-5 h-5" />
+                      <span>Algorand</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">
+                      1,250,000 ALGO
+                    </div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">$250,000.00</div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">28.1%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full"
+                          style={{ width: "28.1%" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Row 3: BNB / USDC */}
-                <div className="grid grid-cols-12 items-center text-xs py-1.5">
-                  <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
-                    <BnbCoinImg className="w-5 h-5" />
-                    <span>BNB Chain</span>
-                  </div>
-                  <div className="col-span-3 text-navy-600 font-mono font-medium">
-                    1,000,000 BNB
-                  </div>
-                  <div className="col-span-2 text-right font-bold text-navy-900">$1,000,000.00</div>
-                  <div className="col-span-3 flex items-center justify-end gap-2">
-                    <span className="text-navy-500 font-semibold text-[11px]">12.3%</span>
-                    <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{ width: "12.3%" }}
-                      />
+                  {/* Row 3: BNB / USDC */}
+                  <div className="grid grid-cols-12 items-center text-xs py-1.5">
+                    <div className="col-span-4 flex items-center gap-2 font-bold text-navy-800">
+                      <BnbCoinImg className="w-5 h-5" />
+                      <span>BNB Chain</span>
+                    </div>
+                    <div className="col-span-3 text-navy-600 font-mono font-medium">
+                      1,000,000 BNB
+                    </div>
+                    <div className="col-span-2 text-right font-bold text-navy-900">
+                      $1,000,000.00
+                    </div>
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      <span className="text-navy-500 font-semibold text-[11px]">12.3%</span>
+                      <div className="w-14 h-2 rounded-full bg-navy-100/80 overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 rounded-full"
+                          style={{ width: "12.3%" }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

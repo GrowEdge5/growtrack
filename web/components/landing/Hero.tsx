@@ -284,7 +284,7 @@ export function Hero() {
             onSubmit={handleSearch}
             className="glass-frosted p-1.5 sm:p-2 rounded-full flex items-center shadow-glass border border-white"
           >
-            <div className="flex-1 flex items-center pl-4 pr-2">
+            <div className="flex-1 flex items-center pl-3 sm:pl-4 pr-2 min-w-0">
               <input
                 id="search-input"
                 type="text"
@@ -296,7 +296,7 @@ export function Hero() {
                 placeholder="Search address/Web3 ID"
                 autoComplete="off"
                 spellCheck="false"
-                className="w-full bg-transparent text-navy-900 placeholder-navy-400 text-sm sm:text-base outline-none font-mono"
+                className="w-full bg-transparent text-navy-900 placeholder-navy-400 text-xs sm:text-base outline-none font-mono"
               />
             </div>
 
@@ -304,16 +304,16 @@ export function Hero() {
             <button
               type="submit"
               aria-label="Search"
-              className="logo-search-glass w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] flex items-center justify-center text-white mr-1.5 sm:mr-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0"
+              className="logo-search-glass w-9 h-9 sm:w-11 sm:h-11 rounded-[14px] flex items-center justify-center text-white mr-1.5 sm:mr-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 shadow-sm"
             >
               <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Connect Wallet Button */}
+            {/* Connect Wallet Button (Desktop & Tablet) */}
             <button
               type="button"
               onClick={() => openWalletModal()}
-              className="btn-connect-wallet text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 cursor-pointer flex-shrink-0"
+              className="hidden sm:flex btn-connect-wallet text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-sm sm:text-base items-center gap-2 cursor-pointer flex-shrink-0 shadow-xs whitespace-nowrap"
             >
               <Wallet className="w-4 h-4" />
               <span>Connect Wallet</span>
@@ -322,10 +322,10 @@ export function Hero() {
 
           {/* Live format feedback: the address family is recognized as it is typed, so
               a malformed paste is caught before it becomes a request. */}
-          <div className="mt-2 flex items-center justify-center gap-2 text-xs font-medium min-h-[1.25rem]">
+          <div className="mt-2 flex items-center justify-center gap-2 text-xs font-medium min-h-[1.25rem] px-2 text-center">
             {error !== null ? (
               <span className="inline-flex items-center gap-1.5 text-amber-700">
-                <AlertCircle className="w-3.5 h-3.5" />
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{error}</span>
               </span>
             ) : address.trim().length > 0 ? (
@@ -335,9 +335,9 @@ export function Hero() {
                 }`}
               >
                 {detection.isValid ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5" />
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
                 <span>
                   {detection.label} — {detection.hint}
@@ -364,14 +364,14 @@ export function Hero() {
         </div>
 
         {/* Bottom Corner Floating Badges */}
-        <div className="flex items-center justify-between mt-5 sm:mt-6 pt-2">
-          <div className="glass-frosted px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs font-semibold text-navy-700 shadow-sm">
-            <BarChart3 className="w-3.5 h-3.5 text-primary-500" />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-5 sm:mt-6 pt-2">
+          <div className="glass-frosted px-3.5 py-2 rounded-2xl flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-navy-700 shadow-sm w-full sm:w-auto justify-center sm:justify-start">
+            <BarChart3 className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
             <span>Real Data. Real Decisions.</span>
           </div>
 
-          <div className="glass-frosted px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs font-semibold text-navy-700 shadow-sm">
-            <Globe className="w-3.5 h-3.5 text-primary-500" />
+          <div className="glass-frosted px-3.5 py-2 rounded-2xl flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-navy-700 shadow-sm w-full sm:w-auto justify-center sm:justify-start">
+            <Globe className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
             <span>Track. Analyse. Grow.</span>
           </div>
         </div>

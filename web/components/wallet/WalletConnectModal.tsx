@@ -76,7 +76,7 @@ export function WalletConnectModal() {
           closeWalletModal();
         }
       }}
-      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-200 ease-out ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 transition-all duration-200 ease-out ${
         animateIn
           ? "bg-[#0A2350]/[0.22] backdrop-blur-[6px] opacity-100"
           : "bg-transparent backdrop-blur-none opacity-0"
@@ -87,15 +87,15 @@ export function WalletConnectModal() {
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className={`relative w-full max-w-2xl sm:max-w-3xl glass-frosted rounded-[32px] p-6 sm:p-8 shadow-2xl border border-white/95 transition-all duration-200 ease-out transform ${
+        className={`relative w-full max-w-2xl sm:max-w-3xl glass-frosted rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-2xl border border-white/95 transition-all duration-200 ease-out transform ${
           animateIn ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-2 opacity-0"
-        } max-h-[90vh] overflow-y-auto`}
+        } max-h-[92vh] overflow-y-auto`}
       >
         <button
           type="button"
           onClick={closeWalletModal}
           aria-label="Close wallet connection modal"
-          className="absolute top-5 right-5 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-navy-100/70 text-navy-500 hover:text-navy-900 flex items-center justify-center shadow-sm hover:scale-105 transition-all cursor-pointer z-20"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/80 hover:bg-white border border-navy-100/70 text-navy-500 hover:text-navy-900 flex items-center justify-center shadow-sm hover:scale-105 transition-all cursor-pointer z-20"
         >
           <X className="w-4 h-4" />
         </button>
