@@ -157,7 +157,7 @@ export function buildContainer(env: Environment): ApplicationContainer {
     chainName: "Polygon",
     chainSlug: "polygon",
     nativeSymbol: "POL",
-    rpcUrl: "https://polygon-rpc.com",
+    rpcUrl: "https://polygon-bor-rpc.publicnode.com",
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
   const bscProvider = new ViemChainDataProvider({
@@ -165,7 +165,7 @@ export function buildContainer(env: Environment): ApplicationContainer {
     chainName: "BNB Chain",
     chainSlug: "bsc",
     nativeSymbol: "BNB",
-    rpcUrl: "https://binance.llamarpc.com",
+    rpcUrl: "https://bsc-dataseed.bnbchain.org",
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
   const avalancheProvider = new ViemChainDataProvider({

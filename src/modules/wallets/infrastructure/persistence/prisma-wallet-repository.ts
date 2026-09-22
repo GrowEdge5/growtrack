@@ -152,8 +152,22 @@ export class PrismaWalletRepository implements WalletRepository {
       }
 
       for (const tx of snapshot.transactions) {
-        await transaction.transaction.create({
-          data: {
+        await transaction.transaction.upsert({
+          where: {
+            chainId_txHash: {
+              chainId: snapshot.wallet.chain.id,
+              txHash: tx.hash
+            }
+          },
+          update: {
+            snapshotId: created.id,
+            blockNumber: tx.blockNumber,
+            fromAddress: tx.fromAddress,
+            toAddress: tx.toAddress ?? null,
+            value: tx.rawValue,
+            occurredAt: tx.occurredAt
+          },
+          create: {
             snapshotId: created.id,
             chainId: snapshot.wallet.chain.id,
             txHash: tx.hash,

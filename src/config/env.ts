@@ -29,7 +29,7 @@ const environmentSchema = z
     ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
     CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
     WALLET_FRESHNESS_SECONDS: z.coerce.number().int().positive().default(900),
-    PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+    PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(20_000),
     EVM_RPC_URL: z.string().url(),
     EVM_CHAIN_ID: z.coerce.number().int().positive().default(1),
     EVM_CHAIN_NAME: z.string().min(1).default("ethereum"),

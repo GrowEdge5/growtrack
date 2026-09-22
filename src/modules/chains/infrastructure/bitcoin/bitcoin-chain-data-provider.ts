@@ -102,26 +102,118 @@ export class BitcoinChainDataProvider implements ChainDataProvider {
 
   public async fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData> {
     const address = wallet.displayAddress;
-    const [stats, tipHeight, txs] = await Promise.all([
-      this.getJson<AddressResponse>(`/address/${address}`),
-      this.getText("/blocks/tip/height"),
-      this.fetchTransactions(address)
-    ]);
+    try {
+      const [stats, tipHeight, txs] = await Promise.all([
+        this.getJson<AddressResponse>(`/address/${address}`),
+        this.getText("/blocks/tip/height"),
+        this.fetchTransactions(address)
+      ]);
 
-    const balance = sumStats(stats.chain_stats).plus(sumStats(stats.mempool_stats));
-    const height = Number.parseInt(tipHeight, 10);
+      const balance = sumStats(stats.chain_stats).plus(sumStats(stats.mempool_stats));
+      const height = Number.parseInt(tipHeight, 10);
 
-    return {
-      nativeBalance: balance.toFixed(0),
-      nativeSymbol: this.chain.nativeSymbol,
-      nativeDecimals: BTC_DECIMALS,
-      provider: "esplora-rest",
-      ...(Number.isFinite(height) ? { blockNumber: String(height) } : {}),
-      holdings: [],
-      transactions: txs,
-      positions: [],
-      signals: []
-    };
+      return {
+        nativeBalance: balance.toFixed(0),
+        nativeSymbol: this.chain.nativeSymbol,
+        nativeDecimals: BTC_DECIMALS,
+        provider: "esplora-rest",
+        ...(Number.isFinite(height) ? { blockNumber: String(height) } : {}),
+        holdings: [],
+        transactions: txs,
+        positions: [],
+        signals: []
+      };
+    } catch (primaryErr) {
+      this.logger.warn(
+        `Esplora API failed for Bitcoin address ${address}: ${String(primaryErr)}. Falling back to blockchain.info.`
+      );
+      return await this.fetchFromBlockchainInfo(address, primaryErr);
+    }
+  }
+
+  private async fetchFromBlockchainInfo(
+    address: string,
+    primaryErr?: unknown
+  ): Promise<ProviderWalletData> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const [rawRes, heightRes] = await Promise.all([
+        fetch(`https://blockchain.info/rawaddr/${encodeURIComponent(address)}?limit=10`, {
+          signal: controller.signal,
+          headers: { accept: "application/json" }
+        }),
+        fetch("https://blockchain.info/q/getblockcount", {
+          signal: controller.signal
+        }).catch(() => null)
+      ]);
+
+      if (!rawRes.ok) {
+        if (primaryErr instanceof Error) {
+          throw primaryErr;
+        }
+        throw new Error(`Bitcoin API responded ${rawRes.status} for blockchain.info`);
+      }
+
+      const data = (await rawRes.json()) as {
+        final_balance?: number;
+        txs?: Array<{
+          hash?: string;
+          time?: number;
+          block_height?: number;
+          inputs?: Array<{ prev_out?: { addr?: string; value?: number } }>;
+          out?: Array<{ addr?: string; value?: number }>;
+        }>;
+      };
+
+      let blockNumber: string | undefined;
+      if (heightRes !== null && heightRes.ok) {
+        const text = await heightRes.text();
+        if (/^\d+$/.test(text.trim())) {
+          blockNumber = text.trim();
+        }
+      }
+
+      const txs: WalletTransaction[] = (data.txs ?? []).slice(0, 10).map((tx) => {
+        const isReceived = tx.out?.some((o) => o.addr === address) ?? false;
+        const relevantValue = isReceived
+          ? (tx.out
+              ?.filter((o) => o.addr === address)
+              .reduce((sum, o) => sum + (o.value ?? 0), 0) ?? 0)
+          : (tx.out?.[0]?.value ?? 0);
+
+        return {
+          hash: String(tx.hash ?? ""),
+          blockNumber: String(tx.block_height ?? 0),
+          fromAddress: tx.inputs?.[0]?.prev_out?.addr ?? "Coinbase / External",
+          toAddress: isReceived ? address : (tx.out?.[0]?.addr ?? "External"),
+          rawValue: String(relevantValue),
+          occurredAt: tx.time ? new Date(tx.time * 1000) : new Date(),
+          activityType: isReceived ? "Receive" : "Send",
+          assetSymbol: "BTC",
+          status: "confirmed"
+        };
+      });
+
+      return {
+        nativeBalance: String(data.final_balance ?? 0),
+        nativeSymbol: this.chain.nativeSymbol,
+        nativeDecimals: BTC_DECIMALS,
+        provider: "blockchain-info",
+        ...(blockNumber !== undefined ? { blockNumber } : {}),
+        holdings: [],
+        transactions: txs,
+        positions: [],
+        signals: []
+      };
+    } catch (err) {
+      if (primaryErr instanceof Error) {
+        throw primaryErr;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private async fetchTransactions(address: string): Promise<WalletTransaction[]> {
@@ -180,7 +272,7 @@ export class BitcoinChainDataProvider implements ChainDataProvider {
 
   private async fetchText(url: string): Promise<string> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timer = setTimeout(() => controller.abort(), Math.min(this.timeoutMs, 4000));
     try {
       const response = await fetch(url, {
         signal: controller.signal,
