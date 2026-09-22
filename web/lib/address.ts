@@ -132,12 +132,22 @@ export function explorerName(chainSlug: string): string | null {
   return EXPLORERS[chainSlug.toLowerCase()]?.name ?? null;
 }
 
-/** Per-chain transaction explorer link, used for x402 settlement receipts. */
+/** Per-chain transaction explorer link. */
 export function transactionUrl(chainSlug: string, txId: string): string | null {
-  if (chainSlug.toLowerCase() !== "algorand") {
-    return null;
+  const slug = chainSlug.toLowerCase();
+  const encoded = encodeURIComponent(txId);
+  switch (slug) {
+    case "algorand":
+      return `https://lora.algokit.io/mainnet/transaction/${encoded}`;
+    case "ethereum":
+      return `https://etherscan.io/tx/${encoded}`;
+    case "bitcoin":
+      return `https://blockstream.info/tx/${encoded}`;
+    case "solana":
+      return `https://solscan.io/tx/${encoded}`;
+    default:
+      return null;
   }
-  return `https://lora.algokit.io/mainnet/transaction/${encodeURIComponent(txId)}`;
 }
 
 const CHAIN_LABELS: Readonly<Record<string, string>> = {

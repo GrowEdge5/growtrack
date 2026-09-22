@@ -18,6 +18,9 @@ export interface WalletTransaction {
   toAddress?: string;
   rawValue: string;
   occurredAt: Date;
+  activityType?: string;
+  assetSymbol?: string;
+  status?: string;
 }
 
 export interface ProtocolPosition {

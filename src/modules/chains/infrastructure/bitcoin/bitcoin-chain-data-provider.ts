@@ -5,6 +5,7 @@ import type {
   ProviderWalletData
 } from "../../application/ports/chain-data-provider.js";
 import type { Chain, WalletIdentity } from "../../domain/chain.js";
+import type { WalletTransaction } from "../../../wallets/domain/wallet-snapshot.js";
 import { InvalidWalletAddressError } from "../../../../shared/domain/errors.js";
 import { isBitcoinAddress } from "../../domain/address-detection.js";
 
@@ -31,6 +32,29 @@ interface AddressStats {
 interface AddressResponse {
   chain_stats?: AddressStats;
   mempool_stats?: AddressStats;
+}
+
+interface EsploraVout {
+  scriptpubkey_address?: string;
+  value?: number;
+}
+
+interface EsploraVin {
+  prevout?: {
+    scriptpubkey_address?: string;
+    value?: number;
+  };
+}
+
+interface EsploraTx {
+  txid?: string;
+  status?: {
+    confirmed?: boolean;
+    block_height?: number;
+    block_time?: number;
+  };
+  vin?: EsploraVin[];
+  vout?: EsploraVout[];
 }
 
 // Reads a Bitcoin address's balance from an Esplora REST API.
@@ -78,9 +102,10 @@ export class BitcoinChainDataProvider implements ChainDataProvider {
 
   public async fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData> {
     const address = wallet.displayAddress;
-    const [stats, tipHeight] = await Promise.all([
+    const [stats, tipHeight, txs] = await Promise.all([
       this.getJson<AddressResponse>(`/address/${address}`),
-      this.getText("/blocks/tip/height")
+      this.getText("/blocks/tip/height"),
+      this.fetchTransactions(address)
     ]);
 
     const balance = sumStats(stats.chain_stats).plus(sumStats(stats.mempool_stats));
@@ -92,13 +117,42 @@ export class BitcoinChainDataProvider implements ChainDataProvider {
       nativeDecimals: BTC_DECIMALS,
       provider: "esplora-rest",
       ...(Number.isFinite(height) ? { blockNumber: String(height) } : {}),
-      // A Bitcoin address holds no tokens and no positions: the UTXO sum is the
-      // whole portfolio.
       holdings: [],
-      transactions: [],
+      transactions: txs,
       positions: [],
       signals: []
     };
+  }
+
+  private async fetchTransactions(address: string): Promise<WalletTransaction[]> {
+    try {
+      const list = await this.getJson<EsploraTx[]>(`/address/${address}/txs`);
+      if (!Array.isArray(list)) return [];
+
+      return list.slice(0, 10).map((tx: EsploraTx) => {
+        const isReceived = tx.vout?.some((out) => out.scriptpubkey_address === address) ?? false;
+        const relevantValue = isReceived
+          ? (tx.vout
+              ?.filter((out) => out.scriptpubkey_address === address)
+              .reduce((sum: number, out) => sum + (out.value ?? 0), 0) ?? 0)
+          : (tx.vout?.[0]?.value ?? 0);
+
+        return {
+          hash: String(tx.txid ?? ""),
+          blockNumber: String(tx.status?.block_height ?? 0),
+          fromAddress: tx.vin?.[0]?.prevout?.scriptpubkey_address ?? "Coinbase / External",
+          toAddress: isReceived ? address : (tx.vout?.[0]?.scriptpubkey_address ?? "External"),
+          rawValue: String(relevantValue),
+          occurredAt: tx.status?.block_time ? new Date(tx.status.block_time * 1000) : new Date(),
+          activityType: isReceived ? "Receive" : "Send",
+          assetSymbol: "BTC",
+          status: tx.status?.confirmed ? "confirmed" : "pending"
+        };
+      });
+    } catch (err) {
+      this.logger.warn(`Could not load Bitcoin transactions for ${address}: ${String(err)}`);
+      return [];
+    }
   }
 
   // Tries each configured API base in order and returns the first usable response.

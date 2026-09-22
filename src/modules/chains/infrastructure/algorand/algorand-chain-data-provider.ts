@@ -5,7 +5,7 @@ import type {
   ProviderWalletData
 } from "../../application/ports/chain-data-provider.js";
 import type { Chain, WalletIdentity } from "../../domain/chain.js";
-import type { TokenHolding } from "../../../wallets/domain/wallet-snapshot.js";
+import type { TokenHolding, WalletTransaction } from "../../../wallets/domain/wallet-snapshot.js";
 import { InvalidWalletAddressError } from "../../../../shared/domain/errors.js";
 import { getAsaTokenList } from "./algorand-asset-list.js";
 
@@ -25,6 +25,22 @@ interface AlgorandProviderOptions {
 // (Algonode by default). algosdk v3 returns bigint for account and asset amounts,
 // so balances are carried as exact strings — no JS-number precision loss for whale
 // balances or large-supply assets, which the no-wrong-data rule forbids.
+interface AlgonodeTxItem {
+  id?: string;
+  "confirmed-round"?: number;
+  sender?: string;
+  "tx-type"?: string;
+  "round-time"?: number;
+  "payment-transaction"?: {
+    amount?: number;
+    receiver?: string;
+  };
+  "asset-transfer-transaction"?: {
+    amount?: number;
+    receiver?: string;
+  };
+}
+
 export class AlgorandChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
   public readonly nativeDecimals = ALGO_DECIMALS;
@@ -61,16 +77,20 @@ export class AlgorandChainDataProvider implements ChainDataProvider {
 
   public async fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData> {
     let account: Awaited<ReturnType<ReturnType<algosdk.Algodv2["accountInformation"]>["do"]>>;
+    let transactions: WalletTransaction[] = [];
+
     try {
-      account = await withTimeout(
-        this.client.accountInformation(wallet.displayAddress).do(),
-        this.timeoutMs,
-        "algod accountInformation"
-      );
+      const [acctRes, txs] = await Promise.all([
+        withTimeout(
+          this.client.accountInformation(wallet.displayAddress).do(),
+          this.timeoutMs,
+          "algod accountInformation"
+        ),
+        this.fetchTransactions(wallet.displayAddress)
+      ]);
+      account = acctRes;
+      transactions = txs;
     } catch (error) {
-      // A valid address that algod has never seen returns 404. That is a genuine
-      // zero-balance account, not an error — reporting "0" is accurate, not fabricated.
-      // Any other failure (timeout, 5xx) rethrows so the refresh fails loudly.
       if (isAccountNotFound(error)) {
         return this.zeroBalanceData();
       }
@@ -84,10 +104,64 @@ export class AlgorandChainDataProvider implements ChainDataProvider {
       provider: "algonode-rest",
       blockNumber: account.round.toString(),
       holdings: this.mapHoldings(account.assets ?? []),
-      transactions: [],
+      transactions,
       positions: [],
       signals: []
     };
+  }
+
+  private async fetchTransactions(address: string): Promise<WalletTransaction[]> {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      const res = await fetch(
+        `https://mainnet-idx.algonode.cloud/v2/accounts/${address}/transactions?limit=10`,
+        {
+          signal: controller.signal,
+          headers: { accept: "application/json" }
+        }
+      );
+      clearTimeout(timer);
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as { transactions?: AlgonodeTxItem[] };
+      if (!Array.isArray(data.transactions)) return [];
+
+      return data.transactions.map((tx: AlgonodeTxItem) => {
+        const txType = tx["tx-type"];
+        let activityType = "Transfer";
+        let rawValue = "0";
+        let toAddress: string | undefined = undefined;
+
+        if (txType === "pay") {
+          const pay = tx["payment-transaction"];
+          rawValue = String(pay?.amount ?? 0);
+          toAddress = pay?.receiver;
+          activityType = tx.sender === address ? "Send" : "Receive";
+        } else if (txType === "axfer") {
+          const axfer = tx["asset-transfer-transaction"];
+          rawValue = String(axfer?.amount ?? 0);
+          toAddress = axfer?.receiver;
+          activityType = tx.sender === address ? "Send" : "Receive";
+        } else if (txType === "appl") {
+          activityType = "Contract Interaction";
+        }
+
+        return {
+          hash: String(tx.id ?? ""),
+          blockNumber: String(tx["confirmed-round"] ?? 0),
+          fromAddress: String(tx.sender ?? address),
+          toAddress: toAddress ?? "Algorand Network",
+          rawValue,
+          occurredAt: tx["round-time"] ? new Date(tx["round-time"] * 1000) : new Date(),
+          activityType,
+          assetSymbol: txType === "pay" ? "ALGO" : "ASA",
+          status: "confirmed"
+        };
+      });
+    } catch {
+      return [];
+    }
   }
 
   // Keeps only assets on the curated list with a positive balance. An account may

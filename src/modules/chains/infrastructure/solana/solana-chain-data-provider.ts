@@ -5,7 +5,11 @@ import type {
   ProviderWalletData
 } from "../../application/ports/chain-data-provider.js";
 import type { Chain, WalletIdentity } from "../../domain/chain.js";
-import type { IntelligenceSignal, TokenHolding } from "../../../wallets/domain/wallet-snapshot.js";
+import type {
+  IntelligenceSignal,
+  TokenHolding,
+  WalletTransaction
+} from "../../../wallets/domain/wallet-snapshot.js";
 import { InvalidWalletAddressError } from "../../../../shared/domain/errors.js";
 import { isSolanaAddress } from "../../domain/address-detection.js";
 import { SolanaTokenMetadataSource, type SolanaTokenLookup } from "./solana-token-metadata.js";
@@ -95,10 +99,11 @@ export class SolanaChainDataProvider implements ChainDataProvider {
 
   public async fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData> {
     const owner = wallet.displayAddress;
-    const [balance, slot, accounts] = await Promise.all([
+    const [balance, slot, accounts, transactions] = await Promise.all([
       this.rpc<{ value: number }>("getBalance", [owner]),
       this.rpc<number>("getSlot", []),
-      this.fetchTokenAccounts(owner)
+      this.fetchTokenAccounts(owner),
+      this.fetchTransactions(owner)
     ]);
 
     const signals: IntelligenceSignal[] = [];
@@ -114,10 +119,34 @@ export class SolanaChainDataProvider implements ChainDataProvider {
       provider: "solana-rpc",
       blockNumber: slot.toString(),
       holdings,
-      transactions: [],
+      transactions,
       positions: [],
       signals
     };
+  }
+
+  private async fetchTransactions(owner: string): Promise<WalletTransaction[]> {
+    try {
+      const sigs = await this.rpc<
+        Array<{ signature: string; slot: number; blockTime?: number; err?: unknown }>
+      >("getSignaturesForAddress", [owner, { limit: 10 }]);
+
+      if (!Array.isArray(sigs)) return [];
+
+      return sigs.map((sig) => ({
+        hash: sig.signature,
+        blockNumber: String(sig.slot),
+        fromAddress: owner,
+        toAddress: "Solana Network",
+        rawValue: "0",
+        occurredAt: sig.blockTime ? new Date(sig.blockTime * 1000) : new Date(),
+        activityType: "Contract Interaction",
+        assetSymbol: "SOL",
+        status: sig.err ? "failed" : "confirmed"
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private fetchTokenAccounts(owner: string): Promise<TokenAccountEntry[]> {

@@ -1,5 +1,34 @@
 # Growtrack
 
+> ## Progress Report — 2026-09-22: Major Product + Multi-Chain Data Upgrade
+>
+> 1. **Official Branding & Floating Visual System**:
+>    - Official Growtrack logo asset integrated across the entire web application (Navbar, Hero, Wallet views, and Footer).
+>    - Floating crypto marks upgraded with smooth continuous subtle float loops (`.animate-float-1/2/3/4`, 5.5s–8s) and refined glass coin tiles (`.glass-coin-tile`).
+>    - Replaced HYPE across the entire visual and data system with official Solana (`SOL`) coin mark and multi-chain tracking.
+> 2. **Whale Tracking Overhaul (Real Blockchain Data)**:
+>    - Completely eliminated all small summary cards and non-financial vanity metrics (TVF, Followers, Following, PnL %, Earnings).
+>    - Live on-chain data wired for **vitalik.eth** (`0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`) and **Satoshi** (`1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`).
+>    - Truthful multi-token holding breakdown with relative snapshot provenance timestamps, live valuation, and explicit `Unpriced` badges for unverified tokens.
+> 3. **Live Multi-Chain Transaction Indexing**:
+>    - **Bitcoin**: Esplora REST API (`/address/${address}/txs`) reading real UTXO input/output ledger entries, block times, and confirmations.
+>    - **Algorand**: Algonode Indexer (`/v2/accounts/${address}/transactions`) decoding payments, asset transfers, and round times.
+>    - **Solana**: Keyless RPC `getSignaturesForAddress` with confirmation status and slot heights.
+>    - **EVM (Ethereum)**: Blockscout REST API (`/api/v2/addresses/${address}/transactions`) decoding transfers, contract calls, and gas status.
+> 4. **Responsive Transaction Ledger**:
+>    - Replaced the placeholder in `/wallet/[address]` Transactions tab with a clean desktop table and mobile stacked glass cards (`.glass-card-subtle`).
+>    - Real deep-links to network block explorers (Etherscan, Solscan, Blockstream, Lora) using verified per-chain transaction hash links.
+> 5. **Multi-Wallet Switcher & Quick Presets**:
+>    - Added quick whale presets (`+ vitalik.eth`, `+ Satoshi`) with 1-click comparison and wallet switching.
+>    - Integrated dynamic "Consolidate Wallets (x402)" trigger leading to multi-wallet consolidation report.
+> 6. **Quality & Verification Pipeline**:
+>    - Root TypeScript (`npx tsc --noEmit`): 0 errors.
+>    - Web TypeScript (`npx tsc --noEmit -p web/tsconfig.json`): 0 errors.
+>    - ESLint (`npm run lint`): 0 errors, 0 warnings.
+>    - Prettier (`npm run format:check`): Clean.
+>    - Unit & E2E tests (`npx vitest run`): 79 of 79 tests passing.
+>    - Production build (`npx next build web`): Clean production optimization.
+
 > ## Progress Report — 2026-09-19: Live API Integration, Single-Wallet Free Tier & x402 Handshake
 >
 > 1. **What was completed**: Full end-to-end wiring between the Next.js frontend (`web/`) and the Fastify backend API (`src/`). All fabricated mock dashboard data has been replaced with live on-chain reads across EVM (Ethereum) and Algorand, with Solana and Bitcoin adapters verified on the backend.

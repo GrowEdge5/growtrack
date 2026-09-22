@@ -1,25 +1,23 @@
 import React from "react";
 
 /**
- * Growtrack Brand Emblem (Exact Match to Reference):
- * - Blue 3D glass squircle body
- * - Specular top gloss reflection
- * - White inner bevel glow
- * - Crisp white magnifying glass
+ * Official Growtrack Brand Logo:
+ * Uses the supplied official Growtrack logo asset as the single source of truth.
  */
-export function BrandLogoIcon({ className = "w-10 h-10" }: { className?: string }) {
+export function BrandLogoIcon({
+  className = "w-10 h-10",
+  imgClassName = "w-full h-full object-contain"
+}: {
+  className?: string;
+  imgClassName?: string;
+}) {
   return (
-    <div
-      className={`logo-search-glass rounded-[14px] flex items-center justify-center flex-shrink-0 ${className}`}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)] relative z-10"
-      >
-        <circle cx="10.5" cy="10.5" r="6" stroke="currentColor" strokeWidth="2.5" />
-        <path d="M15 15L20 20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
+    <div className={`relative flex items-center justify-center flex-shrink-0 ${className}`}>
+      <img
+        src="/assets/branding/growtrack-logo.png"
+        alt="Growtrack"
+        className={`object-contain drop-shadow-sm ${imgClassName}`}
+      />
     </div>
   );
 }
@@ -58,15 +56,18 @@ export function EthereumCoinImg({ className = "w-6 h-6" }: { className?: string 
   );
 }
 
-export function HyperliquidCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+export function SolanaCoinImg({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <img
-      src="/assets/coins/hyperliquid.svg"
-      alt="Hyperliquid"
-      className={`object-contain flex-shrink-0 ${className}`}
+      src="/assets/coins/solana.png"
+      alt="Solana"
+      className={`object-contain rounded-full flex-shrink-0 ${className}`}
     />
   );
 }
+
+// Deprecated alias to prevent breaks during refactoring
+export const HyperliquidCoinImg = SolanaCoinImg;
 
 export function BitcoinCoinImg({ className = "w-6 h-6" }: { className?: string }) {
   return (

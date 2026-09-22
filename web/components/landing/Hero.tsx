@@ -8,12 +8,12 @@ import { useWalletModal } from "@/context/WalletModalContext";
 import { AnimatedChainText } from "./AnimatedChainText";
 import { detectAddressFormat } from "@/lib/address";
 import {
-  BrandLogoIcon,
   AlgorandCoinImg,
-  BnbCoinImg,
-  EthereumCoinImg,
-  HyperliquidCoinImg,
   BitcoinCoinImg,
+  EthereumCoinImg,
+  BnbCoinImg,
+  SolanaCoinImg,
+  BrandLogoIcon,
   CurvedArrowDoodle
 } from "./CryptoIcons";
 
@@ -64,22 +64,22 @@ export function Hero() {
             </div>
 
             {/* Tile 1: Algorand (Large Floating Tile) */}
-            <div className="glass-frosted-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 hover:rotate-0 pointer-events-auto shadow-md">
+            <div className="glass-coin-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 hover:rotate-0 pointer-events-auto animate-float-1">
               <AlgorandCoinImg className="w-14 h-14" />
             </div>
 
             {/* Tile 2: Bitcoin (Smaller Floating Tile near Left) */}
-            <div className="glass-frosted-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-6 translate-x-14 -translate-y-4 hover:rotate-0 pointer-events-auto shadow-md">
+            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-6 translate-x-14 -translate-y-4 hover:rotate-0 pointer-events-auto animate-float-2">
               <BitcoinCoinImg className="w-12 h-12" />
             </div>
 
             {/* Tile 3: Ethereum (Third Left Floating Tile per User Correction) */}
-            <div className="glass-frosted-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 translate-x-6 translate-y-3 hover:rotate-0 pointer-events-auto shadow-md">
+            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 translate-x-6 translate-y-3 hover:rotate-0 pointer-events-auto animate-float-3">
               <EthereumCoinImg className="w-13 h-13" />
             </div>
           </div>
 
-          {/* Right Floating Doodles & Glass Coin Tiles: 1. Hyperliquid, 2. BNB, 3. Dots */}
+          {/* Right Floating Doodles & Glass Coin Tiles: 1. Solana, 2. BNB, 3. Dots */}
           <div className="hidden lg:block absolute -right-4 xl:-right-12 top-0 w-60 z-20 pointer-events-none">
             {/* Callout: "More Possibilities" with comfortable breathing room */}
             <div className="flex items-center justify-end gap-2 mb-3 mr-2">
@@ -89,18 +89,18 @@ export function Hero() {
               </span>
             </div>
 
-            {/* Tile 1: Hyperliquid (Clean HYPE mark, NO dark background, sitting cleanly in glass tile) */}
-            <div className="glass-frosted-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform rotate-12 ml-auto hover:rotate-0 pointer-events-auto shadow-md">
-              <HyperliquidCoinImg className="w-14 h-11" />
+            {/* Tile 1: Solana (Clean SOL mark, NO dark background, sitting cleanly in glass tile) */}
+            <div className="glass-coin-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform rotate-12 ml-auto hover:rotate-0 pointer-events-auto animate-float-4">
+              <SolanaCoinImg className="w-13 h-13" />
             </div>
 
             {/* Tile 2: BNB (Smaller Floating Tile near Right Side) */}
-            <div className="glass-frosted-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 -translate-x-8 -translate-y-3 hover:rotate-0 pointer-events-auto shadow-md">
+            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 -translate-x-8 -translate-y-3 hover:rotate-0 pointer-events-auto animate-float-1">
               <BnbCoinImg className="w-12 h-12" />
             </div>
 
             {/* Tile 3: Three Dots Tile */}
-            <div className="glass-frosted-tile w-16 h-16 rounded-2xl p-2 flex items-center justify-center transform rotate-6 -translate-x-2 translate-y-2 hover:rotate-0 pointer-events-auto shadow-md">
+            <div className="glass-coin-tile w-16 h-16 rounded-2xl p-2 flex items-center justify-center transform rotate-6 -translate-x-2 translate-y-2 hover:rotate-0 pointer-events-auto animate-float-2">
               <div className="flex gap-1.5 items-center">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
                 <span className="w-2.5 h-2.5 rounded-full bg-primary-400" />
@@ -237,11 +237,11 @@ export function Hero() {
                   </div>
                 </div>
 
-                {/* 5. Hyperliquid */}
+                {/* 5. Solana */}
                 <div className="flex items-center justify-between font-semibold">
                   <div className="flex items-center gap-2">
-                    <HyperliquidCoinImg className="w-5 h-5" />
-                    <span className="text-navy-900 font-bold">Hyperliquid</span>
+                    <SolanaCoinImg className="w-5 h-5" />
+                    <span className="text-navy-900 font-bold">Solana</span>
                   </div>
                   <div className="text-right">
                     <span className="text-navy-900 font-bold">$1,120.18</span>

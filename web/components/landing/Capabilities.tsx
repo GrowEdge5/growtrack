@@ -20,7 +20,7 @@ import {
   BitcoinCoinImg,
   EthereumCoinImg,
   BnbCoinImg,
-  HyperliquidCoinImg,
+  SolanaCoinImg,
   CurvedArrowDoodle
 } from "./CryptoIcons";
 
@@ -56,13 +56,13 @@ export function Capabilities() {
 
         {/* Flanking Floating 3D Elements */}
         <div className="hidden xl:block absolute -left-8 top-64 pointer-events-none">
-          <div className="glass-frosted-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 pointer-events-auto">
+          <div className="glass-coin-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 pointer-events-auto animate-float-1">
             <AlgorandCoinImg className="w-14 h-14" />
           </div>
         </div>
 
         <div className="hidden xl:block absolute -right-8 top-72 pointer-events-none">
-          <div className="glass-frosted-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-12 pointer-events-auto">
+          <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-12 pointer-events-auto animate-float-3">
             <div className="w-10 h-10 rounded-xl bg-primary-100/90 border border-primary-300 flex items-center justify-center">
               <Layers className="w-6 h-6 text-primary-600" />
             </div>
@@ -342,8 +342,8 @@ export function Capabilities() {
 
                   <div className="flex items-center justify-between p-2 rounded-xl bg-white/70 border border-white/80 hover:bg-white/95 transition-colors">
                     <div className="flex items-center gap-2">
-                      <HyperliquidCoinImg className="w-5 h-5" />
-                      <span className="text-navy-800">Hyperliquid</span>
+                      <SolanaCoinImg className="w-5 h-5" />
+                      <span className="text-navy-800">Solana</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-navy-900 font-bold">$1,749.00</span>

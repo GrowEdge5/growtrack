@@ -5,7 +5,7 @@ import type {
   ProviderWalletData
 } from "../../application/ports/chain-data-provider.js";
 import type { Chain, WalletIdentity } from "../../domain/chain.js";
-import type { TokenHolding } from "../../../wallets/domain/wallet-snapshot.js";
+import type { TokenHolding, WalletTransaction } from "../../../wallets/domain/wallet-snapshot.js";
 import { InvalidWalletAddressError } from "../../../../shared/domain/errors.js";
 import { getErc20TokenList } from "./ethereum-token-list.js";
 
@@ -34,6 +34,18 @@ interface EvmProviderOptions {
 
 // EVM native currency (wei) has 18 decimals on every chain Growtrack reads.
 const EVM_NATIVE_DECIMALS = 18;
+
+interface BlockscoutItem {
+  hash?: string;
+  block_number?: number;
+  from?: { hash?: string };
+  to?: { hash?: string };
+  value?: string;
+  timestamp?: string;
+  transaction_types?: string[];
+  status?: string;
+  has_error_in_internal_transactions?: boolean;
+}
 
 export class ViemChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
@@ -81,10 +93,11 @@ export class ViemChainDataProvider implements ChainDataProvider {
 
   public async fetchWalletData(wallet: WalletIdentity): Promise<ProviderWalletData> {
     const owner = getAddress(wallet.displayAddress);
-    const [nativeBalance, blockNumber, holdings] = await Promise.all([
+    const [nativeBalance, blockNumber, holdings, transactions] = await Promise.all([
       this.client.getBalance({ address: owner }),
       this.client.getBlockNumber(),
-      this.fetchTokenHoldings(owner)
+      this.fetchTokenHoldings(owner),
+      this.fetchTransactions(owner)
     ]);
 
     return {
@@ -94,10 +107,51 @@ export class ViemChainDataProvider implements ChainDataProvider {
       provider: "viem-rpc",
       blockNumber: blockNumber.toString(),
       holdings,
-      transactions: [],
+      transactions,
       positions: [],
       signals: []
     };
+  }
+
+  private async fetchTransactions(owner: string): Promise<WalletTransaction[]> {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`https://eth.blockscout.com/api/v2/addresses/${owner}/transactions`, {
+        signal: controller.signal,
+        headers: { accept: "application/json" }
+      });
+      clearTimeout(timer);
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as { items?: BlockscoutItem[] };
+      if (!Array.isArray(data.items)) return [];
+
+      return data.items.slice(0, 10).map((tx: BlockscoutItem) => {
+        const fromHash = tx.from?.hash ?? "";
+        const isFromOwner = fromHash.toLowerCase() === owner.toLowerCase();
+        const types = Array.isArray(tx.transaction_types) ? tx.transaction_types : [];
+        let activityType = isFromOwner ? "Send" : "Receive";
+        if (types.includes("contract_call") || types.includes("contract_creation")) {
+          activityType = "Contract Interaction";
+        }
+
+        return {
+          hash: String(tx.hash ?? ""),
+          blockNumber: String(tx.block_number ?? 0),
+          fromAddress: String(tx.from?.hash ?? owner),
+          toAddress: String(tx.to?.hash ?? "Contract"),
+          rawValue: String(tx.value ?? "0"),
+          occurredAt: tx.timestamp ? new Date(tx.timestamp) : new Date(),
+          activityType,
+          assetSymbol: "ETH",
+          status:
+            tx.status === "ok" || !tx.has_error_in_internal_transactions ? "confirmed" : "failed"
+        };
+      });
+    } catch {
+      return [];
+    }
   }
 
   // Reads ERC-20 balances for the curated token list in a single multicall.

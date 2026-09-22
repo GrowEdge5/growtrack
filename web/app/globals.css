@@ -134,3 +134,90 @@ body {
     inset 0 1px 1px rgba(255, 255, 255, 0.65);
   transform: translateY(-1px);
 }
+
+/* Premium Rounded-Square Glass Coin Tile (Part 3) */
+.glass-coin-tile {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 247, 255, 0.72) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 10px 30px -4px rgba(20, 33, 61, 0.08),
+    0 0 20px 0 rgba(45, 120, 230, 0.12),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1.5px 2px 0 rgba(45, 120, 230, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-coin-tile:hover {
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow:
+    0 16px 40px -4px rgba(20, 33, 61, 0.12),
+    0 0 28px 2px rgba(45, 120, 230, 0.22),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 1);
+}
+
+/* Subtle Continuous Floating Animations (Part 2) */
+@keyframes float-slow-1 {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 12px rgba(45, 120, 230, 0.1));
+  }
+  50% {
+    transform: translateY(-8px) translateX(3px) rotate(1.5deg) scale(1.02);
+    filter: drop-shadow(0 10px 20px rgba(45, 120, 230, 0.2));
+  }
+}
+
+@keyframes float-slow-2 {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 12px rgba(45, 120, 230, 0.1));
+  }
+  50% {
+    transform: translateY(-10px) translateX(-4px) rotate(-2deg) scale(1.015);
+    filter: drop-shadow(0 12px 24px rgba(45, 120, 230, 0.22));
+  }
+}
+
+@keyframes float-slow-3 {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 12px rgba(45, 120, 230, 0.1));
+  }
+  50% {
+    transform: translateY(-7px) translateX(4px) rotate(2deg) scale(1.025);
+    filter: drop-shadow(0 8px 18px rgba(45, 120, 230, 0.18));
+  }
+}
+
+@keyframes float-slow-4 {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 12px rgba(45, 120, 230, 0.1));
+  }
+  50% {
+    transform: translateY(-9px) translateX(-3px) rotate(-1.5deg) scale(1.018);
+    filter: drop-shadow(0 11px 22px rgba(45, 120, 230, 0.2));
+  }
+}
+
+.animate-float-1 {
+  animation: float-slow-1 6s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-slow-2 7s ease-in-out infinite 0.8s;
+}
+
+.animate-float-3 {
+  animation: float-slow-3 5.5s ease-in-out infinite 1.4s;
+}
+
+.animate-float-4 {
+  animation: float-slow-4 8s ease-in-out infinite 0.4s;
+}

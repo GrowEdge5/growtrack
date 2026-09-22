@@ -103,9 +103,11 @@ export function GlassSquareIcon({
       case "sol":
       case "solana":
         return (
-          <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#9945FF] to-[#14F195] flex items-center justify-center text-white font-bold text-[9px]">
-            SOL
-          </div>
+          <img
+            src="/assets/coins/solana.png"
+            alt="Solana"
+            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
+          />
         );
       default:
         return (
@@ -118,7 +120,7 @@ export function GlassSquareIcon({
 
   return (
     <div
-      className={`glass-frosted-tile flex items-center justify-center border border-white/90 shadow-xs flex-shrink-0 ${containerSizeClasses} ${className}`}
+      className={`glass-coin-tile flex items-center justify-center border border-white/90 shadow-xs flex-shrink-0 ${containerSizeClasses} ${className}`}
     >
       {renderCoin()}
     </div>

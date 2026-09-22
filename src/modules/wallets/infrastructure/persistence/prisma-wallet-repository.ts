@@ -19,6 +19,10 @@ export class PrismaWalletRepository implements WalletRepository {
       include: {
         tokenBalances: {
           include: { token: true }
+        },
+        transactions: {
+          orderBy: { occurredAt: "desc" },
+          take: 20
         }
       }
     });
@@ -48,7 +52,14 @@ export class PrismaWalletRepository implements WalletRepository {
         rawAmount: balance.rawAmount,
         ...(balance.valueUsd !== null ? { valueUsd: balance.valueUsd.toString() } : {})
       })),
-      transactions: [],
+      transactions: (record.transactions ?? []).map((tx) => ({
+        hash: tx.txHash,
+        blockNumber: tx.blockNumber,
+        fromAddress: tx.fromAddress,
+        ...(tx.toAddress !== null ? { toAddress: tx.toAddress } : {}),
+        rawValue: tx.value,
+        occurredAt: tx.occurredAt
+      })),
       positions: [],
       signals: []
     };
@@ -136,6 +147,21 @@ export class PrismaWalletRepository implements WalletRepository {
             tokenId: token.id,
             rawAmount: holding.rawAmount,
             ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {})
+          }
+        });
+      }
+
+      for (const tx of snapshot.transactions) {
+        await transaction.transaction.create({
+          data: {
+            snapshotId: created.id,
+            chainId: snapshot.wallet.chain.id,
+            txHash: tx.hash,
+            blockNumber: tx.blockNumber,
+            fromAddress: tx.fromAddress,
+            toAddress: tx.toAddress ?? null,
+            value: tx.rawValue,
+            occurredAt: tx.occurredAt
           }
         });
       }

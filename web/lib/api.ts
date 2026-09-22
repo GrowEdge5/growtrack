@@ -48,6 +48,18 @@ export interface TokenHolding {
  */
 export type SnapshotStatus = "complete" | "partial";
 
+export interface WalletTransaction {
+  hash: string;
+  blockNumber: string;
+  fromAddress: string;
+  toAddress?: string;
+  rawValue: string;
+  occurredAt: string;
+  activityType?: string;
+  assetSymbol?: string;
+  status?: string;
+}
+
 export interface WalletSnapshot {
   wallet: WalletIdentity;
   status: SnapshotStatus;
@@ -55,19 +67,12 @@ export interface WalletSnapshot {
   nativeSymbol: string;
   provider: string;
   blockNumber?: string;
-  /**
-   * The native balance's own USD value. Absent when the native currency could not be
-   * priced — which is a different state from a priced native balance worth nothing,
-   * and the reason this is reported separately instead of being inferred from the
-   * total.
-   */
   nativeValueUsd?: string;
-  /** Sum of native + priced holdings. Absent when nothing could be priced. */
   totalValueUsd?: string;
   capturedAt: string;
   expiresAt: string;
   holdings: TokenHolding[];
-  transactions: unknown[];
+  transactions: WalletTransaction[];
   positions: unknown[];
   signals: unknown[];
 }

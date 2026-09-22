@@ -21,7 +21,11 @@ import {
   Lock,
   Loader2,
   Hourglass,
-  X
+  X,
+  Sparkles,
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileCode
 } from "lucide-react";
 
 import { Navbar } from "@/components/landing/Navbar";
@@ -35,16 +39,24 @@ import {
   analyzeWallet,
   fetchChains,
   type AnalyzeResponse,
-  type ChainDescriptor
+  type ChainDescriptor,
+  type WalletTransaction
 } from "@/lib/api";
 import {
   detectAddressFormat,
   explorerName,
   explorerUrl,
+  transactionUrl,
   chainLabel,
   coinKeyForSymbol
 } from "@/lib/address";
 import { formatAmount, formatRelativeTime, formatUsd, shorten, toWholeUnits } from "@/lib/format";
+
+const KNOWN_NAMES: Readonly<Record<string, string>> = {
+  "0xd8da6bf26964af9d7eed9e03e53415d37aa96045": "vitalik.eth",
+  "1a1zp1ep5qgefidmptftl5slmv7divfna": "Satoshi",
+  jjnp4jgsr5icf5ntmvc4to7ce4km2fdl7g4laeefik2kvgl6rtplpgmtb4: "Algorand Foundation"
+};
 
 interface PageProps {
   params: Promise<{ address: string }>;
@@ -262,6 +274,31 @@ export default function WalletDashboardPage({ params }: PageProps) {
     setNewWalletInput("");
   };
 
+  const handleAddPreset = (presetAddress: string) => {
+    setAddError(null);
+    if (tracked.some((entry) => entry.toLowerCase() === presetAddress.toLowerCase())) {
+      setSelected(presetAddress);
+      return;
+    }
+    if (!requireWallet("Track more than one wallet and build a consolidated report")) {
+      return;
+    }
+    setTracked((previous) => [...previous, presetAddress]);
+    setSelected(presetAddress);
+  };
+
+  const handleRemoveWallet = (entryToRemove: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tracked.length <= 1) return;
+    const remaining = tracked.filter(
+      (entry) => entry.toLowerCase() !== entryToRemove.toLowerCase()
+    );
+    setTracked(remaining);
+    if (selected.toLowerCase() === entryToRemove.toLowerCase()) {
+      setSelected(remaining[0]);
+    }
+  };
+
   const handleGenerateReport = () => {
     if (tracked.length < 2) {
       setAddError(
@@ -317,8 +354,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
-                    {shorten(selected, 8, 6)}
+                    {KNOWN_NAMES[selected.toLowerCase()] ?? shorten(selected, 8, 6)}
                   </h1>
+                  {KNOWN_NAMES[selected.toLowerCase()] && (
+                    <span className="font-mono text-xs text-navy-500 font-semibold bg-white/70 px-2 py-0.5 rounded-md border border-navy-100">
+                      {shorten(selected, 6, 4)}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-100/90 border border-primary-200 text-xs font-black text-primary-600 shadow-xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                     <span>
@@ -513,21 +555,43 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {tracked.map((entry, index) => (
-                    <button
-                      key={entry}
-                      type="button"
-                      onClick={() => setSelected(entry)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        selected === entry
-                          ? "bg-primary-500 text-white shadow-sm"
-                          : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
-                      }`}
-                      title={entry}
-                    >
-                      {index === 0 ? "Searched" : `Wallet ${index + 1}`} · {shorten(entry, 4, 3)}
-                    </button>
-                  ))}
+                  {tracked.map((entry, index) => {
+                    const isSelected = selected.toLowerCase() === entry.toLowerCase();
+                    const displayName =
+                      KNOWN_NAMES[entry.toLowerCase()] ??
+                      (index === 0 ? "Searched" : `Wallet ${index + 1}`);
+
+                    return (
+                      <div
+                        key={entry}
+                        onClick={() => setSelected(entry)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none ${
+                          isSelected
+                            ? "bg-primary-500 text-white shadow-sm"
+                            : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
+                        }`}
+                        title={entry}
+                      >
+                        <span>
+                          {displayName} · {shorten(entry, 4, 3)}
+                        </span>
+                        {tracked.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveWallet(entry, e)}
+                            className={`p-0.5 rounded-full transition-colors cursor-pointer ${
+                              isSelected
+                                ? "text-white/80 hover:text-white hover:bg-white/20"
+                                : "text-navy-400 hover:text-navy-700 hover:bg-navy-100"
+                            }`}
+                            title="Remove wallet"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -558,6 +622,42 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   </button>
                 </div>
               </form>
+
+              {/* Quick Presets & Combined Action */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 pt-3 border-t border-navy-100/40">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-navy-400 font-bold text-[10px] uppercase tracking-wider">
+                    Quick Presets:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPreset("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-primary-500" />
+                    <span>vitalik.eth (ETH)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPreset("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-primary-500" />
+                    <span>Satoshi (BTC)</span>
+                  </button>
+                </div>
+
+                {tracked.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateReport}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>Consolidate {tracked.length} Wallets (x402)</span>
+                  </button>
+                )}
+              </div>
 
               {!isConnected && (
                 <p className="mt-2 text-[11px] text-navy-500 font-medium flex items-center gap-1.5">
@@ -805,13 +905,342 @@ export default function WalletDashboardPage({ params }: PageProps) {
               />
             )}
 
-            {activeTab === "transactions" && (
-              <ComingSoon
-                title="Transaction history"
-                description="This wallet's on-chain history is not read yet — the API returns an empty transaction list by design."
-                detail={`${data.transactions.length === 0 ? "No transactions are available to display." : ""} A history view needs a chain indexer, which is a separate integration from the balance reads powering the rest of this page.`}
-              />
-            )}
+            {activeTab === "transactions" &&
+              (data.transactions.length === 0 ? (
+                <div className="glass-frosted rounded-[28px] p-8 sm:p-12 border border-white text-center shadow-glass space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center mx-auto text-primary-500 shadow-xs">
+                    <Clock className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-lg font-bold text-navy-900">
+                    No Recent Transactions Indexed
+                  </h3>
+                  <p className="text-xs sm:text-sm text-navy-500 max-w-md mx-auto leading-relaxed">
+                    The {detectedChain !== null ? chainLabel(detectedChain) : "chain"} indexer
+                    returned no recent public transactions for this address, or transactions have
+                    not settled yet.
+                  </p>
+                  {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
+                    <div className="pt-2">
+                      <a
+                        href={explorerUrl(detectedChain, selected) as string}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/90 hover:bg-white border border-navy-100 text-xs font-bold text-primary-600 hover:text-primary-700 shadow-xs transition-all"
+                      >
+                        <span>View raw history on {explorerName(detectedChain)}</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-navy-100/60">
+                      <div>
+                        <h3 className="text-base font-black text-navy-900 tracking-tight">
+                          Recent On-Chain Activity
+                        </h3>
+                        <p className="text-xs text-navy-500 font-medium">
+                          Showing {data.transactions.length} verified transaction
+                          {data.transactions.length === 1 ? "" : "s"} indexed directly from{" "}
+                          {detectedChain !== null ? chainLabel(detectedChain) : "chain"}.
+                        </p>
+                      </div>
+                      {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
+                        <a
+                          href={explorerUrl(detectedChain, selected) as string}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white border border-navy-100/80 text-xs font-bold text-navy-700 hover:text-primary-600 shadow-xs transition-all"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
+                          <span>Full history on {explorerName(detectedChain)}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-navy-100/60 text-navy-400 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="py-2.5 px-3">Type</th>
+                            <th className="py-2.5 px-3">Tx Hash</th>
+                            <th className="py-2.5 px-3">From / To</th>
+                            <th className="py-2.5 px-3 text-right">Amount</th>
+                            <th className="py-2.5 px-3">Time</th>
+                            <th className="py-2.5 px-3 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-navy-100/40">
+                          {data.transactions.map((tx) => {
+                            const isOutgoing =
+                              tx.fromAddress &&
+                              tx.fromAddress.toLowerCase() === selected.toLowerCase();
+                            const isIncoming =
+                              tx.toAddress && tx.toAddress.toLowerCase() === selected.toLowerCase();
+                            const txLink = transactionUrl(detectedChain || "", tx.hash);
+
+                            const formattedVal =
+                              tx.rawValue && tx.rawValue !== "0"
+                                ? toWholeUnits(
+                                    tx.rawValue,
+                                    detectedChain === "bitcoin"
+                                      ? 8
+                                      : detectedChain === "algorand"
+                                        ? 6
+                                        : detectedChain === "solana"
+                                          ? 9
+                                          : 18
+                                  )
+                                : null;
+
+                            return (
+                              <tr key={tx.hash} className="hover:bg-white/60 transition-colors">
+                                <td className="py-3 px-3">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                                      isOutgoing
+                                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                        : isIncoming
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                          : "bg-primary-50 text-primary-700 border border-primary-200"
+                                    }`}
+                                  >
+                                    {isOutgoing ? (
+                                      <ArrowUpRight className="w-3 h-3" />
+                                    ) : isIncoming ? (
+                                      <ArrowDownLeft className="w-3 h-3" />
+                                    ) : (
+                                      <FileCode className="w-3 h-3" />
+                                    )}
+                                    <span>
+                                      {tx.activityType ??
+                                        (isOutgoing
+                                          ? "Sent"
+                                          : isIncoming
+                                            ? "Received"
+                                            : "Interaction")}
+                                    </span>
+                                  </span>
+                                </td>
+
+                                <td className="py-3 px-3 font-mono font-bold text-navy-800">
+                                  {txLink ? (
+                                    <a
+                                      href={txLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
+                                      title={tx.hash}
+                                    >
+                                      <span>{shorten(tx.hash, 8, 6)}</span>
+                                      <ExternalLink className="w-3 h-3 opacity-70" />
+                                    </a>
+                                  ) : (
+                                    <span>{shorten(tx.hash, 8, 6)}</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3 px-3 font-mono text-[11px] text-navy-600">
+                                  {tx.fromAddress && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-navy-400">From:</span>
+                                      <span title={tx.fromAddress}>
+                                        {shorten(tx.fromAddress, 6, 4)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {tx.toAddress && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-navy-400">To:</span>
+                                      <span title={tx.toAddress}>
+                                        {shorten(tx.toAddress, 6, 4)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+
+                                <td className="py-3 px-3 text-right font-mono font-bold text-navy-900">
+                                  {formattedVal !== null ? (
+                                    <span
+                                      className={
+                                        isOutgoing
+                                          ? "text-amber-700"
+                                          : isIncoming
+                                            ? "text-emerald-700"
+                                            : "text-navy-900"
+                                      }
+                                    >
+                                      {isOutgoing ? "-" : isIncoming ? "+" : ""}
+                                      {formatAmount(formattedVal) ?? formattedVal}{" "}
+                                      {tx.assetSymbol ?? ""}
+                                    </span>
+                                  ) : (
+                                    <span className="text-navy-400 font-normal italic">—</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3 px-3 text-navy-500 font-medium whitespace-nowrap">
+                                  {tx.occurredAt ? formatRelativeTime(tx.occurredAt) : "Recently"}
+                                </td>
+
+                                <td className="py-3 px-3 text-right">
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                      tx.status === "confirmed" || !tx.status
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                        : tx.status === "failed"
+                                          ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                                    }`}
+                                  >
+                                    {tx.status === "confirmed" || !tx.status ? (
+                                      <Check className="w-2.5 h-2.5" />
+                                    ) : null}
+                                    <span className="capitalize">{tx.status ?? "confirmed"}</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile cards */}
+                    <div className="md:hidden space-y-3">
+                      {data.transactions.map((tx) => {
+                        const isOutgoing =
+                          tx.fromAddress && tx.fromAddress.toLowerCase() === selected.toLowerCase();
+                        const isIncoming =
+                          tx.toAddress && tx.toAddress.toLowerCase() === selected.toLowerCase();
+                        const txLink = transactionUrl(detectedChain || "", tx.hash);
+
+                        const formattedVal =
+                          tx.rawValue && tx.rawValue !== "0"
+                            ? toWholeUnits(
+                                tx.rawValue,
+                                detectedChain === "bitcoin"
+                                  ? 8
+                                  : detectedChain === "algorand"
+                                    ? 6
+                                    : detectedChain === "solana"
+                                      ? 9
+                                      : 18
+                              )
+                            : null;
+
+                        return (
+                          <div
+                            key={tx.hash}
+                            className="glass-card-subtle rounded-xl p-3.5 border border-white/90 space-y-2.5 text-xs shadow-xs"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                                  isOutgoing
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : isIncoming
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-primary-50 text-primary-700 border border-primary-200"
+                                }`}
+                              >
+                                {isOutgoing ? (
+                                  <ArrowUpRight className="w-3 h-3" />
+                                ) : isIncoming ? (
+                                  <ArrowDownLeft className="w-3 h-3" />
+                                ) : (
+                                  <FileCode className="w-3 h-3" />
+                                )}
+                                <span>
+                                  {tx.activityType ??
+                                    (isOutgoing ? "Sent" : isIncoming ? "Received" : "Interaction")}
+                                </span>
+                              </span>
+
+                              <span className="text-navy-400 text-[11px] font-medium">
+                                {tx.occurredAt ? formatRelativeTime(tx.occurredAt) : "Recently"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 font-mono">
+                              <span className="text-navy-500 text-[11px]">Hash</span>
+                              {txLink ? (
+                                <a
+                                  href={txLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary-600 font-bold hover:underline"
+                                >
+                                  <span>{shorten(tx.hash, 6, 4)}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="font-bold text-navy-800">
+                                  {shorten(tx.hash, 6, 4)}
+                                </span>
+                              )}
+                            </div>
+
+                            {formattedVal !== null && (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-navy-500 text-[11px]">Amount</span>
+                                <span
+                                  className={`font-mono font-bold text-sm ${
+                                    isOutgoing
+                                      ? "text-amber-700"
+                                      : isIncoming
+                                        ? "text-emerald-700"
+                                        : "text-navy-900"
+                                  }`}
+                                >
+                                  {isOutgoing ? "-" : isIncoming ? "+" : ""}
+                                  {formatAmount(formattedVal) ?? formattedVal}{" "}
+                                  {tx.assetSymbol ?? ""}
+                                </span>
+                              </div>
+                            )}
+
+                            {(tx.fromAddress || tx.toAddress) && (
+                              <div className="text-[11px] font-mono text-navy-600 bg-white/50 p-2 rounded-lg space-y-1">
+                                {tx.fromAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-navy-400">From:</span>
+                                    <span>{shorten(tx.fromAddress, 6, 4)}</span>
+                                  </div>
+                                )}
+                                {tx.toAddress && (
+                                  <div className="flex justify-between">
+                                    <span className="text-navy-400">To:</span>
+                                    <span>{shorten(tx.toAddress, 6, 4)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1 border-t border-navy-100/40 text-[10px]">
+                              <span className="text-navy-400 capitalize">
+                                {detectedChain !== null ? chainLabel(detectedChain) : "Chain"}
+                              </span>
+                              <span
+                                className={`font-bold capitalize ${
+                                  tx.status === "confirmed" || !tx.status
+                                    ? "text-emerald-700"
+                                    : "text-amber-700"
+                                }`}
+                              >
+                                {tx.status ?? "confirmed"}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
 
             {activeTab === "defi" && (
               <ComingSoon
