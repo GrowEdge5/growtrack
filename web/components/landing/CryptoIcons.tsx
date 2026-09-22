@@ -79,6 +79,56 @@ export function BitcoinCoinImg({ className = "w-6 h-6" }: { className?: string }
   );
 }
 
+export function BaseCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-full bg-[#0052FF] flex items-center justify-center text-white font-black text-[11px] select-none flex-shrink-0 ${className}`}
+    >
+      <span className="leading-none">B</span>
+    </div>
+  );
+}
+
+export function ArbitrumCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-full bg-[#28A0F0] flex items-center justify-center text-white font-black text-[9px] select-none flex-shrink-0 ${className}`}
+    >
+      <span className="leading-none tracking-tighter">ARB</span>
+    </div>
+  );
+}
+
+export function OptimismCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-full bg-[#FF0420] flex items-center justify-center text-white font-black text-[10px] select-none flex-shrink-0 ${className}`}
+    >
+      <span className="leading-none tracking-tight">OP</span>
+    </div>
+  );
+}
+
+export function PolygonCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-full bg-[#8247E5] flex items-center justify-center text-white font-black text-[9px] select-none flex-shrink-0 ${className}`}
+    >
+      <span className="leading-none tracking-tighter">POL</span>
+    </div>
+  );
+}
+
+export function AvalancheCoinImg({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-full bg-[#E84142] flex items-center justify-center text-white font-black text-[9px] select-none flex-shrink-0 ${className}`}
+    >
+      <span className="leading-none tracking-tighter">AVAX</span>
+    </div>
+  );
+}
+
 /**
  * Curved Doodle Arrows matching handwriting callouts in reference screenshots
  */

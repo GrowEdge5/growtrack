@@ -27,6 +27,7 @@ const ERC20_BALANCE_OF_ABI = [
 interface EvmProviderOptions {
   chainId: number;
   chainName: string;
+  chainSlug?: string;
   nativeSymbol: string;
   rpcUrl: string;
   timeoutMs: number;
@@ -47,6 +48,14 @@ interface BlockscoutItem {
   has_error_in_internal_transactions?: boolean;
 }
 
+const BLOCKSCOUT_HOSTS: Readonly<Record<string, string>> = {
+  ethereum: "https://eth.blockscout.com",
+  base: "https://base.blockscout.com",
+  arbitrum: "https://arbitrum.blockscout.com",
+  optimism: "https://optimism.blockscout.com",
+  polygon: "https://polygon.blockscout.com"
+};
+
 export class ViemChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
   public readonly nativeDecimals = EVM_NATIVE_DECIMALS;
@@ -55,7 +64,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
   public constructor(options: EvmProviderOptions) {
     this.chain = {
       id: options.chainId,
-      slug: options.chainName.toLowerCase(),
+      slug: options.chainSlug ?? options.chainName.toLowerCase(),
       namespace: "eip155",
       nativeSymbol: options.nativeSymbol
     };
@@ -115,9 +124,10 @@ export class ViemChainDataProvider implements ChainDataProvider {
 
   private async fetchTransactions(owner: string): Promise<WalletTransaction[]> {
     try {
+      const host = BLOCKSCOUT_HOSTS[this.chain.slug] ?? BLOCKSCOUT_HOSTS.ethereum;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(`https://eth.blockscout.com/api/v2/addresses/${owner}/transactions`, {
+      const res = await fetch(`${host}/api/v2/addresses/${owner}/transactions`, {
         signal: controller.signal,
         headers: { accept: "application/json" }
       });
@@ -144,7 +154,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
           rawValue: String(tx.value ?? "0"),
           occurredAt: tx.timestamp ? new Date(tx.timestamp) : new Date(),
           activityType,
-          assetSymbol: "ETH",
+          assetSymbol: this.chain.nativeSymbol,
           status:
             tx.status === "ok" || !tx.has_error_in_internal_transactions ? "confirmed" : "failed"
         };

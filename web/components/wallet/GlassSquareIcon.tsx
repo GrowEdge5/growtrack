@@ -109,6 +109,51 @@ export function GlassSquareIcon({
             className={`w-full h-full object-contain rounded-full ${iconClassName}`}
           />
         );
+      case "base":
+        return (
+          <div
+            className={`w-full h-full rounded-full bg-[#0052FF] flex items-center justify-center text-white font-black text-[10px] select-none ${iconClassName}`}
+          >
+            B
+          </div>
+        );
+      case "arbitrum":
+      case "arb":
+        return (
+          <div
+            className={`w-full h-full rounded-full bg-[#28A0F0] flex items-center justify-center text-white font-black text-[8px] select-none ${iconClassName}`}
+          >
+            ARB
+          </div>
+        );
+      case "optimism":
+      case "op":
+        return (
+          <div
+            className={`w-full h-full rounded-full bg-[#FF0420] flex items-center justify-center text-white font-black text-[9px] select-none ${iconClassName}`}
+          >
+            OP
+          </div>
+        );
+      case "polygon":
+      case "pol":
+      case "matic":
+        return (
+          <div
+            className={`w-full h-full rounded-full bg-[#8247E5] flex items-center justify-center text-white font-black text-[8px] select-none ${iconClassName}`}
+          >
+            POL
+          </div>
+        );
+      case "avalanche":
+      case "avax":
+        return (
+          <div
+            className={`w-full h-full rounded-full bg-[#E84142] flex items-center justify-center text-white font-black text-[8px] select-none ${iconClassName}`}
+          >
+            AVAX
+          </div>
+        );
       default:
         return (
           <div className="w-full h-full rounded-full bg-primary-100 border border-primary-200 flex items-center justify-center text-primary-700 font-extrabold text-[10px] uppercase">

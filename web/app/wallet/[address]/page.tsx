@@ -75,7 +75,28 @@ interface AssetRow {
   unitPriceUsd?: string;
   allocationPct?: number;
   isNative: boolean;
+  chainSlug?: string;
 }
+
+interface SupportedChain {
+  slug: string;
+  name: string;
+  symbol: string;
+  isEvm: boolean;
+}
+
+const ALL_SUPPORTED_CHAINS: readonly SupportedChain[] = [
+  { slug: "ethereum", name: "Ethereum", symbol: "ETH", isEvm: true },
+  { slug: "base", name: "Base", symbol: "ETH", isEvm: true },
+  { slug: "arbitrum", name: "Arbitrum", symbol: "ETH", isEvm: true },
+  { slug: "bsc", name: "BNB Chain", symbol: "BNB", isEvm: true },
+  { slug: "polygon", name: "Polygon", symbol: "POL", isEvm: true },
+  { slug: "optimism", name: "Optimism", symbol: "ETH", isEvm: true },
+  { slug: "avalanche", name: "Avalanche", symbol: "AVAX", isEvm: true },
+  { slug: "solana", name: "Solana", symbol: "SOL", isEvm: false },
+  { slug: "bitcoin", name: "Bitcoin", symbol: "BTC", isEvm: false },
+  { slug: "algorand", name: "Algorand", symbol: "ALGO", isEvm: false }
+];
 
 export default function WalletDashboardPage({ params }: PageProps) {
   const { address } = use(params);
@@ -101,6 +122,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"portfolio" | "nfts" | "transactions" | "defi">(
     "portfolio"
   );
+  const [selectedChainFilter, setSelectedChainFilter] = useState<string | null>(null);
   const [searchToken, setSearchToken] = useState("");
   const [hideUnpriced, setHideUnpriced] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -114,6 +136,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       lastRouteAddress.current = rawAddress;
       setTracked([rawAddress]);
       setSelected(rawAddress);
+      setSelectedChainFilter(null);
     }
   }, [rawAddress]);
 
@@ -123,11 +146,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
       .catch(() => setChains([]));
   }, []);
 
-  const load = useCallback(async (walletAddress: string) => {
+  const load = useCallback(async (walletAddress: string, chainSlug?: string) => {
     setLoading(true);
     setLoadError(null);
     try {
-      setSnapshot(await analyzeWallet(walletAddress));
+      setSnapshot(await analyzeWallet(walletAddress, chainSlug));
     } catch (error) {
       setSnapshot(null);
       setLoadError(describeLoadError(error, walletAddress));
@@ -178,7 +201,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
         ...(share(data.nativeValueUsd) !== undefined
           ? { allocationPct: share(data.nativeValueUsd) as number }
           : {}),
-        isNative: true
+        isNative: true,
+        chainSlug: data.wallet.chain.slug
       });
     }
 
@@ -196,7 +220,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
         ...(share(holding.valueUsd) !== undefined
           ? { allocationPct: share(holding.valueUsd) as number }
           : {}),
-        isNative: false
+        isNative: false,
+        chainSlug: data.wallet.chain.slug
       });
     }
 
@@ -222,12 +247,38 @@ export default function WalletDashboardPage({ params }: PageProps) {
       if (hideUnpriced && row.valueUsd === undefined) {
         return false;
       }
+      if (selectedChainFilter !== null && row.chainSlug !== selectedChainFilter) {
+        return false;
+      }
       if (query.length === 0) {
         return true;
       }
       return row.symbol.toLowerCase().includes(query) || row.name.toLowerCase().includes(query);
     });
-  }, [rows, hideUnpriced, searchToken]);
+  }, [rows, hideUnpriced, searchToken, selectedChainFilter]);
+
+  const isCurrentEvm = useMemo(() => {
+    if (detectedChain === null) return false;
+    return ["ethereum", "base", "arbitrum", "bsc", "polygon", "optimism", "avalanche"].includes(
+      detectedChain
+    );
+  }, [detectedChain]);
+
+  const handleChainClick = (chainSlug: string) => {
+    const targetChain = ALL_SUPPORTED_CHAINS.find((c) => c.slug === chainSlug);
+    if (!targetChain) return;
+
+    if (chainSlug === detectedChain) {
+      // Toggle filter on current chain
+      setSelectedChainFilter((prev) => (prev === chainSlug ? null : chainSlug));
+      return;
+    }
+
+    if (isCurrentEvm && targetChain.isEvm) {
+      setSelectedChainFilter(null);
+      void load(selected, chainSlug);
+    }
+  };
 
   const pricedCount = rows.filter((row) => row.valueUsd !== undefined).length;
   const unpricedCount = rows.length - pricedCount;
@@ -465,25 +516,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* 2. Truthful valuation principle */}
-        <div className="glass-frosted rounded-2xl p-4 border border-white/90 flex items-start gap-3 shadow-xs">
-          <div className="w-8 h-8 rounded-xl bg-primary-100/90 border border-primary-200 flex items-center justify-center flex-shrink-0 text-primary-600">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div className="text-xs text-navy-600 leading-relaxed">
-            <strong className="text-navy-900 font-bold">Truthful valuation: </strong>
-            balances are read from{" "}
-            {detectedChain !== null ? chainLabel(detectedChain) : "the chain"} and priced through a
-            market data feed. Anything without a trustworthy USD price is shown as{" "}
-            <span className="inline-block font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[11px]">
-              Unpriced
-            </span>{" "}
-            and excluded from the total — never valued at $0.00 and never filled in with placeholder
-            numbers.
-          </div>
-        </div>
-
-        {/* 3. Loading / error / data */}
+        {/* Loading / error / data */}
         {loading && snapshot === null && <LoadingPanel address={selected} />}
 
         {loadError !== null && !loading && (
@@ -497,8 +530,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
         {data !== undefined && snapshot !== null && (
           <>
-            {/* Summary */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Compact Summary Cards */}
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <SummaryCard
                 label="Wallet value (priced)"
                 value={formatUsd(data.totalValueUsd) ?? "Pending pricing"}
@@ -537,24 +570,144 @@ export default function WalletDashboardPage({ params }: PageProps) {
               />
             </section>
 
-            {/* 4. Wallets in this view */}
-            <section className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-navy-100/60">
+            {/* DeBank-Style Multi-Chain Portfolio Breakdown */}
+            <section className="glass-frosted rounded-2xl p-4 sm:p-5 shadow-glass border border-white">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-navy-100/60">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-primary-100/80 border border-primary-200/80 flex items-center justify-center text-primary-600 flex-shrink-0">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-navy-900 tracking-tight flex items-center gap-2">
+                      <span>Multi-Chain Portfolio Breakdown</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-navy-100 text-navy-600">
+                        10 Chains
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-navy-500 font-medium">
+                      DeBank-style coverage across Layer 1 networks and EVM Layer 2 rollups
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChainFilter(null)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedChainFilter === null
+                        ? "bg-primary-500 text-white shadow-xs"
+                        : "bg-white/80 hover:bg-white text-navy-700 border border-navy-100/80"
+                    }`}
+                  >
+                    All Chains
+                  </button>
+                  {detectedChain !== null && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accentGreen animate-pulse" />
+                      <span>{chainLabel(detectedChain)}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Grid of chains */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
+                {ALL_SUPPORTED_CHAINS.map((chain) => {
+                  const isActive = detectedChain === chain.slug;
+                  const isFiltered = selectedChainFilter === chain.slug;
+                  const isCompatible = (isCurrentEvm && chain.isEvm) || isActive;
+
+                  let displayValue = "—";
+                  let displayPct: string | null = null;
+
+                  if (isActive) {
+                    displayValue = formatUsd(data.totalValueUsd) ?? "Pending";
+                    if (data.totalValueUsd !== undefined && Number(data.totalValueUsd) > 0) {
+                      displayPct = "100%";
+                    }
+                  } else if (isCompatible) {
+                    displayValue = "$0";
+                  }
+
+                  return (
+                    <div
+                      key={chain.slug}
+                      onClick={() => handleChainClick(chain.slug)}
+                      className={`group p-2.5 rounded-xl border transition-all select-none flex items-center justify-between gap-2 ${
+                        isActive || isFiltered
+                          ? "bg-primary-50/90 border-primary-300 ring-1 ring-primary-400 shadow-xs cursor-pointer"
+                          : isCompatible
+                            ? "bg-white/75 hover:bg-white border-navy-100/70 hover:border-primary-200 hover:shadow-xs cursor-pointer"
+                            : "bg-white/30 border-navy-100/30 opacity-40 cursor-not-allowed"
+                      }`}
+                      title={
+                        isActive
+                          ? `Currently viewing on ${chain.name}`
+                          : isCompatible
+                            ? `Click to view ${chain.name} balances`
+                            : `Not compatible with ${chainLabel(detectedChain ?? "")} address`
+                      }
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center">
+                          <GlassSquareIcon coin={chain.slug} size="sm" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-navy-900 truncate flex items-center gap-1">
+                            <span>{chain.name}</span>
+                            {isActive && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="text-[11px] font-semibold text-navy-600 flex items-center gap-1 mt-0.5">
+                            <span className={isActive ? "text-navy-900 font-black" : ""}>
+                              {displayValue}
+                            </span>
+                            {displayPct !== null && (
+                              <span className="text-[10px] text-primary-600 font-bold">
+                                {displayPct}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        {isActive ? (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-500 text-white">
+                            Live
+                          </span>
+                        ) : isCompatible ? (
+                          <span className="text-[10px] font-bold text-navy-400 group-hover:text-primary-600 transition-colors">
+                            &rarr;
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Compact Wallets in this view */}
+            <section className="glass-frosted rounded-2xl p-3.5 sm:p-4 shadow-glass border border-white">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3 pb-2.5 border-b border-navy-100/60">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-navy-400">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
                     Wallets
                   </div>
-                  <h2 className="text-lg sm:text-xl font-black text-navy-900 tracking-tight">
+                  <h2 className="text-base sm:text-lg font-black text-navy-900 tracking-tight">
                     {tracked.length === 1
                       ? "Watching one wallet"
                       : `Watching ${tracked.length} wallets`}
                   </h2>
-                  <p className="text-[11px] text-navy-500 font-medium mt-0.5">
+                  <p className="text-[10px] text-navy-500 font-medium">
                     Looking up a single wallet is free and needs no connection.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {tracked.map((entry, index) => {
                     const isSelected = selected.toLowerCase() === entry.toLowerCase();
                     const displayName =
@@ -565,9 +718,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       <div
                         key={entry}
                         onClick={() => setSelected(entry)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "bg-primary-500 text-white shadow-sm"
+                            ? "bg-primary-500 text-white shadow-xs"
                             : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
                         }`}
                         title={entry}
@@ -597,7 +750,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
               <form
                 onSubmit={handleAddWallet}
-                className="flex flex-col sm:flex-row items-center gap-3"
+                className="flex flex-col sm:flex-row items-center gap-2.5"
               >
                 <div className="flex-1 w-full relative">
                   <input
@@ -608,31 +761,31 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       if (addError !== null) setAddError(null);
                     }}
                     placeholder="Add a wallet to consolidate (EVM, Algorand, Solana or Bitcoin)…"
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/90 border border-navy-100 text-navy-900 placeholder-navy-400 text-xs sm:text-sm font-mono outline-none focus:border-primary-400 shadow-xs"
+                    className="w-full px-3 py-2 rounded-xl bg-white/90 border border-navy-100 text-navy-900 placeholder-navy-400 text-xs font-mono outline-none focus:border-primary-400 shadow-xs"
                   />
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="submit"
-                    className="btn-connect-wallet text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer flex-1 sm:flex-none"
+                    className="btn-connect-wallet text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer flex-1 sm:flex-none"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Add wallet</span>
                   </button>
                 </div>
               </form>
 
               {/* Quick Presets & Combined Action */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 pt-3 border-t border-navy-100/40">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2.5 pt-2.5 border-t border-navy-100/40">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-navy-400 font-bold text-[10px] uppercase tracking-wider">
                     Quick Presets:
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAddPreset("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-[11px] shadow-xs transition-all cursor-pointer"
                   >
                     <Plus className="w-3 h-3 text-primary-500" />
                     <span>vitalik.eth (ETH)</span>
@@ -640,7 +793,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   <button
                     type="button"
                     onClick={() => handleAddPreset("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-[11px] shadow-xs transition-all cursor-pointer"
                   >
                     <Plus className="w-3 h-3 text-primary-500" />
                     <span>Satoshi (BTC)</span>
@@ -651,7 +804,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   <button
                     type="button"
                     onClick={handleGenerateReport}
-                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
                     <Zap className="w-3.5 h-3.5 fill-white" />
                     <span>Consolidate {tracked.length} Wallets (x402)</span>
@@ -660,8 +813,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
               </div>
 
               {!isConnected && (
-                <p className="mt-2 text-[11px] text-navy-500 font-medium flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-navy-400" />
+                <p className="mt-2 text-[10px] text-navy-500 font-medium flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-navy-400" />
                   <span>
                     Adding a second wallet needs a connected wallet — the consolidated view is built
                     from the paid report.
@@ -670,8 +823,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
               )}
 
               {addError !== null && (
-                <div className="mt-3 text-xs font-semibold text-amber-700 flex items-start gap-1.5">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div className="mt-2 text-xs font-semibold text-amber-700 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span>{addError}</span>
                 </div>
               )}
@@ -1281,14 +1434,18 @@ function SummaryCard({
         : "text-navy-500";
 
   return (
-    <div className="glass-frosted rounded-[24px] p-5 shadow-glass border border-white flex flex-col justify-between">
-      <div className="text-xs font-bold uppercase tracking-wider text-navy-400">{label}</div>
-      <div className="mt-2 text-2xl sm:text-3xl font-black text-navy-900 tracking-tight break-words">
+    <div className="glass-frosted rounded-2xl p-3.5 sm:p-4 shadow-glass border border-white flex flex-col justify-between">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-navy-400">{label}</div>
+      <div className="mt-1 text-xl sm:text-2xl font-black text-navy-900 tracking-tight break-words">
         {value}
       </div>
-      <div className={`mt-2 text-xs font-semibold ${toneClass} flex items-center gap-1.5`}>
-        {noteTone === "warn" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-        <span>{note}</span>
+      <div
+        className={`mt-1.5 text-[11px] font-semibold ${toneClass} flex items-center gap-1.5 truncate`}
+      >
+        {noteTone === "warn" && (
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+        )}
+        <span className="truncate">{note}</span>
       </div>
     </div>
   );

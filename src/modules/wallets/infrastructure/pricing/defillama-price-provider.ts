@@ -24,7 +24,19 @@ const LLAMA_CHAINS: Readonly<Record<number, LlamaChain>> = {
   3: { slug: "solana", nativeCoinKey: "coingecko:solana" },
   // Bitcoin mainnet (id 4). The native balance is reported in satoshis with 8
   // decimals, which the shared scaling already handles.
-  4: { slug: "bitcoin", nativeCoinKey: "coingecko:bitcoin" }
+  4: { slug: "bitcoin", nativeCoinKey: "coingecko:bitcoin" },
+  // Base mainnet L2 (id 8453). Native currency is ETH.
+  8453: { slug: "base", nativeCoinKey: "coingecko:ethereum" },
+  // Arbitrum One L2 (id 42161). Native currency is ETH.
+  42161: { slug: "arbitrum", nativeCoinKey: "coingecko:ethereum" },
+  // Optimism L2 (id 10). Native currency is ETH.
+  10: { slug: "optimism", nativeCoinKey: "coingecko:ethereum" },
+  // Polygon PoS (id 137). Native currency is POL/MATIC.
+  137: { slug: "polygon", nativeCoinKey: "coingecko:matic-network" },
+  // BNB Smart Chain (id 56). Native currency is BNB.
+  56: { slug: "bsc", nativeCoinKey: "coingecko:binancecoin" },
+  // Avalanche C-Chain (id 43114). Native currency is AVAX.
+  43114: { slug: "avax", nativeCoinKey: "coingecko:avalanche-2" }
 };
 
 // DeFiLlama attaches a 0..1 confidence to each price. Anything below this is

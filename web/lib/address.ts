@@ -112,7 +112,13 @@ const EXPLORERS: Readonly<Record<string, ExplorerConfig>> = {
   algorand: { url: "https://lora.algokit.io/mainnet/account/{address}", name: "Lora" },
   ethereum: { url: "https://etherscan.io/address/{address}", name: "Etherscan" },
   solana: { url: "https://solscan.io/account/{address}", name: "Solscan" },
-  bitcoin: { url: "https://mempool.space/address/{address}", name: "mempool.space" }
+  bitcoin: { url: "https://mempool.space/address/{address}", name: "mempool.space" },
+  base: { url: "https://basescan.org/address/{address}", name: "Basescan" },
+  arbitrum: { url: "https://arbiscan.io/address/{address}", name: "Arbiscan" },
+  optimism: { url: "https://optimistic.etherscan.io/address/{address}", name: "OP Etherscan" },
+  polygon: { url: "https://polygonscan.com/address/{address}", name: "Polygonscan" },
+  bsc: { url: "https://bscscan.com/address/{address}", name: "BscScan" },
+  avalanche: { url: "https://snowtrace.io/address/{address}", name: "Snowtrace" }
 };
 
 /**
@@ -145,6 +151,18 @@ export function transactionUrl(chainSlug: string, txId: string): string | null {
       return `https://blockstream.info/tx/${encoded}`;
     case "solana":
       return `https://solscan.io/tx/${encoded}`;
+    case "base":
+      return `https://basescan.org/tx/${encoded}`;
+    case "arbitrum":
+      return `https://arbiscan.io/tx/${encoded}`;
+    case "optimism":
+      return `https://optimistic.etherscan.io/tx/${encoded}`;
+    case "polygon":
+      return `https://polygonscan.com/tx/${encoded}`;
+    case "bsc":
+      return `https://bscscan.com/tx/${encoded}`;
+    case "avalanche":
+      return `https://snowtrace.io/tx/${encoded}`;
     default:
       return null;
   }
@@ -154,7 +172,13 @@ const CHAIN_LABELS: Readonly<Record<string, string>> = {
   algorand: "Algorand",
   ethereum: "Ethereum",
   solana: "Solana",
-  bitcoin: "Bitcoin"
+  bitcoin: "Bitcoin",
+  base: "Base",
+  arbitrum: "Arbitrum",
+  optimism: "Optimism",
+  polygon: "Polygon",
+  bsc: "BNB Chain",
+  avalanche: "Avalanche"
 };
 
 export function chainLabel(slug: string): string {
@@ -174,6 +198,10 @@ export function coinKeyForSymbol(symbol: string): string {
     weth: "ethereum",
     btc: "bitcoin",
     sol: "solana",
+    bnb: "bsc",
+    pol: "polygon",
+    matic: "polygon",
+    avax: "avalanche",
     usdc: "usdc",
     usdt: "usdt"
   };

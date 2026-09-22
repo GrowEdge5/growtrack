@@ -64,17 +64,17 @@ export function Hero() {
             </div>
 
             {/* Tile 1: Algorand (Large Floating Tile) */}
-            <div className="glass-coin-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 hover:rotate-0 pointer-events-auto animate-float-1">
+            <div className="glass-coin-tile w-24 h-24 rounded-3xl p-3 flex items-center justify-center transform -rotate-12 hover:rotate-0 pointer-events-auto animate-float-1 mb-4">
               <AlgorandCoinImg className="w-14 h-14" />
             </div>
 
             {/* Tile 2: Bitcoin (Smaller Floating Tile near Left) */}
-            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-6 translate-x-14 -translate-y-4 hover:rotate-0 pointer-events-auto animate-float-2">
+            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform rotate-6 translate-x-12 translate-y-2 hover:rotate-0 pointer-events-auto animate-float-2 mb-4">
               <BitcoinCoinImg className="w-12 h-12" />
             </div>
 
             {/* Tile 3: Ethereum (Third Left Floating Tile per User Correction) */}
-            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 translate-x-6 translate-y-3 hover:rotate-0 pointer-events-auto animate-float-3">
+            <div className="glass-coin-tile w-20 h-20 rounded-2xl p-2.5 flex items-center justify-center transform -rotate-6 -translate-x-2 translate-y-3 hover:rotate-0 pointer-events-auto animate-float-3">
               <EthereumCoinImg className="w-13 h-13" />
             </div>
           </div>

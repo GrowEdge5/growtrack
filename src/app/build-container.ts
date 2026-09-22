@@ -10,7 +10,13 @@ import type { ChainProviderRegistry } from "../modules/chains/application/ports/
 import { AlgorandChainDataProvider } from "../modules/chains/infrastructure/algorand/algorand-chain-data-provider.js";
 import { ALGORAND_MAINNET_CHAIN_ID } from "../modules/chains/infrastructure/algorand/algorand-asset-list.js";
 import {
+  ARBITRUM_MAINNET_CHAIN_ID,
+  AVALANCHE_MAINNET_CHAIN_ID,
+  BASE_MAINNET_CHAIN_ID,
   BITCOIN_MAINNET_CHAIN_ID,
+  BSC_MAINNET_CHAIN_ID,
+  OPTIMISM_MAINNET_CHAIN_ID,
+  POLYGON_MAINNET_CHAIN_ID,
   SOLANA_MAINNET_CHAIN_ID
 } from "../modules/chains/infrastructure/chain-ids.js";
 import { BitcoinChainDataProvider } from "../modules/chains/infrastructure/bitcoin/bitcoin-chain-data-provider.js";
@@ -122,8 +128,62 @@ export function buildContainer(env: Environment): ApplicationContainer {
       ? { fallbackApiUrl: env.BITCOIN_FALLBACK_API_URL }
       : {})
   });
+  const baseProvider = new ViemChainDataProvider({
+    chainId: BASE_MAINNET_CHAIN_ID,
+    chainName: "Base",
+    chainSlug: "base",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://mainnet.base.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const arbitrumProvider = new ViemChainDataProvider({
+    chainId: ARBITRUM_MAINNET_CHAIN_ID,
+    chainName: "Arbitrum",
+    chainSlug: "arbitrum",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://arb1.arbitrum.io/rpc",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const optimismProvider = new ViemChainDataProvider({
+    chainId: OPTIMISM_MAINNET_CHAIN_ID,
+    chainName: "Optimism",
+    chainSlug: "optimism",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://mainnet.optimism.io",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const polygonProvider = new ViemChainDataProvider({
+    chainId: POLYGON_MAINNET_CHAIN_ID,
+    chainName: "Polygon",
+    chainSlug: "polygon",
+    nativeSymbol: "POL",
+    rpcUrl: "https://polygon-rpc.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const bscProvider = new ViemChainDataProvider({
+    chainId: BSC_MAINNET_CHAIN_ID,
+    chainName: "BNB Chain",
+    chainSlug: "bsc",
+    nativeSymbol: "BNB",
+    rpcUrl: "https://binance.llamarpc.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const avalancheProvider = new ViemChainDataProvider({
+    chainId: AVALANCHE_MAINNET_CHAIN_ID,
+    chainName: "Avalanche",
+    chainSlug: "avalanche",
+    nativeSymbol: "AVAX",
+    rpcUrl: "https://api.avax.network/ext/bc/C/rpc",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
   const providers = new DefaultChainProviderRegistry([
     provider,
+    baseProvider,
+    arbitrumProvider,
+    optimismProvider,
+    polygonProvider,
+    bscProvider,
+    avalancheProvider,
     algorandProvider,
     solanaProvider,
     bitcoinProvider
