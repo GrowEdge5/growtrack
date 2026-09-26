@@ -13,7 +13,12 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 export const metadata: Metadata = {
   title: "Growtrack | Multichain wallet intelligence",
   description:
-    "Look up any EVM, Algorand, Solana or Bitcoin address and see its real holdings and USD value. Pay per query in USDC on Algorand via x402."
+    "Look up any EVM, Algorand, Solana or Bitcoin address and see its real holdings and USD value. Pay per query in USDC on Algorand via x402.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png"
+  }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -14,6 +14,9 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" 
   <circle cx="100" cy="40" r="9" fill="#4ade80"/>
 </svg>`;
 
+import fs from "node:fs";
+import path from "node:path";
+
 export function registerDiscoveryRoutes(
   app: FastifyInstance,
   container: ApplicationContainer
@@ -23,14 +26,26 @@ export function registerDiscoveryRoutes(
     nativeSymbol: provider.chain.nativeSymbol
   }));
 
+  app.get("/logo.png", async (_request, reply) => {
+    const pngPath = path.resolve(process.cwd(), "web", "public", "logo.png");
+    if (fs.existsSync(pngPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(pngPath));
+    }
+    return reply.status(404).send();
+  });
+
   app.get("/logo.svg", async (_request, reply) => {
     reply.type("image/svg+xml").header("cache-control", "public, max-age=86400");
     return LOGO_SVG;
   });
 
-  // Browsers request /favicon.ico by convention; serving the SVG here avoids a 404
-  // in the facilitator's crawl log without shipping a binary asset.
   app.get("/favicon.ico", async (_request, reply) => {
+    const icoPath = path.resolve(process.cwd(), "web", "public", "favicon.ico");
+    if (fs.existsSync(icoPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(icoPath));
+    }
     reply.type("image/svg+xml").header("cache-control", "public, max-age=86400");
     return LOGO_SVG;
   });
