@@ -48,7 +48,10 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
   await app.register(cors, { origin: parseCorsOrigins(container.env.CORS_ORIGIN) });
-  await app.register(helmet);
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: false
+  });
   await app.register(sensible);
   await app.register(rateLimit, { max: container.env.RATE_LIMIT_MAX, timeWindow: "1 minute" });
 

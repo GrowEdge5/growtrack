@@ -12,6 +12,9 @@ export function proxyToWeb(
   onError?: () => void
 ): void {
   reply.hijack();
+  for (const name of reply.raw.getHeaderNames()) {
+    reply.raw.removeHeader(name);
+  }
   const url = req.raw.url ?? "/";
   const proxyReq = http.request(
     {
