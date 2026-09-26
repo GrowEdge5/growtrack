@@ -76,6 +76,11 @@ interface AssetRow {
   allocationPct?: number;
   isNative: boolean;
   chainSlug?: string;
+  walletAddress?: string;
+}
+
+interface DisplayTransaction extends WalletTransaction {
+  chainSlug?: string;
 }
 
 interface SupportedChain {
@@ -105,18 +110,22 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const { session, isConnected } = useWalletSession();
   const { requireWallet } = useWalletGate();
 
-  // The wallet whose data is on screen. Free and anonymous: no connection is needed
-  // to reach this state, which is the whole point of the page.
-  const [selected, setSelected] = useState(rawAddress);
-  // Every wallet the visitor has added. The first is the one they searched for;
-  // adding more is a connect-gated action.
+  // The wallet whose data is on screen. Can be "ALL" (consolidated across all wallets/chains)
+  // or a specific address from tracked.
+  const [selected, setSelected] = useState<string>(rawAddress);
+  // Every wallet the visitor has added.
   const [tracked, setTracked] = useState<string[]>([rawAddress]);
   const [newWalletInput, setNewWalletInput] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
 
-  const [snapshot, setSnapshot] = useState<AnalyzeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Store snapshots indexed by lowercased wallet address
+  const [snapshotsByAddress, setSnapshotsByAddress] = useState<Record<string, AnalyzeResponse>>({});
+  const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [loadError, setLoadError] = useState<{ message: string; hint?: string } | null>(null);
+
+  // Pending wallet to add when wallet connection or payment is needed
+  const [pendingWalletToAdd, setPendingWalletToAdd] = useState<string | null>(null);
+  const [reportModalAddresses, setReportModalAddresses] = useState<string[] | null>(null);
 
   const [chains, setChains] = useState<ChainDescriptor[]>([]);
   const [activeTab, setActiveTab] = useState<"portfolio" | "nfts" | "transactions" | "defi">(
@@ -126,7 +135,6 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [searchToken, setSearchToken] = useState("");
   const [hideUnpriced, setHideUnpriced] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showReport, setShowReport] = useState(false);
 
   // A new address in the URL is a new primary wallet; reset the tracked set so the
   // page never mixes two different searches.
@@ -137,6 +145,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setTracked([rawAddress]);
       setSelected(rawAddress);
       setSelectedChainFilter(null);
+      setSnapshotsByAddress({});
     }
   }, [rawAddress]);
 
@@ -146,87 +155,111 @@ export default function WalletDashboardPage({ params }: PageProps) {
       .catch(() => setChains([]));
   }, []);
 
-  const load = useCallback(async (walletAddress: string, chainSlug?: string) => {
-    setLoading(true);
+  const loadWallet = useCallback(async (walletAddress: string, chainSlug?: string) => {
+    const key = walletAddress.toLowerCase();
+    setLoadingMap((prev) => ({ ...prev, [key]: true }));
     setLoadError(null);
     try {
-      setSnapshot(await analyzeWallet(walletAddress, chainSlug));
+      const res = await analyzeWallet(walletAddress, chainSlug);
+      setSnapshotsByAddress((prev) => ({ ...prev, [key]: res }));
     } catch (error) {
-      setSnapshot(null);
       setLoadError(describeLoadError(error, walletAddress));
     } finally {
-      setLoading(false);
+      setLoadingMap((prev) => ({ ...prev, [key]: false }));
     }
   }, []);
 
+  // Ensure all tracked wallets have their snapshots fetched
   useEffect(() => {
-    void load(selected);
-  }, [selected, load]);
-
-  const data = snapshot?.data;
-  const detectedChain = snapshot?.meta.chain ?? null;
-  const nativeDecimals = useMemo(() => {
-    const match = chains.find((chain) => chain.slug === detectedChain);
-    return match?.nativeDecimals ?? null;
-  }, [chains, detectedChain]);
-
-  // Native value is a field the API reports directly, so an unpriced native balance
-  // is never inferred as zero from the portfolio total.
-  const rows = useMemo<AssetRow[]>(() => {
-    if (data === undefined) {
-      return [];
-    }
-
-    const assets: AssetRow[] = [];
-    const totalValue = data.totalValueUsd === undefined ? null : Number(data.totalValueUsd);
-    const share = (value: string | undefined): number | undefined => {
-      if (totalValue === null || totalValue === 0 || value === undefined) {
-        return undefined;
+    for (const addr of tracked) {
+      const key = addr.toLowerCase();
+      if (!snapshotsByAddress[key] && !loadingMap[key]) {
+        void loadWallet(addr);
       }
-      const numeric = Number(value);
-      return Number.isFinite(numeric) ? (numeric / totalValue) * 100 : undefined;
-    };
+    }
+  }, [tracked, snapshotsByAddress, loadingMap, loadWallet]);
 
-    if (nativeDecimals !== null) {
-      const nativeAmount = toWholeUnits(data.nativeBalance, nativeDecimals);
-      assets.push({
-        key: `native-${data.nativeSymbol}`,
-        symbol: data.nativeSymbol,
-        name: `${chainLabel(data.wallet.chain.slug)} native`,
-        amount: nativeAmount,
-        ...(data.nativeValueUsd !== undefined ? { valueUsd: data.nativeValueUsd } : {}),
-        ...(data.nativeValueUsd !== undefined && Number(nativeAmount) > 0
-          ? { unitPriceUsd: String(Number(data.nativeValueUsd) / Number(nativeAmount)) }
-          : {}),
-        ...(share(data.nativeValueUsd) !== undefined
-          ? { allocationPct: share(data.nativeValueUsd) as number }
-          : {}),
-        isNative: true,
-        chainSlug: data.wallet.chain.slug
-      });
+  // When user was prompted to connect to add a wallet and now becomes connected:
+  useEffect(() => {
+    if (isConnected && pendingWalletToAdd !== null && reportModalAddresses === null) {
+      setReportModalAddresses([...tracked, pendingWalletToAdd]);
+    }
+  }, [isConnected, pendingWalletToAdd, reportModalAddresses, tracked]);
+
+  const isSelectedAll = selected === "ALL";
+  const currentSnapshot = isSelectedAll
+    ? null
+    : (snapshotsByAddress[selected.toLowerCase()] ?? null);
+  const data = currentSnapshot?.data;
+  const detectedChain = isSelectedAll ? null : (currentSnapshot?.meta.chain ?? null);
+
+  const loading = isSelectedAll
+    ? tracked.some((addr) => loadingMap[addr.toLowerCase()])
+    : Boolean(loadingMap[selected.toLowerCase()]);
+
+  // Combined asset rows across all tracked wallets if isSelectedAll, or single wallet if not
+  const rows = useMemo<AssetRow[]>(() => {
+    const assets: AssetRow[] = [];
+    const walletsToProcess = isSelectedAll ? tracked : currentSnapshot ? [selected] : [];
+
+    for (const walletAddr of walletsToProcess) {
+      const snap = snapshotsByAddress[walletAddr.toLowerCase()];
+      if (!snap || !snap.data) continue;
+
+      const d = snap.data;
+      const snapChain = snap.meta.chain;
+      const match = chains.find((chain) => chain.slug === snapChain);
+      const nativeDec = match?.nativeDecimals ?? null;
+
+      if (nativeDec !== null) {
+        const nativeAmount = toWholeUnits(d.nativeBalance, nativeDec);
+        assets.push({
+          key: `${walletAddr}-native-${d.nativeSymbol}`,
+          symbol: d.nativeSymbol,
+          name: `${chainLabel(d.wallet.chain.slug)} native`,
+          amount: nativeAmount,
+          ...(d.nativeValueUsd !== undefined ? { valueUsd: d.nativeValueUsd } : {}),
+          ...(d.nativeValueUsd !== undefined && Number(nativeAmount) > 0
+            ? { unitPriceUsd: String(Number(d.nativeValueUsd) / Number(nativeAmount)) }
+            : {}),
+          isNative: true,
+          chainSlug: d.wallet.chain.slug,
+          walletAddress: walletAddr
+        });
+      }
+
+      for (const holding of d.holdings) {
+        const amount = toWholeUnits(holding.rawAmount, holding.decimals);
+        assets.push({
+          key: `${walletAddr}-token-${holding.tokenAddress}`,
+          symbol: holding.symbol,
+          name: holding.name,
+          amount,
+          ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {}),
+          ...(holding.valueUsd !== undefined && Number(amount) > 0
+            ? { unitPriceUsd: String(Number(holding.valueUsd) / Number(amount)) }
+            : {}),
+          isNative: false,
+          chainSlug: d.wallet.chain.slug,
+          walletAddress: walletAddr
+        });
+      }
     }
 
-    for (const holding of data.holdings) {
-      const amount = toWholeUnits(holding.rawAmount, holding.decimals);
-      assets.push({
-        key: `token-${holding.tokenAddress}`,
-        symbol: holding.symbol,
-        name: holding.name,
-        amount,
-        ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {}),
-        ...(holding.valueUsd !== undefined && Number(amount) > 0
-          ? { unitPriceUsd: String(Number(holding.valueUsd) / Number(amount)) }
-          : {}),
-        ...(share(holding.valueUsd) !== undefined
-          ? { allocationPct: share(holding.valueUsd) as number }
-          : {}),
-        isNative: false,
-        chainSlug: data.wallet.chain.slug
-      });
+    // Calculate allocation percentage relative to total priced assets in this view
+    const totalPriced = assets.reduce(
+      (sum, item) => sum + (item.valueUsd ? Number(item.valueUsd) : 0),
+      0
+    );
+
+    if (totalPriced > 0) {
+      for (const item of assets) {
+        if (item.valueUsd !== undefined) {
+          item.allocationPct = (Number(item.valueUsd) / totalPriced) * 100;
+        }
+      }
     }
 
-    // Largest known value first; unpriced assets keep their API order at the end so
-    // they stay visible rather than disappearing below a fold of priced rows.
     return assets.sort((left, right) => {
       if (left.valueUsd === undefined && right.valueUsd === undefined) {
         return 0;
@@ -239,7 +272,23 @@ export default function WalletDashboardPage({ params }: PageProps) {
       }
       return Number(right.valueUsd) - Number(left.valueUsd);
     });
-  }, [data, nativeDecimals]);
+  }, [isSelectedAll, tracked, selected, snapshotsByAddress, chains, currentSnapshot]);
+
+  const totalPortfolioValueUsd = useMemo(() => {
+    if (isSelectedAll) {
+      let sum = 0;
+      let hasAnyPriced = false;
+      for (const addr of tracked) {
+        const snap = snapshotsByAddress[addr.toLowerCase()];
+        if (snap?.data?.totalValueUsd !== undefined) {
+          sum += Number(snap.data.totalValueUsd);
+          hasAnyPriced = true;
+        }
+      }
+      return hasAnyPriced ? sum.toFixed(2) : undefined;
+    }
+    return currentSnapshot?.data?.totalValueUsd;
+  }, [isSelectedAll, tracked, snapshotsByAddress, currentSnapshot]);
 
   const filteredRows = useMemo(() => {
     const query = searchToken.trim().toLowerCase();
@@ -257,6 +306,31 @@ export default function WalletDashboardPage({ params }: PageProps) {
     });
   }, [rows, hideUnpriced, searchToken, selectedChainFilter]);
 
+  // Per-chain totals for the DeBank-style grid
+  const chainTotals = useMemo(() => {
+    const map: Record<string, { totalUsd: number; assetCount: number; hasAssets: boolean }> = {};
+    for (const c of ALL_SUPPORTED_CHAINS) {
+      map[c.slug] = { totalUsd: 0, assetCount: 0, hasAssets: false };
+    }
+
+    const walletsToProcess = isSelectedAll ? tracked : currentSnapshot ? [selected] : [];
+
+    for (const walletAddr of walletsToProcess) {
+      const snap = snapshotsByAddress[walletAddr.toLowerCase()];
+      if (!snap || !snap.data) continue;
+
+      const chainSlug = snap.data.wallet.chain.slug;
+      if (map[chainSlug]) {
+        map[chainSlug].hasAssets = true;
+        map[chainSlug].assetCount += 1 + snap.data.holdings.length;
+        if (snap.data.totalValueUsd !== undefined) {
+          map[chainSlug].totalUsd += Number(snap.data.totalValueUsd);
+        }
+      }
+    }
+    return map;
+  }, [isSelectedAll, tracked, selected, snapshotsByAddress, currentSnapshot]);
+
   const isCurrentEvm = useMemo(() => {
     if (detectedChain === null) return false;
     return ["ethereum", "base", "arbitrum", "bsc", "polygon", "optimism", "avalanche"].includes(
@@ -265,6 +339,12 @@ export default function WalletDashboardPage({ params }: PageProps) {
   }, [detectedChain]);
 
   const handleChainClick = (chainSlug: string) => {
+    if (isSelectedAll) {
+      // In consolidated view, clicking any chain filters the assets table to that chain
+      setSelectedChainFilter((prev) => (prev === chainSlug ? null : chainSlug));
+      return;
+    }
+
     const targetChain = ALL_SUPPORTED_CHAINS.find((c) => c.slug === chainSlug);
     if (!targetChain) return;
 
@@ -276,9 +356,45 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
     if (isCurrentEvm && targetChain.isEvm) {
       setSelectedChainFilter(null);
-      void load(selected, chainSlug);
+      void loadWallet(selected, chainSlug);
     }
   };
+
+  const transactions = useMemo<DisplayTransaction[]>(() => {
+    if (!isSelectedAll) {
+      return (currentSnapshot?.data?.transactions ?? []).map((t) => ({
+        ...t,
+        chainSlug: currentSnapshot?.data?.wallet?.chain?.slug
+      }));
+    }
+    const allTx: DisplayTransaction[] = [];
+    for (const addr of tracked) {
+      const snap = snapshotsByAddress[addr.toLowerCase()];
+      if (snap?.data?.transactions) {
+        const chainSlug = snap.data.wallet.chain.slug;
+        for (const t of snap.data.transactions) {
+          allTx.push({ ...t, chainSlug });
+        }
+      }
+    }
+    return allTx.sort(
+      (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
+    );
+  }, [isSelectedAll, currentSnapshot, tracked, snapshotsByAddress]);
+
+  const defiPositions = useMemo(() => {
+    if (!isSelectedAll) {
+      return currentSnapshot?.data?.positions ?? [];
+    }
+    const allPos = [];
+    for (const addr of tracked) {
+      const snap = snapshotsByAddress[addr.toLowerCase()];
+      if (snap?.data?.positions) {
+        allPos.push(...snap.data.positions);
+      }
+    }
+    return allPos;
+  }, [isSelectedAll, currentSnapshot, tracked, snapshotsByAddress]);
 
   const pricedCount = rows.filter((row) => row.valueUsd !== undefined).length;
   const unpricedCount = rows.length - pricedCount;
@@ -290,6 +406,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    if (isSelectedAll) {
+      for (const addr of tracked) {
+        void loadWallet(addr);
+      }
+    } else {
+      void loadWallet(selected, selectedChainFilter ?? undefined);
     }
   };
 
@@ -307,22 +433,23 @@ export default function WalletDashboardPage({ params }: PageProps) {
       return;
     }
 
-    // The rule: one wallet needs no connection, a second one does. This is a real
-    // constraint rather than a nag — a multi-wallet view is built from the paid
-    // report path, which settles on Algorand and therefore needs a signer.
-    if (!requireWallet("Track more than one wallet and build a consolidated report")) {
-      return;
-    }
-
     const hint = detectAddressFormat(candidate);
     if (!hint.isValid) {
       setAddError(`${hint.label}: ${hint.hint}`);
       return;
     }
 
-    setTracked((previous) => [...previous, candidate]);
-    setSelected(candidate);
-    setNewWalletInput("");
+    // Adding a 2nd wallet requires wallet connection and $0.001 USDC (x402) on Algorand
+    if (!isConnected) {
+      setPendingWalletToAdd(candidate);
+      requireWallet(
+        "Connect your Algorand wallet to unlock multi-wallet tracking ($0.001 USDC via x402)"
+      );
+      return;
+    }
+
+    setPendingWalletToAdd(candidate);
+    setReportModalAddresses([...tracked, candidate]);
   };
 
   const handleAddPreset = (presetAddress: string) => {
@@ -331,11 +458,17 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setSelected(presetAddress);
       return;
     }
-    if (!requireWallet("Track more than one wallet and build a consolidated report")) {
+
+    if (!isConnected) {
+      setPendingWalletToAdd(presetAddress);
+      requireWallet(
+        "Connect your Algorand wallet to unlock multi-wallet tracking ($0.001 USDC via x402)"
+      );
       return;
     }
-    setTracked((previous) => [...previous, presetAddress]);
-    setSelected(presetAddress);
+
+    setPendingWalletToAdd(presetAddress);
+    setReportModalAddresses([...tracked, presetAddress]);
   };
 
   const handleRemoveWallet = (entryToRemove: string, e: React.MouseEvent) => {
@@ -345,25 +478,26 @@ export default function WalletDashboardPage({ params }: PageProps) {
       (entry) => entry.toLowerCase() !== entryToRemove.toLowerCase()
     );
     setTracked(remaining);
+    setSnapshotsByAddress((prev) => {
+      const copy = { ...prev };
+      delete copy[entryToRemove.toLowerCase()];
+      return copy;
+    });
     if (selected.toLowerCase() === entryToRemove.toLowerCase()) {
-      setSelected(remaining[0]);
+      setSelected(remaining.length > 1 ? "ALL" : remaining[0]);
     }
   };
 
   const handleGenerateReport = () => {
-    if (tracked.length < 2) {
-      setAddError(
-        "Add at least one more wallet to build a consolidated report — a single wallet is already fully covered above, free of charge."
-      );
+    if (!requireWallet("Generate the consolidated portfolio report ($0.001 USDC via x402)")) {
       return;
     }
-    if (!requireWallet("Generate the consolidated portfolio report")) {
-      return;
-    }
-    setShowReport(true);
+    setReportModalAddresses(tracked);
   };
 
-  const addressHint = detectAddressFormat(selected);
+  const addressHint = isSelectedAll
+    ? { label: "Multi-Chain", hint: "", isValid: true }
+    : detectAddressFormat(selected);
 
   return (
     <div className="site-atmosphere min-h-screen text-navy-800 selection:bg-primary-500 selection:text-white font-sans flex flex-col antialiased relative">
@@ -381,15 +515,22 @@ export default function WalletDashboardPage({ params }: PageProps) {
             <span>Back to search</span>
           </Link>
 
-          {snapshot !== null && (
+          {isSelectedAll ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-navy-500">
+              <span className="w-2 h-2 rounded-full bg-accentGreen" />
+              <span>Multi-Wallet Consolidated · {tracked.length} wallets · Live across chains</span>
+            </div>
+          ) : currentSnapshot !== null ? (
             <div className="flex items-center gap-2 text-xs font-semibold text-navy-500">
               <span className="w-2 h-2 rounded-full bg-accentGreen" />
               <span>
-                {snapshot.meta.source === "live" ? "Read live from chain" : "Served from cache"} ·{" "}
-                {formatRelativeTime(data?.capturedAt ?? "")}
+                {currentSnapshot.meta.source === "live"
+                  ? "Read live from chain"
+                  : "Served from cache"}{" "}
+                · {formatRelativeTime(data?.capturedAt ?? "")}
               </span>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* 1. Wallet identity */}
@@ -403,94 +544,147 @@ export default function WalletDashboardPage({ params }: PageProps) {
               </div>
 
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
-                    {KNOWN_NAMES[selected.toLowerCase()] ?? shorten(selected, 8, 6)}
-                  </h1>
-                  {KNOWN_NAMES[selected.toLowerCase()] && (
-                    <span className="font-mono text-xs text-navy-500 font-semibold bg-white/70 px-2 py-0.5 rounded-md border border-navy-100">
-                      {shorten(selected, 6, 4)}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-100/90 border border-primary-200 text-xs font-black text-primary-600 shadow-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                    <span>
-                      {detectedChain !== null ? chainLabel(detectedChain) : addressHint.label}
-                    </span>
-                  </span>
-                  {isConnected && session !== null && session.address === selected && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Connected wallet</span>
-                    </span>
-                  )}
-                </div>
+                {isSelectedAll ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
+                        All Tracked Wallets
+                      </h1>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-100/90 border border-primary-200 text-xs font-black text-primary-600 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                        <span>{tracked.length} Wallets · Multi-Chain Consolidated</span>
+                      </span>
+                    </div>
 
-                <div className="flex items-center gap-2.5 text-xs text-navy-500 font-mono mt-1.5 flex-wrap">
-                  <span className="bg-white/60 px-2 py-0.5 rounded-lg border border-navy-100/50 break-all select-all font-medium text-navy-700">
-                    {selected}
-                  </span>
+                    <div className="flex items-center gap-2 text-xs text-navy-500 font-mono mt-2 flex-wrap">
+                      {tracked.map((addr) => (
+                        <button
+                          key={addr}
+                          type="button"
+                          onClick={() => setSelected(addr)}
+                          className="bg-white/70 hover:bg-white px-2 py-0.5 rounded-lg border border-navy-100 text-navy-700 font-medium cursor-pointer transition-all inline-flex items-center gap-1 text-xs"
+                          title={`Click to view ${addr}`}
+                        >
+                          <span>{KNOWN_NAMES[addr.toLowerCase()] ?? shorten(addr, 6, 4)}</span>
+                          <ArrowUpRight className="w-3 h-3 text-navy-400" />
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold disabled:opacity-60"
+                      >
+                        <RefreshCw
+                          className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`}
+                        />
+                        <span>Refresh all</span>
+                      </button>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => void handleCopy(selected)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold"
-                  >
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 text-accentGreen" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 text-primary-500" />
-                    )}
-                    <span>{copied ? "Copied" : "Copy"}</span>
-                  </button>
-
-                  {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
-                    <a
-                      href={explorerUrl(detectedChain, selected) as string}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all font-sans text-xs font-bold"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
-                      <span>{explorerName(detectedChain) ?? "Explorer"}</span>
-                    </a>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => void load(selected)}
-                    disabled={loading}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold disabled:opacity-60"
-                  >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`}
-                    />
-                    <span>Refresh</span>
-                  </button>
-                </div>
-
-                {data !== undefined && (
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-navy-500 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      <Database className="w-3.5 h-3.5 text-primary-500" />
-                      Read via <code className="font-mono text-navy-700">{data.provider}</code>
-                    </span>
-                    {data.blockNumber !== undefined && (
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-navy-500 font-medium">
+                      <span className="inline-flex items-center gap-1">
+                        <Database className="w-3.5 h-3.5 text-primary-500" />
+                        Multi-chain live indexer aggregated
+                      </span>
                       <span className="inline-flex items-center gap-1">
                         <Layers className="w-3.5 h-3.5 text-primary-500" />
-                        {data.wallet.chain.namespace === "algorand" ? "Round" : "Block"}{" "}
-                        <code className="font-mono text-navy-700">{data.blockNumber}</code>
+                        10 Layer 1 and Layer 2 chains
                       </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
+                        {KNOWN_NAMES[selected.toLowerCase()] ?? shorten(selected, 8, 6)}
+                      </h1>
+                      {KNOWN_NAMES[selected.toLowerCase()] && (
+                        <span className="font-mono text-xs text-navy-500 font-semibold bg-white/70 px-2 py-0.5 rounded-md border border-navy-100">
+                          {shorten(selected, 6, 4)}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-100/90 border border-primary-200 text-xs font-black text-primary-600 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                        <span>
+                          {detectedChain !== null ? chainLabel(detectedChain) : addressHint.label}
+                        </span>
+                      </span>
+                      {isConnected && session !== null && session.address === selected && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Connected wallet</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2.5 text-xs text-navy-500 font-mono mt-1.5 flex-wrap">
+                      <span className="bg-white/60 px-2 py-0.5 rounded-lg border border-navy-100/50 break-all select-all font-medium text-navy-700">
+                        {selected}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleCopy(selected)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold"
+                      >
+                        {copied ? (
+                          <Check className="w-3.5 h-3.5 text-accentGreen" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 text-primary-500" />
+                        )}
+                        <span>{copied ? "Copied" : "Copy"}</span>
+                      </button>
+
+                      {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
+                        <a
+                          href={explorerUrl(detectedChain, selected) as string}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all font-sans text-xs font-bold"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
+                          <span>{explorerName(detectedChain) ?? "Explorer"}</span>
+                        </a>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white border border-navy-100/70 text-navy-700 hover:text-primary-600 shadow-xs transition-all cursor-pointer font-sans text-xs font-bold disabled:opacity-60"
+                      >
+                        <RefreshCw
+                          className={`w-3.5 h-3.5 text-primary-500 ${loading ? "animate-spin" : ""}`}
+                        />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+
+                    {data !== undefined && (
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-navy-500 font-medium">
+                        <span className="inline-flex items-center gap-1">
+                          <Database className="w-3.5 h-3.5 text-primary-500" />
+                          Read via <code className="font-mono text-navy-700">{data.provider}</code>
+                        </span>
+                        {data.blockNumber !== undefined && (
+                          <span className="inline-flex items-center gap-1">
+                            <Layers className="w-3.5 h-3.5 text-primary-500" />
+                            {data.wallet.chain.namespace === "algorand" ? "Round" : "Block"}{" "}
+                            <code className="font-mono text-navy-700">{data.blockNumber}</code>
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-primary-500" />
+                          Snapshot valid until{" "}
+                          {new Date(data.expiresAt).toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </span>
+                      </div>
                     )}
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-primary-500" />
-                      Snapshot valid until{" "}
-                      {new Date(data.expiresAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </span>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -507,48 +701,58 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 ) : (
                   <Lock className="w-3.5 h-3.5" />
                 )}
-                <span>Generate full report (USDC via x402)</span>
+                <span>Generate full report ($0.001 USDC)</span>
               </button>
               <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-full lg:max-w-[15rem] text-center lg:text-left">
-                Multi-wallet consolidation. You see the exact price before approving anything.
+                Multi-wallet consolidation. Pay $0.001 USDC via x402 on Algorand.
               </p>
             </div>
           </div>
         </section>
 
         {/* Loading / error / data */}
-        {loading && snapshot === null && <LoadingPanel address={selected} />}
+        {loading &&
+          (!isSelectedAll
+            ? currentSnapshot === null
+            : Object.keys(snapshotsByAddress).length === 0) && (
+            <LoadingPanel address={isSelectedAll ? "all tracked wallets" : selected} />
+          )}
 
         {loadError !== null && !loading && (
           <ErrorPanel
             message={loadError.message}
             hint={loadError.hint}
-            onRetry={() => void load(selected)}
+            onRetry={handleRefresh}
             onSearch={(value) => setSelected(value)}
           />
         )}
 
-        {data !== undefined && snapshot !== null && (
+        {((!isSelectedAll && data !== undefined && currentSnapshot !== null) ||
+          (isSelectedAll && Object.keys(snapshotsByAddress).length > 0)) && (
           <>
             {/* Compact Summary Cards */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <SummaryCard
-                label="Wallet value (priced)"
-                value={formatUsd(data.totalValueUsd) ?? "Pending pricing"}
+                label={isSelectedAll ? "Consolidated value (priced)" : "Wallet value (priced)"}
+                value={formatUsd(totalPortfolioValueUsd) ?? "Pending pricing"}
                 note={
-                  data.totalValueUsd === undefined
-                    ? "No trusted price for this wallet's assets yet"
+                  totalPortfolioValueUsd === undefined
+                    ? "No trusted price for these assets yet"
                     : unpricedCount > 0
                       ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
                       : "Every discovered asset is priced"
                 }
-                noteTone={data.totalValueUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
+                noteTone={totalPortfolioValueUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
               />
 
               <SummaryCard
                 label="Assets found"
                 value={`${rows.length}${rows.length === 1 ? " asset" : " assets"}`}
-                note={`On ${detectedChain !== null ? chainLabel(detectedChain) : "one chain"}`}
+                note={
+                  isSelectedAll
+                    ? `Across ${tracked.length} wallets`
+                    : `On ${detectedChain !== null ? chainLabel(detectedChain) : "one chain"}`
+                }
               />
 
               <SummaryCard
@@ -564,9 +768,15 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
               <SummaryCard
                 label="Coverage"
-                value={data.status === "complete" ? "Fully priced" : "Partially priced"}
+                value={
+                  isSelectedAll
+                    ? "Multi-Wallet Consolidated"
+                    : data?.status === "complete"
+                      ? "Fully priced"
+                      : "Partially priced"
+                }
                 note="Curated token list per chain — not exhaustive"
-                noteTone={data.status === "complete" ? "ok" : "warn"}
+                noteTone="ok"
               />
             </section>
 
@@ -614,21 +824,41 @@ export default function WalletDashboardPage({ params }: PageProps) {
               {/* Grid of chains */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
                 {ALL_SUPPORTED_CHAINS.map((chain) => {
-                  const isActive = detectedChain === chain.slug;
+                  const isActive = !isSelectedAll && detectedChain === chain.slug;
                   const isFiltered = selectedChainFilter === chain.slug;
-                  const isCompatible = (isCurrentEvm && chain.isEvm) || isActive;
+                  const isCompatible = isSelectedAll || (isCurrentEvm && chain.isEvm) || isActive;
 
                   let displayValue = "—";
                   let displayPct: string | null = null;
 
-                  if (isActive) {
-                    displayValue = formatUsd(data.totalValueUsd) ?? "Pending";
-                    if (data.totalValueUsd !== undefined && Number(data.totalValueUsd) > 0) {
-                      displayPct = "100%";
+                  if (isSelectedAll) {
+                    const info = chainTotals[chain.slug];
+                    if (info && info.hasAssets) {
+                      displayValue = formatUsd(info.totalUsd.toString()) ?? "$0";
+                      if (
+                        totalPortfolioValueUsd &&
+                        Number(totalPortfolioValueUsd) > 0 &&
+                        info.totalUsd > 0
+                      ) {
+                        displayPct = `${((info.totalUsd / Number(totalPortfolioValueUsd)) * 100).toFixed(1)}%`;
+                      }
+                    } else {
+                      displayValue = "$0";
                     }
-                  } else if (isCompatible) {
-                    displayValue = "$0";
+                  } else {
+                    if (isActive && data !== undefined) {
+                      displayValue = formatUsd(data.totalValueUsd) ?? "Pending";
+                      if (data.totalValueUsd !== undefined && Number(data.totalValueUsd) > 0) {
+                        displayPct = "100%";
+                      }
+                    } else if (isCompatible) {
+                      displayValue = "$0";
+                    }
                   }
+
+                  const hasBalance = isSelectedAll
+                    ? (chainTotals[chain.slug]?.hasAssets ?? false)
+                    : isActive;
 
                   return (
                     <div
@@ -642,11 +872,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
                             : "bg-white/30 border-navy-100/30 opacity-40 cursor-not-allowed"
                       }`}
                       title={
-                        isActive
-                          ? `Currently viewing on ${chain.name}`
-                          : isCompatible
-                            ? `Click to view ${chain.name} balances`
-                            : `Not compatible with ${chainLabel(detectedChain ?? "")} address`
+                        isSelectedAll
+                          ? `Click to filter assets on ${chain.name}`
+                          : isActive
+                            ? `Currently viewing on ${chain.name}`
+                            : isCompatible
+                              ? `Click to view ${chain.name} balances`
+                              : `Not compatible with ${chainLabel(detectedChain ?? "")} address`
                       }
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -656,12 +888,14 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         <div className="min-w-0">
                           <div className="text-xs font-bold text-navy-900 truncate flex items-center gap-1">
                             <span>{chain.name}</span>
-                            {isActive && (
+                            {(isActive || (isSelectedAll && hasBalance)) && (
                               <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
                             )}
                           </div>
                           <div className="text-[11px] font-semibold text-navy-600 flex items-center gap-1 mt-0.5">
-                            <span className={isActive ? "text-navy-900 font-black" : ""}>
+                            <span
+                              className={isActive || hasBalance ? "text-navy-900 font-black" : ""}
+                            >
                               {displayValue}
                             </span>
                             {displayPct !== null && (
@@ -677,6 +911,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         {isActive ? (
                           <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-500 text-white">
                             Live
+                          </span>
+                        ) : isFiltered ? (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-600 text-white">
+                            Filtered
                           </span>
                         ) : isCompatible ? (
                           <span className="text-[10px] font-bold text-navy-400 group-hover:text-primary-600 transition-colors">
@@ -700,16 +938,34 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   <h2 className="text-base sm:text-lg font-black text-navy-900 tracking-tight">
                     {tracked.length === 1
                       ? "Watching one wallet"
-                      : `Watching ${tracked.length} wallets`}
+                      : `Watching ${tracked.length} wallets (Consolidated)`}
                   </h2>
                   <p className="text-[10px] text-navy-500 font-medium">
-                    Looking up a single wallet is free and needs no connection.
+                    {tracked.length === 1
+                      ? "Looking up a single wallet is free. Add another wallet to consolidate multi-chain net worth."
+                      : "Click 'All Wallets' for unified net worth, or any wallet to inspect its individual holdings."}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-wrap">
+                  {tracked.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelected("ALL")}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer select-none ${
+                        isSelectedAll
+                          ? "bg-primary-500 text-white shadow-xs ring-2 ring-primary-300"
+                          : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>All Wallets ({tracked.length}) · Consolidated</span>
+                    </button>
+                  )}
+
                   {tracked.map((entry, index) => {
-                    const isSelected = selected.toLowerCase() === entry.toLowerCase();
+                    const isSelected =
+                      !isSelectedAll && selected.toLowerCase() === entry.toLowerCase();
                     const displayName =
                       KNOWN_NAMES[entry.toLowerCase()] ??
                       (index === 0 ? "Searched" : `Wallet ${index + 1}`);
@@ -798,6 +1054,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     <Plus className="w-3 h-3 text-primary-500" />
                     <span>Satoshi (BTC)</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleAddPreset("JJNP4JGSR5ICF5NTMVC4TO7CE4KM2FDL7G4LAEEFIK2KVGL6RTPLPGMTB4")
+                    }
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/80 hover:bg-white border border-navy-100/80 text-navy-700 hover:text-primary-600 font-bold text-[11px] shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-primary-500" />
+                    <span>Algorand Foundation (ALGO)</span>
+                  </button>
                 </div>
 
                 {tracked.length >= 2 && (
@@ -807,7 +1073,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
                     <Zap className="w-3.5 h-3.5 fill-white" />
-                    <span>Consolidate {tracked.length} Wallets (x402)</span>
+                    <span>Consolidate {tracked.length} Wallets ($0.001 USDC)</span>
                   </button>
                 )}
               </div>
@@ -816,8 +1082,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 <p className="mt-2 text-[10px] text-navy-500 font-medium flex items-center gap-1.5">
                   <Lock className="w-3 h-3 text-navy-400" />
                   <span>
-                    Adding a second wallet needs a connected wallet — the consolidated view is built
-                    from the paid report.
+                    Adding a second wallet needs a connected wallet — unlocked for $0.001 USDC via
+                    x402 on Algorand.
                   </span>
                 </p>
               )}
@@ -837,8 +1103,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   [
                     { id: "portfolio", label: "Portfolio", count: rows.length },
                     { id: "nfts", label: "NFTs", count: null },
-                    { id: "transactions", label: "Transactions", count: data.transactions.length },
-                    { id: "defi", label: "DeFi Positions", count: data.positions.length }
+                    { id: "transactions", label: "Transactions", count: transactions.length },
+                    { id: "defi", label: "DeFi Positions", count: defiPositions.length }
                   ] as const
                 ).map((tab) => (
                   <button
@@ -929,8 +1195,20 @@ export default function WalletDashboardPage({ params }: PageProps) {
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-[10px] font-semibold text-navy-400">
-                                    {detectedChain !== null ? chainLabel(detectedChain) : ""}
+                                  <div className="text-[10px] font-semibold text-navy-400 flex items-center gap-1.5 mt-0.5">
+                                    <span>
+                                      {row.chainSlug
+                                        ? chainLabel(row.chainSlug)
+                                        : detectedChain !== null
+                                          ? chainLabel(detectedChain)
+                                          : ""}
+                                    </span>
+                                    {isSelectedAll && row.walletAddress && (
+                                      <span className="text-[9px] text-navy-500 font-mono bg-navy-50 px-1 py-0.2 rounded border border-navy-100">
+                                        {KNOWN_NAMES[row.walletAddress.toLowerCase()] ??
+                                          shorten(row.walletAddress, 4, 3)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -987,8 +1265,20 @@ export default function WalletDashboardPage({ params }: PageProps) {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] font-semibold text-navy-400">
-                                  {detectedChain !== null ? chainLabel(detectedChain) : ""}
+                                <div className="text-[11px] font-semibold text-navy-400 flex items-center gap-1.5 mt-0.5">
+                                  <span>
+                                    {row.chainSlug
+                                      ? chainLabel(row.chainSlug)
+                                      : detectedChain !== null
+                                        ? chainLabel(detectedChain)
+                                        : ""}
+                                  </span>
+                                  {isSelectedAll && row.walletAddress && (
+                                    <span className="text-[10px] text-navy-500 font-mono bg-navy-50 px-1.5 py-0.5 rounded border border-navy-100">
+                                      {KNOWN_NAMES[row.walletAddress.toLowerCase()] ??
+                                        shorten(row.walletAddress, 4, 3)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1059,7 +1349,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
             )}
 
             {activeTab === "transactions" &&
-              (data.transactions.length === 0 ? (
+              (transactions.length === 0 ? (
                 <div className="glass-frosted rounded-[28px] p-8 sm:p-12 border border-white text-center shadow-glass space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center mx-auto text-primary-500 shadow-xs">
                     <Clock className="w-7 h-7" />
@@ -1095,9 +1385,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           Recent On-Chain Activity
                         </h3>
                         <p className="text-xs text-navy-500 font-medium">
-                          Showing {data.transactions.length} verified transaction
-                          {data.transactions.length === 1 ? "" : "s"} indexed directly from{" "}
-                          {detectedChain !== null ? chainLabel(detectedChain) : "chain"}.
+                          Showing {transactions.length} verified transaction
+                          {transactions.length === 1 ? "" : "s"} indexed directly from chain.
                         </p>
                       </div>
                       {detectedChain !== null && explorerUrl(detectedChain, selected) !== null && (
@@ -1127,23 +1416,31 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-navy-100/40">
-                          {data.transactions.map((tx) => {
+                          {transactions.map((tx) => {
                             const isOutgoing =
-                              tx.fromAddress &&
-                              tx.fromAddress.toLowerCase() === selected.toLowerCase();
+                              Boolean(tx.fromAddress) &&
+                              (tx.fromAddress.toLowerCase() === selected.toLowerCase() ||
+                                tracked.some(
+                                  (a) => a.toLowerCase() === tx.fromAddress.toLowerCase()
+                                ));
                             const isIncoming =
-                              tx.toAddress && tx.toAddress.toLowerCase() === selected.toLowerCase();
-                            const txLink = transactionUrl(detectedChain || "", tx.hash);
+                              Boolean(tx.toAddress) &&
+                              (tx.toAddress!.toLowerCase() === selected.toLowerCase() ||
+                                tracked.some(
+                                  (a) => a.toLowerCase() === tx.toAddress!.toLowerCase()
+                                ));
+                            const txChain = tx.chainSlug || detectedChain || "";
+                            const txLink = transactionUrl(txChain, tx.hash);
 
                             const formattedVal =
                               tx.rawValue && tx.rawValue !== "0"
                                 ? toWholeUnits(
                                     tx.rawValue,
-                                    detectedChain === "bitcoin"
+                                    txChain === "bitcoin"
                                       ? 8
-                                      : detectedChain === "algorand"
+                                      : txChain === "algorand"
                                         ? 6
-                                        : detectedChain === "solana"
+                                        : txChain === "solana"
                                           ? 9
                                           : 18
                                   )
@@ -1264,22 +1561,27 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
                     {/* Mobile cards */}
                     <div className="md:hidden space-y-3">
-                      {data.transactions.map((tx) => {
+                      {transactions.map((tx) => {
                         const isOutgoing =
-                          tx.fromAddress && tx.fromAddress.toLowerCase() === selected.toLowerCase();
+                          Boolean(tx.fromAddress) &&
+                          (tx.fromAddress.toLowerCase() === selected.toLowerCase() ||
+                            tracked.some((a) => a.toLowerCase() === tx.fromAddress.toLowerCase()));
                         const isIncoming =
-                          tx.toAddress && tx.toAddress.toLowerCase() === selected.toLowerCase();
-                        const txLink = transactionUrl(detectedChain || "", tx.hash);
+                          Boolean(tx.toAddress) &&
+                          (tx.toAddress!.toLowerCase() === selected.toLowerCase() ||
+                            tracked.some((a) => a.toLowerCase() === tx.toAddress!.toLowerCase()));
+                        const txChain = tx.chainSlug || detectedChain || "";
+                        const txLink = transactionUrl(txChain, tx.hash);
 
                         const formattedVal =
                           tx.rawValue && tx.rawValue !== "0"
                             ? toWholeUnits(
                                 tx.rawValue,
-                                detectedChain === "bitcoin"
+                                txChain === "bitcoin"
                                   ? 8
-                                  : detectedChain === "algorand"
+                                  : txChain === "algorand"
                                     ? 6
-                                    : detectedChain === "solana"
+                                    : txChain === "solana"
                                       ? 9
                                       : 18
                               )
@@ -1375,7 +1677,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
                             <div className="flex items-center justify-between pt-1 border-t border-navy-100/40 text-[10px]">
                               <span className="text-navy-400 capitalize">
-                                {detectedChain !== null ? chainLabel(detectedChain) : "Chain"}
+                                {txChain ? chainLabel(txChain) : "Chain"}
                               </span>
                               <span
                                 className={`font-bold capitalize ${
@@ -1406,8 +1708,27 @@ export default function WalletDashboardPage({ params }: PageProps) {
         )}
       </main>
 
-      {showReport && (
-        <PortfolioReportModal addresses={tracked} onClose={() => setShowReport(false)} />
+      {reportModalAddresses !== null && (
+        <PortfolioReportModal
+          addresses={reportModalAddresses}
+          onClose={() => {
+            setReportModalAddresses(null);
+            setPendingWalletToAdd(null);
+          }}
+          onSuccess={() => {
+            if (pendingWalletToAdd !== null) {
+              const toAdd = pendingWalletToAdd;
+              setTracked((prev) =>
+                prev.some((x) => x.toLowerCase() === toAdd.toLowerCase()) ? prev : [...prev, toAdd]
+              );
+              setSelected("ALL");
+              setNewWalletInput("");
+              setPendingWalletToAdd(null);
+              setReportModalAddresses(null);
+              void loadWallet(toAdd);
+            }
+          }}
+        />
       )}
 
       <Footer />

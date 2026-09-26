@@ -206,7 +206,7 @@ describe("public surface end to end", () => {
     // Serialized through the response schema. The regression this guards is the zod
     // serializer stripping fields the schema under-declared while the base64 header
     // kept them.
-    expect(body.accepts[0]?.amount).toBe("50000");
+    expect(body.accepts[0]?.amount).toBe("1000");
     expect(body.resource.url).toBe("https://growtrack.example/v1/portfolio/report");
     expect(body.extensions.bazaar).toBeDefined();
     expect(body.accepts[0]?.extensions?.bazaar).toBeDefined();
@@ -216,7 +216,7 @@ describe("public surface end to end", () => {
     const header = paidRequestBody.parse(
       parseBase64Json(response.headers["payment-required"], z.unknown())
     );
-    expect(header.accepts[0]?.amount).toBe("50000");
+    expect(header.accepts[0]?.amount).toBe("1000");
     expect(header.extensions.bazaar).toBeDefined();
 
     await app.close();
@@ -263,14 +263,14 @@ describe("public surface end to end", () => {
     expect(manifest.assetName).toBe("USDC");
     expect(manifest.resources.map((resource) => resource.priceUsd)).toEqual([
       "$0.010000",
-      "$0.020000",
-      "$0.050000"
+      "$0.002000",
+      "$0.001000"
     ]);
 
     const llms = await app.inject({ method: "GET", url: "/llms.txt" });
     expect(llms.statusCode).toBe(200);
     expect(llms.headers["content-type"]).toContain("text/plain");
-    expect(llms.body).toContain("$0.05 per report");
+    expect(llms.body).toContain("$0.001 per report");
     expect(llms.body).toContain("solana");
 
     await app.close();

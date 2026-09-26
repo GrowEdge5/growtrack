@@ -53,9 +53,10 @@ type Phase =
 interface Props {
   addresses: readonly string[];
   onClose: () => void;
+  onSuccess?: (report: PortfolioReport) => void;
 }
 
-export function PortfolioReportModal({ addresses, onClose }: Props) {
+export function PortfolioReportModal({ addresses, onClose, onSuccess }: Props) {
   const { session, isConnected } = useWalletSession();
   const { openWalletModal } = useWalletModal();
   const [phase, setPhase] = useState<Phase>({ name: "idle" });
@@ -79,6 +80,7 @@ export function PortfolioReportModal({ addresses, onClose }: Props) {
           receipt: null,
           accept: freeAcceptance()
         });
+        onSuccess?.(outcome.data);
         return;
       }
 
@@ -91,7 +93,7 @@ export function PortfolioReportModal({ addresses, onClose }: Props) {
     } catch (error) {
       setPhase({ name: "error", message: describe(error) });
     }
-  }, [runRequest]);
+  }, [runRequest, onSuccess]);
 
   useEffect(() => {
     void loadQuote();
@@ -119,6 +121,7 @@ export function PortfolioReportModal({ addresses, onClose }: Props) {
         receipt: result.receipt?.transactionId ?? null,
         accept
       });
+      onSuccess?.(result.data);
     } catch (error) {
       setPhase({ name: "error", message: describe(error) });
     }

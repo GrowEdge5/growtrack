@@ -163,15 +163,23 @@ export async function payAndRetry<T>(
   const built = buildPaymentGroup(params, accept, wallet.address);
   onStage("awaiting-signature");
 
-  // Sign only the transaction this wallet owns. The sponsored fee-payer transaction
-  // is deliberately left unsigned for the facilitator.
+  // Pass the full atomic group to the wallet connector so the wallet SDK can verify
+  // the group ID across all transactions. The fee-payer transaction has signers: []
+  // so the user's wallet only prompts to sign their own payment transaction.
+  const txnsToSign = built.includeFeePayer
+    ? [
+        { txn: built.feePayerBase64 as string, signers: [] },
+        { txn: built.paymentBase64, signers: [wallet.address] }
+      ]
+    : [{ txn: built.paymentBase64, signers: [wallet.address] }];
+
   const signed = await signTransactions(
     wallet.id,
-    [built.paymentBase64],
+    txnsToSign,
     wallet.address,
     networkContext(params)
   );
-  const signedPayment = signed[0];
+  const signedPayment = signed[built.paymentIndex];
   if (signedPayment === undefined || signedPayment === null) {
     throw new X402Error("The wallet did not sign the payment.", "SIGNATURE_DECLINED");
   }

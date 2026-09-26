@@ -147,30 +147,25 @@ async function getDefly(): Promise<DeflyConnect> {
   return deflyClient;
 }
 
+export interface TransactionToSign {
+  txn: string;
+  signers?: string[];
+}
+
 interface Connector {
   connect(network: NetworkContext): Promise<string[]>;
   /** Re-attach to a previous session without user interaction; null when there is none. */
   reconnect(network: NetworkContext): Promise<string[] | null>;
   disconnect(): Promise<void>;
   /**
-   * Signs exactly the transactions handed over. A wallet is never asked to sign a
-   * transaction it does not own — the x402 group also carries the facilitator's
-   * sponsored fee-payer transaction, which the facilitator signs itself, so the
-   * client passes only its own payment transaction and reassembles the group
-   * afterwards. Returns one entry per input: base64 signed blob, or null if declined.
+   * Signs transactions handed over. Supports passing individual unsigned transactions
+   * or items in an atomic group with selective signers (e.g. signers: [] for unsigned fee payer).
    */
   sign(
-    transactions: readonly string[],
+    transactions: readonly (string | TransactionToSign)[],
     signer: string,
     network: NetworkContext
   ): Promise<(string | null)[]>;
-}
-
-function decodeGroup(
-  algosdk: typeof import("algosdk").default,
-  transactions: readonly string[]
-): import("algosdk").Transaction[] {
-  return transactions.map((txn) => algosdk.decodeUnsignedTransaction(base64ToBytes(txn)));
 }
 
 const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
@@ -194,9 +189,16 @@ const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
     async sign(transactions, signer, network) {
       const algosdk = (await import("algosdk")).default;
       const pera = await getPera(network);
-      const txns = decodeGroup(algosdk, transactions);
-      const signed = await pera.signTransaction([txns.map((txn) => ({ txn }))], signer);
-      return signed.map((bytes: Uint8Array) => bytesToBase64(bytes));
+      const group = transactions.map((t) => {
+        const raw = typeof t === "string" ? t : t.txn;
+        const decoded = algosdk.decodeUnsignedTransaction(base64ToBytes(raw));
+        const signers = typeof t === "object" && t.signers !== undefined ? t.signers : [signer];
+        return { txn: decoded, signers };
+      });
+      const signed = await pera.signTransaction([group], signer);
+      return signed.map((bytes: Uint8Array | null) =>
+        bytes == null ? null : bytesToBase64(bytes)
+      );
     }
   },
   defly: {
@@ -217,9 +219,16 @@ const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
     async sign(transactions, signer) {
       const algosdk = (await import("algosdk")).default;
       const defly = await getDefly();
-      const txns = decodeGroup(algosdk, transactions);
-      const signed = await defly.signTransaction([txns.map((txn) => ({ txn }))], signer);
-      return signed.map((bytes: Uint8Array) => bytesToBase64(bytes));
+      const group = transactions.map((t) => {
+        const raw = typeof t === "string" ? t : t.txn;
+        const decoded = algosdk.decodeUnsignedTransaction(base64ToBytes(raw));
+        const signers = typeof t === "object" && t.signers !== undefined ? t.signers : [signer];
+        return { txn: decoded, signers };
+      });
+      const signed = await defly.signTransaction([group], signer);
+      return signed.map((bytes: Uint8Array | null) =>
+        bytes == null ? null : bytesToBase64(bytes)
+      );
     }
   },
   lute: {
@@ -238,9 +247,16 @@ const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
     async sign(transactions) {
       const LuteConnect = (await import("@galaxypay/lute-connect")).default;
       const lute = new LuteConnect("Growtrack");
-      // Lute's API is flat (no groups) and infers the signer from each transaction's
-      // sender; a null entry means it declined that transaction.
-      const signed = await lute.signTxns(transactions.map((txn) => ({ txn })));
+      const txns = transactions.map((t) => {
+        if (typeof t === "string") {
+          return { txn: t };
+        }
+        return {
+          txn: t.txn,
+          ...(t.signers !== undefined ? { signers: t.signers } : {})
+        };
+      });
+      const signed = await lute.signTxns(txns);
       return signed.map((bytes) => (bytes == null ? null : bytesToBase64(bytes)));
     }
   }
@@ -313,7 +329,7 @@ export async function disconnectWallet(id: WalletId): Promise<void> {
 /** Signs the given base64-encoded unsigned transactions with the connected wallet. */
 export async function signTransactions(
   id: WalletId,
-  transactions: readonly string[],
+  transactions: readonly (string | TransactionToSign)[],
   signer: string,
   network: NetworkContext
 ): Promise<(string | null)[]> {
