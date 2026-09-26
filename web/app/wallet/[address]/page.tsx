@@ -136,6 +136,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [hideUnpriced, setHideUnpriced] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [failedMap, setFailedMap] = useState<Record<string, boolean>>({});
+
   // A new address in the URL is a new primary wallet; reset the tracked set so the
   // page never mixes two different searches.
   const lastRouteAddress = useRef(rawAddress);
@@ -146,6 +148,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setSelected(rawAddress);
       setSelectedChainFilter(null);
       setSnapshotsByAddress({});
+      setFailedMap({});
     }
   }, [rawAddress]);
 
@@ -162,7 +165,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
     try {
       const res = await analyzeWallet(walletAddress, chainSlug);
       setSnapshotsByAddress((prev) => ({ ...prev, [key]: res }));
+      setFailedMap((prev) => ({ ...prev, [key]: false }));
     } catch (error) {
+      setFailedMap((prev) => ({ ...prev, [key]: true }));
       setLoadError(describeLoadError(error, walletAddress));
     } finally {
       setLoadingMap((prev) => ({ ...prev, [key]: false }));
@@ -173,11 +178,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
   useEffect(() => {
     for (const addr of tracked) {
       const key = addr.toLowerCase();
-      if (!snapshotsByAddress[key] && !loadingMap[key]) {
+      if (!snapshotsByAddress[key] && !loadingMap[key] && !failedMap[key]) {
         void loadWallet(addr);
       }
     }
-  }, [tracked, snapshotsByAddress, loadingMap, loadWallet]);
+  }, [tracked, snapshotsByAddress, loadingMap, failedMap, loadWallet]);
 
   // When user was prompted to connect to add a wallet and now becomes connected:
   useEffect(() => {
@@ -410,6 +415,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
   };
 
   const handleRefresh = () => {
+    setFailedMap({});
     if (isSelectedAll) {
       for (const addr of tracked) {
         void loadWallet(addr);

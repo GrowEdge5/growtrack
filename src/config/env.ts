@@ -22,11 +22,9 @@ const environmentSchema = z
     // because a deploy serves the SPA and the API from one root domain while local
     // development calls the same API from localhost.
     CORS_ORIGIN: z.string().min(1).default("http://localhost:3000"),
-    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
-    // Separate, tighter budget for the free guest analysis route. A cache miss there
-    // performs a live upstream read against keyless public endpoints, which are
-    // shared infrastructure — the default API budget is too generous for that.
-    ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+    // Budget for guest analysis route. Allows normal exploration without false positives.
+    ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
     CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
     WALLET_FRESHNESS_SECONDS: z.coerce.number().int().positive().default(900),
     PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(20_000),

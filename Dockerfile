@@ -35,4 +35,4 @@ COPY --from=build /app/web ./web
 COPY package*.json ./
 EXPOSE 3000
 # START_SCRIPT picks the entrypoint per service (main.js = api, worker.js = worker).
-CMD ["sh", "-c", "node dist/${START_SCRIPT:-main}.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/${START_SCRIPT:-main}.js"]

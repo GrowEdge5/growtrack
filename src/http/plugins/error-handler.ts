@@ -17,6 +17,26 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return;
     }
 
+    const statusCode =
+      typeof error === "object" && error !== null && "statusCode" in error
+        ? (error as { statusCode: unknown }).statusCode
+        : undefined;
+
+    if (statusCode === 429) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Too many requests. Please wait a moment and try again.";
+      sendProblem(reply, {
+        type: "https://growtrack.dev/problems/rate-limited",
+        title: "Rate limit exceeded",
+        status: 429,
+        detail: message,
+        code: "RATE_LIMITED"
+      });
+      return;
+    }
+
     if (error instanceof GrowtrackError) {
       sendProblem(reply, {
         type: `https://growtrack.dev/problems/${error.code.toLowerCase().replaceAll("_", "-")}`,
