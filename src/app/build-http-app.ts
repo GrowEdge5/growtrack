@@ -23,6 +23,7 @@ import { registerDashboardRoute } from "../http/routes/dashboard.routes.js";
 import { registerMetricsRoute } from "../http/routes/metrics.routes.js";
 import { registerPaymentRoutes } from "../http/routes/v1/payments.routes.js";
 import { registerWalletRoutes } from "../http/routes/v1/wallet.routes.js";
+import { proxyToWeb } from "../http/plugins/web-proxy.js";
 
 export async function buildHttpApp(container: ApplicationContainer): Promise<FastifyInstance> {
   const app = Fastify({
@@ -64,6 +65,33 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
   registerWalletRoutes(app, container);
   registerPortfolioRoutes(app, container);
   registerPaymentRoutes(app, container);
+
+  app.setNotFoundHandler((request, reply) => {
+    const url = request.raw.url ?? "";
+    if (url.startsWith("/v1/") || url.startsWith("/health/")) {
+      return reply.status(404).send({
+        type: "https://growtrack.dev/problems/not-found",
+        title: "Route not found",
+        status: 404,
+        detail: `Route ${request.method}:${url} not found`,
+        code: "ROUTE_NOT_FOUND"
+      });
+    }
+
+    proxyToWeb(request, reply, 3001, () => {
+      reply.raw.writeHead(404, { "content-type": "application/json" });
+      reply.raw.end(
+        JSON.stringify({
+          type: "https://growtrack.dev/problems/not-found",
+          title: "Page not found",
+          status: 404,
+          detail: `Path ${url} was not found on this server`,
+          code: "NOT_FOUND"
+        })
+      );
+    });
+  });
+
   return app;
 }
 

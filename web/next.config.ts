@@ -6,7 +6,6 @@ import type { NextConfig } from "next";
 const API_PROXY_TARGET = process.env.API_PROXY_TARGET ?? "http://localhost:3000";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   async rewrites() {
     // When NEXT_PUBLIC_API_URL is set the browser calls the API host directly, so
     // proxying would only add a hop. Otherwise /v1 and /health are forwarded.

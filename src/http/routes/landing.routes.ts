@@ -137,9 +137,17 @@ function landingPage(container: ApplicationContainer): string {
 </html>`;
 }
 
+import { proxyToWeb } from "../plugins/web-proxy.js";
+
 export function registerLandingRoute(app: FastifyInstance, container: ApplicationContainer): void {
-  app.get("/", async (_request, reply) => {
-    reply.type("text/html; charset=utf-8");
-    return landingPage(container);
+  app.get("/", (request, reply) => {
+    if (process.env.VITEST || container.env.NODE_ENV === "test") {
+      reply.type("text/html; charset=utf-8").send(landingPage(container));
+      return;
+    }
+    proxyToWeb(request, reply, 3001, () => {
+      reply.raw.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      reply.raw.end(landingPage(container));
+    });
   });
 }
