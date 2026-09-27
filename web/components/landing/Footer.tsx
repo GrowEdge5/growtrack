@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Github, Instagram, Mail } from "lucide-react";
 import { BrandLogoIcon } from "./CryptoIcons";
 
 export function Footer() {
@@ -25,51 +25,54 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Center: Social Links. Only destinations that actually exist are links;
-            the community channels have no accounts yet, so they are shown as
-            unavailable rather than sending people to a platform homepage. */}
+        {/* Center: Official Social Links */}
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-navy-500 mr-1">Find us on</span>
 
-          <span
-            aria-label="Discord — not available yet"
-            title="No community server yet"
-            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs cursor-not-allowed opacity-70"
+          {/* X (Twitter) */}
+          <a
+            href="https://x.com/growtrackpro"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="X (Twitter)"
+            title="Growtrack on X (@growtrackpro)"
+            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center transition-all hover:scale-110"
           >
-            👾
-          </span>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
 
-          <span
-            aria-label="X — not available yet"
-            title="No X account yet"
-            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs font-bold cursor-not-allowed opacity-70"
+          {/* Instagram */}
+          <a
+            href="https://www.instagram.com/growtrackofficial/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            title="Growtrack on Instagram (@growtrackofficial)"
+            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center transition-all hover:scale-110"
           >
-            𝕏
-          </span>
+            <Instagram className="w-3.5 h-3.5" />
+          </a>
 
+          {/* GitHub */}
           <a
             href="https://github.com/GrowEdge5/growtrack"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             aria-label="GitHub repository"
             title="Growtrack on GitHub"
-            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs font-bold transition-all hover:scale-110"
+            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center transition-all hover:scale-110"
           >
-            🐙
+            <Github className="w-3.5 h-3.5" />
           </a>
 
-          <span
-            aria-label="Telegram — not available yet"
-            title="No Telegram channel yet"
-            className="w-8 h-8 rounded-full bg-white/60 border border-navy-100 text-navy-300 shadow-sm flex items-center justify-center text-xs font-bold cursor-not-allowed opacity-70"
-          >
-            ✈
-          </span>
-
+          {/* Email Support */}
           <a
-            href="mailto:contact@growtrack.pro"
-            aria-label="Email"
-            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center text-xs transition-all hover:scale-110"
+            href="mailto:growtrackofficial@gmail.com"
+            aria-label="Email Support"
+            title="Email us at growtrackofficial@gmail.com"
+            className="w-8 h-8 rounded-full bg-white/90 border border-navy-100 hover:border-primary-300 hover:text-primary-600 text-navy-600 shadow-sm flex items-center justify-center transition-all hover:scale-110"
           >
             <Mail className="w-3.5 h-3.5" />
           </a>
