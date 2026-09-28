@@ -133,6 +133,7 @@ export class PaymentRequirementsBuilder {
                 type: { type: "string" },
                 example: { type: "object" }
               },
+              required: ["type"],
               additionalProperties: false
             }
           },
