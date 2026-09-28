@@ -100,7 +100,7 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
   app.get(
     "/v1/wallets/:chain/:address/live",
     {
-      preHandler: createX402Guard({
+      preValidation: createX402Guard({
         enabled: container.env.X402_ENABLED,
         builder: paidResourceBuilder(container, "wallet-live"),
         facilitator: container.paymentFacilitator

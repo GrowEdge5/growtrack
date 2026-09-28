@@ -48,7 +48,7 @@ function buildApp(enabled: boolean, facilitator?: PaymentFacilitator) {
   app.get(
     "/v1/wallets/:chain/:address/live",
     {
-      preHandler: createX402Guard({
+      preValidation: createX402Guard({
         enabled,
         builder,
         ...(facilitator !== undefined ? { facilitator } : {})

@@ -21,7 +21,7 @@ export function registerPortfolioRoutes(
   app.get(
     "/v1/portfolio",
     {
-      preHandler: createX402Guard({
+      preValidation: createX402Guard({
         enabled: container.env.X402_ENABLED,
         builder: paidResourceBuilder(container, "portfolio-snapshot"),
         facilitator: container.paymentFacilitator
@@ -53,7 +53,7 @@ export function registerPortfolioRoutes(
   app.get(
     "/v1/portfolio/report",
     {
-      preHandler: createX402Guard({
+      preValidation: createX402Guard({
         enabled: container.env.X402_ENABLED,
         builder: paidResourceBuilder(container, "portfolio-report"),
         facilitator: container.paymentFacilitator
