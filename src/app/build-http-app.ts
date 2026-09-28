@@ -47,7 +47,15 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
     transform: jsonSchemaTransform
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
-  await app.register(cors, { origin: parseCorsOrigins(container.env.CORS_ORIGIN) });
+  await app.register(cors, {
+    origin: parseCorsOrigins(container.env.CORS_ORIGIN),
+    exposedHeaders: [
+      "PAYMENT-REQUIRED",
+      "PAYMENT-RESPONSE",
+      "payment-required",
+      "payment-response"
+    ]
+  });
   await app.register(helmet, {
     contentSecurityPolicy: false,
     crossOriginOpenerPolicy: false

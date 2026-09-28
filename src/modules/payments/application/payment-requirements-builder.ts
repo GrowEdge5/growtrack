@@ -121,11 +121,11 @@ export class PaymentRequirementsBuilder {
                 queryParams: {
                   type: "object",
                   properties: this.resource.queryParamsSchema,
-                  additionalProperties: true
+                  additionalProperties: false
                 }
               },
               required: ["type", "method"],
-              additionalProperties: true
+              additionalProperties: false
             },
             output: {
               type: "object",
@@ -133,7 +133,7 @@ export class PaymentRequirementsBuilder {
                 type: { type: "string" },
                 example: { type: "object" }
               },
-              additionalProperties: true
+              additionalProperties: false
             }
           },
           required: ["input"]
