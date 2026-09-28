@@ -25,6 +25,11 @@ const environmentSchema = z
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
     // Budget for guest analysis route. Allows normal exploration without false positives.
     ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+    // Budget for the refresh endpoint. Lower than the global limit because each
+    // refresh triggers an upstream RPC call and a queue job — abuse here exhausts
+    // provider quotas. 30/min is generous for human use (tracking 10+ wallets)
+    // while preventing automated queue flooding.
+    REFRESH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
     CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
     WALLET_FRESHNESS_SECONDS: z.coerce.number().int().positive().default(900),
     PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(20_000),
@@ -96,6 +101,46 @@ const environmentSchema = z
         path: ["X402_PAY_TO"],
         message: "X402_PAY_TO is required when X402_ENABLED=true"
       });
+    }
+
+    // Fail-closed: production must never run with testnet x402 configuration.
+    // The defaults are testnet-safe for development, but a production deploy that
+    // forgot to override them would settle on the wrong network — disqualifying the
+    // entry and potentially losing real funds. Catch it at boot, not at first payment.
+    if (env.NODE_ENV === "production" && env.X402_ENABLED) {
+      const TESTNET_GENESIS = "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=";
+      const TESTNET_USDC_ASSET = "10458941";
+
+      if (env.X402_NETWORK.includes(TESTNET_GENESIS)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["X402_NETWORK"],
+          message:
+            "X402_NETWORK contains the Algorand Testnet genesis hash. " +
+            "Production with X402_ENABLED=true requires Algorand MainNet. " +
+            "Set X402_NETWORK to the MainNet CAIP-2 identifier."
+        });
+      }
+
+      if (env.X402_ASSET_ID === TESTNET_USDC_ASSET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["X402_ASSET_ID"],
+          message:
+            "X402_ASSET_ID is set to the Testnet USDC ASA (10458941). " +
+            "Production with X402_ENABLED=true requires MainNet USDC (31566704)."
+        });
+      }
+
+      if (env.X402_PUBLIC_BASE_URL === undefined || env.X402_PUBLIC_BASE_URL.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["X402_PUBLIC_BASE_URL"],
+          message:
+            "X402_PUBLIC_BASE_URL is required in production when X402_ENABLED=true. " +
+            "Set it to the canonical HTTPS origin (e.g. https://growtrack.pro)."
+        });
+      }
     }
   });
 

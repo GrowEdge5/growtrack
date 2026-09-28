@@ -46,7 +46,11 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
     },
     transform: jsonSchemaTransform
   });
-  await app.register(swaggerUi, { routePrefix: "/docs" });
+  // Swagger UI is registered only outside production to prevent public reconnaissance.
+  // The OpenAPI spec generation (swagger plugin) stays active for internal use.
+  if (container.env.NODE_ENV !== "production") {
+    await app.register(swaggerUi, { routePrefix: "/docs" });
+  }
   await app.register(cors, {
     origin: parseCorsOrigins(container.env.CORS_ORIGIN),
     exposedHeaders: ["PAYMENT-REQUIRED", "PAYMENT-RESPONSE", "payment-required", "payment-response"]
@@ -66,7 +70,11 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
   registerDashboardRoute(app, container);
   registerDiscoveryRoutes(app, container);
   registerHealthRoutes(app, container);
-  registerMetricsRoute(app);
+  // Prometheus metrics are only exposed outside production to prevent information
+  // disclosure. Railway monitoring uses /health/ready for service health.
+  if (container.env.NODE_ENV !== "production") {
+    registerMetricsRoute(app);
+  }
   registerChainRoutes(app, container);
   registerWalletRoutes(app, container);
   registerPortfolioRoutes(app, container);

@@ -8,7 +8,7 @@
 [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js%2015%20App%20Router-black?style=flat&logo=next.js)](https://nextjs.org)
 [![Fastify](https://img.shields.io/badge/Backend-Fastify%205-000000?style=flat&logo=fastify)](https://fastify.dev)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript%205.7-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
-[![Vitest](https://img.shields.io/badge/Tests-79%20Passing-green?style=flat&logo=vitest)](https://vitest.dev)
+[![Vitest](https://img.shields.io/badge/Tests-86%20Passing-green?style=flat&logo=vitest)](https://vitest.dev)
 
 ---
 
@@ -207,7 +207,7 @@ Growtrack maintains rigorous test coverage with zero mocked shortcuts on product
 # Run full CI pipeline
 npm run ci
 
-# Run test suite (79 unit & e2e tests)
+# Run test suite (86 unit & e2e tests)
 npm test
 
 # Run TypeScript checks across root and Next.js web application
@@ -232,6 +232,48 @@ npm run lint
 | **MainNet Settlements**        | 12+ real on-chain MainNet settlements completed and permanently verifiable on Lora             | Verified |
 | **Non-Custodial Architecture** | Growtrack holds zero private keys and never signs on behalf of users                           | Verified |
 | **Public HTTPS Deployment**    | Configured for `https://growtrack.pro` with valid Let's Encrypt TLS certificate                | Ready    |
+
+---
+
+## Security Audit Remediation (2026-09-28)
+
+A full read-only security audit was performed. The following issues were identified and fixed:
+
+### Fixed
+
+| #   | Severity     | Issue                                                                                                                            | Fix                                                                                                                                                                                                                                            |
+| --- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **CRITICAL** | x402 defaults to Algorand Testnet — production could accidentally settle on the wrong network                                    | Startup validation now **rejects** testnet `X402_NETWORK` and `X402_ASSET_ID` when `NODE_ENV=production` and `X402_ENABLED=true`. Process fails to boot instead of silently using testnet. Also requires `X402_PUBLIC_BASE_URL` in production. |
+| 2   | **HIGH**     | `/metrics` publicly exposes Prometheus process internals (memory, GC, event loop)                                                | `/metrics` route is now only registered when `NODE_ENV !== "production"`. Health checks (`/health/live`, `/health/ready`) remain available in all environments.                                                                                |
+| 3   | **HIGH**     | `/docs` Swagger UI publicly exposes full API schema for reconnaissance                                                           | Swagger UI is now only registered when `NODE_ENV !== "production"`. OpenAPI spec generation remains active internally.                                                                                                                         |
+| 4   | **HIGH**     | `POST /v1/wallets/:chain/:address/refresh` had only global rate limiting (300/min), enabling queue flooding via address rotation | Added per-IP rate limit of **30 requests/minute** (configurable via `REFRESH_RATE_LIMIT_MAX`). Uses the same `@fastify/rate-limit` mechanism as the existing analyze endpoint. Combined with existing BullMQ SHA-256 job deduplication.        |
+
+### Verification Results
+
+| Check                                     | Result                                        |
+| ----------------------------------------- | --------------------------------------------- |
+| TypeScript typecheck (backend + frontend) | ✅ Pass                                       |
+| ESLint                                    | ✅ Pass                                       |
+| Unit + E2E tests (86/86 across 15 suites) | ✅ Pass                                       |
+| Backend build (`build:api`)               | ✅ Pass                                       |
+| Frontend build (`build:web`)              | ✅ Pass                                       |
+| x402 guard tests                          | ✅ Pass (10 unit + 3 e2e)                     |
+| Wallet security model                     | ✅ Unchanged — non-custodial, no private keys |
+
+### Requires Railway Action
+
+Verify that the production Railway environment has these variables set correctly:
+
+| Variable               | Required Value                                                    |
+| ---------------------- | ----------------------------------------------------------------- |
+| `NODE_ENV`             | `production`                                                      |
+| `X402_ENABLED`         | `true`                                                            |
+| `X402_NETWORK`         | `algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=` (MainNet) |
+| `X402_ASSET_ID`        | `31566704` (MainNet USDC)                                         |
+| `X402_PAY_TO`          | The merchant's funded Algorand address (opted into USDC)          |
+| `X402_PUBLIC_BASE_URL` | `https://growtrack.pro`                                           |
+
+> **The application will now refuse to start** if `NODE_ENV=production` + `X402_ENABLED=true` with testnet defaults. This is intentional fail-closed behavior.
 
 ---
 

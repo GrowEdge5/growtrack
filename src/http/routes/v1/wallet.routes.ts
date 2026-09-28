@@ -77,6 +77,9 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
   app.post(
     "/v1/wallets/:chain/:address/refresh",
     {
+      config: {
+        rateLimit: { max: container.env.REFRESH_RATE_LIMIT_MAX, timeWindow: "1 minute" }
+      },
       schema: {
         tags: ["wallets"],
         summary: "Queue a wallet intelligence refresh",
