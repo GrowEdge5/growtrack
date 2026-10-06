@@ -42,12 +42,12 @@ export interface PaidResourceContext {
   chainSlugs: readonly string[];
 }
 
-// $0.01 — an agent-sized price for one fresh single-wallet read. The catalog's
-// dominant price band is $0.01–$0.05; a sub-cent price would signal a toy and
-// would need 10x the settlements for the same judged volume.
-const WALLET_LIVE_PRICE_ATOMIC = "10000";
-const PORTFOLIO_SNAPSHOT_PRICE_ATOMIC = "2000";
-const PORTFOLIO_REPORT_PRICE_ATOMIC = "1000";
+// $0.50 — live fresh single-wallet read.
+const WALLET_LIVE_PRICE_ATOMIC = "500000";
+// $1.00 — multi-wallet portfolio snapshot / tracking upgrade.
+const PORTFOLIO_SNAPSHOT_PRICE_ATOMIC = "1000000";
+// $3.00 — full consolidated institutional multi-chain audit report.
+const PORTFOLIO_REPORT_PRICE_ATOMIC = "3000000";
 
 const SNAPSHOT_OUTPUT_EXAMPLE: Record<string, unknown> = {
   wallet: {
@@ -81,7 +81,7 @@ export function buildPaidResources(
         "total portfolio value in USD, and a complete/partial status that says whether every " +
         'discovered position could be priced. Returns JSON. Answers "what does this wallet hold ' +
         'right now, and what is it worth" without an API key, an account or a subscription. ' +
-        "Pay $0.01 per call in USDC on Algorand.",
+        "Pay $0.50 per call in USDC on Algorand.",
       queryParams: {
         chain: "solana",
         address: "GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE"
@@ -109,7 +109,7 @@ export function buildPaidResources(
         "total portfolio value in USD, per-chain subtotals, per-wallet subtotals, and how many " +
         "positions could be priced. Addresses on different chains can be mixed in one request, and " +
         "a bare address given without a chain is detected automatically. Saves a caller from " +
-        "issuing and paying for one request per chain. Returns JSON. Pay $0.002 per call in USDC " +
+        "issuing and paying for one request per chain. Returns JSON. Pay $1.00 per call in USDC " +
         "on Algorand.",
       queryParams: {
         addresses:
@@ -151,7 +151,7 @@ export function buildPaidResources(
         "that could not be priced so a partial valuation is never mistaken for a complete one. " +
         "Ethereum, Algorand, Solana and Bitcoin addresses can be mixed in one request; a bare " +
         "address is chain-detected automatically. Returns JSON shaped for rendering as a " +
-        "statement. Pay $0.001 per report in USDC on Algorand.",
+        "statement. Pay $3.00 per report in USDC on Algorand.",
       queryParams: {
         addresses:
           "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA680F17485f5fE14a58674455179eBBfC1F40"

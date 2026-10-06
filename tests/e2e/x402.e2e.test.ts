@@ -97,8 +97,8 @@ describe("x402 guard on the paid /live route", () => {
     expect(body.x402Version).toBe(2);
     expect(body.accepts[0]?.scheme).toBe("exact");
     expect(body.accepts[0]?.asset).toBe("10458941");
-    // $0.01 per live snapshot — the Composite Entry's cheapest tier.
-    expect(body.accepts[0]?.amount).toBe("10000");
+    // $0.50 per live snapshot — the Composite Entry's cheapest tier.
+    expect(body.accepts[0]?.amount).toBe("500000");
     expect(body.accepts[0]?.extra.tag).toBe("x402-global-challenge");
     expect(body.accepts[0]?.extra.name).toBe("USDC");
     expect(body.resource?.url).toBe("https://growtrack.example/v1/wallets/:chain/:address/live");

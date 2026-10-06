@@ -103,6 +103,23 @@ const ALL_SUPPORTED_CHAINS: readonly SupportedChain[] = [
   { slug: "algorand", name: "Algorand", symbol: "ALGO", isEvm: false }
 ];
 
+function getCandidateChains(address: string): string[] {
+  const hint = detectAddressFormat(address);
+  if (hint.family === "evm") {
+    return ["ethereum", "bsc", "base", "arbitrum", "polygon", "optimism", "avalanche"];
+  }
+  if (hint.family === "solana") {
+    return ["solana"];
+  }
+  if (hint.family === "algorand") {
+    return ["algorand"];
+  }
+  if (hint.family === "bitcoin") {
+    return ["bitcoin"];
+  }
+  return ["ethereum"];
+}
+
 export default function WalletDashboardPage({ params }: PageProps) {
   const { address } = use(params);
   const rawAddress = decodeURIComponent(address);
@@ -118,14 +135,17 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [newWalletInput, setNewWalletInput] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Store snapshots indexed by lowercased wallet address
-  const [snapshotsByAddress, setSnapshotsByAddress] = useState<Record<string, AnalyzeResponse>>({});
+  // Store snapshots indexed by [lowercased wallet address][chainSlug]
+  const [snapshotsByWalletAndChain, setSnapshotsByWalletAndChain] = useState<
+    Record<string, Record<string, AnalyzeResponse>>
+  >({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [loadError, setLoadError] = useState<{ message: string; hint?: string } | null>(null);
 
   // Pending wallet to add when wallet connection or payment is needed
   const [pendingWalletToAdd, setPendingWalletToAdd] = useState<string | null>(null);
   const [reportModalAddresses, setReportModalAddresses] = useState<string[] | null>(null);
+  const [modalMode, setModalMode] = useState<"report" | "add-wallet">("report");
 
   const [chains, setChains] = useState<ChainDescriptor[]>([]);
   const [activeTab, setActiveTab] = useState<"portfolio" | "nfts" | "transactions" | "defi">(
@@ -147,7 +167,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setTracked([rawAddress]);
       setSelected(rawAddress);
       setSelectedChainFilter(null);
-      setSnapshotsByAddress({});
+      setSnapshotsByWalletAndChain({});
       setFailedMap({});
     }
   }, [rawAddress]);
@@ -158,14 +178,43 @@ export default function WalletDashboardPage({ params }: PageProps) {
       .catch(() => setChains([]));
   }, []);
 
-  const loadWallet = useCallback(async (walletAddress: string, chainSlug?: string) => {
+  const loadWallet = useCallback(async (walletAddress: string, specificChain?: string) => {
     const key = walletAddress.toLowerCase();
+    const chainsToLoad = specificChain ? [specificChain] : getCandidateChains(walletAddress);
+
     setLoadingMap((prev) => ({ ...prev, [key]: true }));
     setLoadError(null);
+
     try {
-      const res = await analyzeWallet(walletAddress, chainSlug);
-      setSnapshotsByAddress((prev) => ({ ...prev, [key]: res }));
-      setFailedMap((prev) => ({ ...prev, [key]: false }));
+      const results = await Promise.allSettled(
+        chainsToLoad.map(async (chain) => {
+          const res = await analyzeWallet(walletAddress, chain);
+          return { chain, res };
+        })
+      );
+
+      let hasSuccess = false;
+      let firstErr: unknown = null;
+
+      setSnapshotsByWalletAndChain((prev) => {
+        const walletCopy = { ...(prev[key] ?? {}) };
+        for (const item of results) {
+          if (item.status === "fulfilled") {
+            walletCopy[item.value.chain] = item.value.res;
+            hasSuccess = true;
+          } else {
+            if (!firstErr) firstErr = item.reason;
+          }
+        }
+        return { ...prev, [key]: walletCopy };
+      });
+
+      if (hasSuccess) {
+        setFailedMap((prev) => ({ ...prev, [key]: false }));
+      } else if (firstErr) {
+        setFailedMap((prev) => ({ ...prev, [key]: true }));
+        setLoadError(describeLoadError(firstErr, walletAddress));
+      }
     } catch (error) {
       setFailedMap((prev) => ({ ...prev, [key]: true }));
       setLoadError(describeLoadError(error, walletAddress));
@@ -178,76 +227,100 @@ export default function WalletDashboardPage({ params }: PageProps) {
   useEffect(() => {
     for (const addr of tracked) {
       const key = addr.toLowerCase();
-      if (!snapshotsByAddress[key] && !loadingMap[key] && !failedMap[key]) {
+      if (!snapshotsByWalletAndChain[key] && !loadingMap[key] && !failedMap[key]) {
         void loadWallet(addr);
       }
     }
-  }, [tracked, snapshotsByAddress, loadingMap, failedMap, loadWallet]);
+  }, [tracked, snapshotsByWalletAndChain, loadingMap, failedMap, loadWallet]);
 
   // When user was prompted to connect to add a wallet and now becomes connected:
   useEffect(() => {
     if (isConnected && pendingWalletToAdd !== null && reportModalAddresses === null) {
+      setModalMode("add-wallet");
       setReportModalAddresses([...tracked, pendingWalletToAdd]);
     }
   }, [isConnected, pendingWalletToAdd, reportModalAddresses, tracked]);
 
   const isSelectedAll = selected === "ALL";
+  const currentWalletSnaps = useMemo(
+    () => (isSelectedAll ? {} : (snapshotsByWalletAndChain[selected.toLowerCase()] ?? {})),
+    [isSelectedAll, snapshotsByWalletAndChain, selected]
+  );
+
   const currentSnapshot = isSelectedAll
     ? null
-    : (snapshotsByAddress[selected.toLowerCase()] ?? null);
+    : selectedChainFilter !== null
+      ? (currentWalletSnaps[selectedChainFilter] ?? null)
+      : (currentWalletSnaps["ethereum"] ?? Object.values(currentWalletSnaps)[0] ?? null);
+
   const data = currentSnapshot?.data;
-  const detectedChain = isSelectedAll ? null : (currentSnapshot?.meta.chain ?? null);
+  const detectedChain = isSelectedAll
+    ? null
+    : selectedChainFilter !== null
+      ? selectedChainFilter
+      : (currentSnapshot?.meta.chain ?? null);
 
   const loading = isSelectedAll
     ? tracked.some((addr) => loadingMap[addr.toLowerCase()])
     : Boolean(loadingMap[selected.toLowerCase()]);
 
-  // Combined asset rows across all tracked wallets if isSelectedAll, or single wallet if not
+  // Combined asset rows across all tracked wallets if isSelectedAll, or across all chains of selected wallet if not
   const rows = useMemo<AssetRow[]>(() => {
     const assets: AssetRow[] = [];
-    const walletsToProcess = isSelectedAll ? tracked : currentSnapshot ? [selected] : [];
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
 
     for (const walletAddr of walletsToProcess) {
-      const snap = snapshotsByAddress[walletAddr.toLowerCase()];
-      if (!snap || !snap.data) continue;
+      const walletSnaps = snapshotsByWalletAndChain[walletAddr.toLowerCase()] ?? {};
+      const chainEntries = Object.entries(walletSnaps);
 
-      const d = snap.data;
-      const snapChain = snap.meta.chain;
-      const match = chains.find((chain) => chain.slug === snapChain);
-      const nativeDec = match?.nativeDecimals ?? null;
+      for (const [chainSlug, snap] of chainEntries) {
+        if (!snap || !snap.data) continue;
 
-      if (nativeDec !== null) {
+        const d = snap.data;
+        const match = chains.find((chain) => chain.slug === chainSlug);
+        const nativeDec = match?.nativeDecimals ?? 18;
+
         const nativeAmount = toWholeUnits(d.nativeBalance, nativeDec);
-        assets.push({
-          key: `${walletAddr}-native-${d.nativeSymbol}`,
-          symbol: d.nativeSymbol,
-          name: `${chainLabel(d.wallet.chain.slug)} native`,
-          amount: nativeAmount,
-          ...(d.nativeValueUsd !== undefined ? { valueUsd: d.nativeValueUsd } : {}),
-          ...(d.nativeValueUsd !== undefined && Number(nativeAmount) > 0
-            ? { unitPriceUsd: String(Number(d.nativeValueUsd) / Number(nativeAmount)) }
-            : {}),
-          isNative: true,
-          chainSlug: d.wallet.chain.slug,
-          walletAddress: walletAddr
-        });
-      }
+        const hasNativeBalance =
+          Number(nativeAmount) > 0 ||
+          (d.nativeValueUsd !== undefined && Number(d.nativeValueUsd) > 0);
 
-      for (const holding of d.holdings) {
-        const amount = toWholeUnits(holding.rawAmount, holding.decimals);
-        assets.push({
-          key: `${walletAddr}-token-${holding.tokenAddress}`,
-          symbol: holding.symbol,
-          name: holding.name,
-          amount,
-          ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {}),
-          ...(holding.valueUsd !== undefined && Number(amount) > 0
-            ? { unitPriceUsd: String(Number(holding.valueUsd) / Number(amount)) }
-            : {}),
-          isNative: false,
-          chainSlug: d.wallet.chain.slug,
-          walletAddress: walletAddr
-        });
+        // Include native coin if it has a balance/value, or if this is the only chain snapshot for this wallet
+        if (hasNativeBalance || chainEntries.length === 1) {
+          assets.push({
+            key: `${walletAddr}-${chainSlug}-native-${d.nativeSymbol}`,
+            symbol: d.nativeSymbol,
+            name: `${chainLabel(chainSlug)} native`,
+            amount: nativeAmount,
+            ...(d.nativeValueUsd !== undefined ? { valueUsd: d.nativeValueUsd } : {}),
+            ...(d.nativeValueUsd !== undefined && Number(nativeAmount) > 0
+              ? { unitPriceUsd: String(Number(d.nativeValueUsd) / Number(nativeAmount)) }
+              : {}),
+            isNative: true,
+            chainSlug,
+            walletAddress: walletAddr
+          });
+        }
+
+        for (const holding of d.holdings) {
+          const amount = toWholeUnits(holding.rawAmount, holding.decimals);
+          // Omit 0-balance unpriced holdings
+          if (Number(amount) <= 0 && holding.valueUsd === undefined) continue;
+
+          assets.push({
+            key: `${walletAddr}-${chainSlug}-token-${holding.tokenAddress}`,
+            symbol: holding.symbol,
+            name: holding.name,
+            amount,
+            ...(holding.valueUsd !== undefined ? { valueUsd: holding.valueUsd } : {}),
+            ...(holding.valueUsd !== undefined && Number(amount) > 0
+              ? { unitPriceUsd: String(Number(holding.valueUsd) / Number(amount)) }
+              : {}),
+            isNative: false,
+            chainSlug,
+            walletAddress: walletAddr
+          });
+        }
       }
     }
 
@@ -277,23 +350,27 @@ export default function WalletDashboardPage({ params }: PageProps) {
       }
       return Number(right.valueUsd) - Number(left.valueUsd);
     });
-  }, [isSelectedAll, tracked, selected, snapshotsByAddress, chains, currentSnapshot]);
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, chains]);
 
   const totalPortfolioValueUsd = useMemo(() => {
-    if (isSelectedAll) {
-      let sum = 0;
-      let hasAnyPriced = false;
-      for (const addr of tracked) {
-        const snap = snapshotsByAddress[addr.toLowerCase()];
+    let sum = 0;
+    let hasAnyPriced = false;
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
+
+    for (const addr of walletsToProcess) {
+      const walletSnaps = snapshotsByWalletAndChain[addr.toLowerCase()] ?? {};
+      for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+        if (selectedChainFilter !== null && chainSlug !== selectedChainFilter) {
+          continue;
+        }
         if (snap?.data?.totalValueUsd !== undefined) {
           sum += Number(snap.data.totalValueUsd);
           hasAnyPriced = true;
         }
       }
-      return hasAnyPriced ? sum.toFixed(2) : undefined;
     }
-    return currentSnapshot?.data?.totalValueUsd;
-  }, [isSelectedAll, tracked, snapshotsByAddress, currentSnapshot]);
+    return hasAnyPriced ? sum.toFixed(2) : undefined;
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
   const filteredRows = useMemo(() => {
     const query = searchToken.trim().toLowerCase();
@@ -318,23 +395,31 @@ export default function WalletDashboardPage({ params }: PageProps) {
       map[c.slug] = { totalUsd: 0, assetCount: 0, hasAssets: false };
     }
 
-    const walletsToProcess = isSelectedAll ? tracked : currentSnapshot ? [selected] : [];
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
 
     for (const walletAddr of walletsToProcess) {
-      const snap = snapshotsByAddress[walletAddr.toLowerCase()];
-      if (!snap || !snap.data) continue;
+      const walletSnaps = snapshotsByWalletAndChain[walletAddr.toLowerCase()] ?? {};
+      for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+        if (!snap || !snap.data) continue;
+        if (map[chainSlug]) {
+          const nativeDec = chains.find((c) => c.slug === chainSlug)?.nativeDecimals ?? 18;
+          const hasNative = Number(toWholeUnits(snap.data.nativeBalance, nativeDec)) > 0;
+          const hasTokens = snap.data.holdings.length > 0;
+          const hasValue =
+            snap.data.totalValueUsd !== undefined && Number(snap.data.totalValueUsd) > 0;
 
-      const chainSlug = snap.data.wallet.chain.slug;
-      if (map[chainSlug]) {
-        map[chainSlug].hasAssets = true;
-        map[chainSlug].assetCount += 1 + snap.data.holdings.length;
-        if (snap.data.totalValueUsd !== undefined) {
-          map[chainSlug].totalUsd += Number(snap.data.totalValueUsd);
+          if (hasNative || hasTokens || hasValue) {
+            map[chainSlug].hasAssets = true;
+          }
+          map[chainSlug].assetCount += (hasNative ? 1 : 0) + snap.data.holdings.length;
+          if (snap.data.totalValueUsd !== undefined) {
+            map[chainSlug].totalUsd += Number(snap.data.totalValueUsd);
+          }
         }
       }
     }
     return map;
-  }, [isSelectedAll, tracked, selected, snapshotsByAddress, currentSnapshot]);
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, chains]);
 
   const isCurrentEvm = useMemo(() => {
     if (detectedChain === null) return false;
@@ -344,62 +429,65 @@ export default function WalletDashboardPage({ params }: PageProps) {
   }, [detectedChain]);
 
   const handleChainClick = (chainSlug: string) => {
-    if (isSelectedAll) {
-      // In consolidated view, clicking any chain filters the assets table to that chain
-      setSelectedChainFilter((prev) => (prev === chainSlug ? null : chainSlug));
-      return;
-    }
-
     const targetChain = ALL_SUPPORTED_CHAINS.find((c) => c.slug === chainSlug);
     if (!targetChain) return;
 
-    if (chainSlug === detectedChain) {
-      // Toggle filter on current chain
-      setSelectedChainFilter((prev) => (prev === chainSlug ? null : chainSlug));
+    if (selectedChainFilter === chainSlug) {
+      // Toggle off filter back to All Chains
+      setSelectedChainFilter(null);
       return;
     }
 
-    if (isCurrentEvm && targetChain.isEvm) {
-      setSelectedChainFilter(null);
-      void loadWallet(selected, chainSlug);
+    setSelectedChainFilter(chainSlug);
+
+    // If viewing single wallet and this specific chain has not been fetched yet, fetch it
+    if (!isSelectedAll) {
+      const walletSnaps = snapshotsByWalletAndChain[selected.toLowerCase()] ?? {};
+      if (!walletSnaps[chainSlug]) {
+        void loadWallet(selected, chainSlug);
+      }
     }
   };
 
   const transactions = useMemo<DisplayTransaction[]>(() => {
-    if (!isSelectedAll) {
-      return (currentSnapshot?.data?.transactions ?? []).map((t) => ({
-        ...t,
-        chainSlug: currentSnapshot?.data?.wallet?.chain?.slug
-      }));
-    }
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
     const allTx: DisplayTransaction[] = [];
-    for (const addr of tracked) {
-      const snap = snapshotsByAddress[addr.toLowerCase()];
-      if (snap?.data?.transactions) {
-        const chainSlug = snap.data.wallet.chain.slug;
-        for (const t of snap.data.transactions) {
-          allTx.push({ ...t, chainSlug });
+
+    for (const addr of walletsToProcess) {
+      const walletSnaps = snapshotsByWalletAndChain[addr.toLowerCase()] ?? {};
+      for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+        if (selectedChainFilter !== null && chainSlug !== selectedChainFilter) {
+          continue;
+        }
+        if (snap?.data?.transactions) {
+          for (const t of snap.data.transactions) {
+            allTx.push({ ...t, chainSlug });
+          }
         }
       }
     }
     return allTx.sort(
       (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
     );
-  }, [isSelectedAll, currentSnapshot, tracked, snapshotsByAddress]);
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
   const defiPositions = useMemo(() => {
-    if (!isSelectedAll) {
-      return currentSnapshot?.data?.positions ?? [];
-    }
-    const allPos = [];
-    for (const addr of tracked) {
-      const snap = snapshotsByAddress[addr.toLowerCase()];
-      if (snap?.data?.positions) {
-        allPos.push(...snap.data.positions);
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
+    const allPos: unknown[] = [];
+
+    for (const addr of walletsToProcess) {
+      const walletSnaps = snapshotsByWalletAndChain[addr.toLowerCase()] ?? {};
+      for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+        if (selectedChainFilter !== null && chainSlug !== selectedChainFilter) {
+          continue;
+        }
+        if (snap?.data?.positions) {
+          allPos.push(...snap.data.positions);
+        }
       }
     }
     return allPos;
-  }, [isSelectedAll, currentSnapshot, tracked, snapshotsByAddress]);
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
   const pricedCount = rows.filter((row) => row.valueUsd !== undefined).length;
   const unpricedCount = rows.length - pricedCount;
@@ -445,16 +533,17 @@ export default function WalletDashboardPage({ params }: PageProps) {
       return;
     }
 
-    // Adding a 2nd wallet requires wallet connection and $0.001 USDC (x402) on Algorand
+    // Adding a 2nd wallet requires wallet connection and $1.00 USDC (x402) on Algorand
     if (!isConnected) {
       setPendingWalletToAdd(candidate);
       requireWallet(
-        "Connect your Algorand wallet to unlock multi-wallet tracking ($0.001 USDC via x402)"
+        "Connect your Algorand wallet to unlock multi-wallet tracking ($1.00 USDC via x402)"
       );
       return;
     }
 
     setPendingWalletToAdd(candidate);
+    setModalMode("add-wallet");
     setReportModalAddresses([...tracked, candidate]);
   };
 
@@ -468,12 +557,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
     if (!isConnected) {
       setPendingWalletToAdd(presetAddress);
       requireWallet(
-        "Connect your Algorand wallet to unlock multi-wallet tracking ($0.001 USDC via x402)"
+        "Connect your Algorand wallet to unlock multi-wallet tracking ($1.00 USDC via x402)"
       );
       return;
     }
 
     setPendingWalletToAdd(presetAddress);
+    setModalMode("add-wallet");
     setReportModalAddresses([...tracked, presetAddress]);
   };
 
@@ -484,7 +574,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       (entry) => entry.toLowerCase() !== entryToRemove.toLowerCase()
     );
     setTracked(remaining);
-    setSnapshotsByAddress((prev) => {
+    setSnapshotsByWalletAndChain((prev) => {
       const copy = { ...prev };
       delete copy[entryToRemove.toLowerCase()];
       return copy;
@@ -495,9 +585,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
   };
 
   const handleGenerateReport = () => {
-    if (!requireWallet("Generate the consolidated portfolio report ($0.001 USDC via x402)")) {
+    if (!requireWallet("Generate the consolidated portfolio report ($3.00 USDC via x402)")) {
       return;
     }
+    setModalMode("report");
     setReportModalAddresses(tracked);
   };
 
@@ -707,10 +798,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 ) : (
                   <Lock className="w-3.5 h-3.5" />
                 )}
-                <span>Generate full report ($0.001 USDC)</span>
+                <span>Generate full report ($3.00 USDC)</span>
               </button>
               <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-full lg:max-w-[15rem] text-center lg:text-left">
-                Multi-wallet consolidation. Pay $0.001 USDC via x402 on Algorand.
+                Institutional multi-wallet audit. Pay $3.00 USDC via x402 on Algorand.
               </p>
             </div>
           </div>
@@ -719,8 +810,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
         {/* Loading / error / data */}
         {loading &&
           (!isSelectedAll
-            ? currentSnapshot === null
-            : Object.keys(snapshotsByAddress).length === 0) && (
+            ? Object.keys(snapshotsByWalletAndChain[selected.toLowerCase()] ?? {}).length === 0
+            : Object.keys(snapshotsByWalletAndChain).length === 0) && (
             <LoadingPanel address={isSelectedAll ? "all tracked wallets" : selected} />
           )}
 
@@ -733,8 +824,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
           />
         )}
 
-        {((!isSelectedAll && data !== undefined && currentSnapshot !== null) ||
-          (isSelectedAll && Object.keys(snapshotsByAddress).length > 0)) && (
+        {((!isSelectedAll &&
+          Object.keys(snapshotsByWalletAndChain[selected.toLowerCase()] ?? {}).length > 0) ||
+          (isSelectedAll && Object.keys(snapshotsByWalletAndChain).length > 0)) && (
           <>
             {/* Compact Summary Cards */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
@@ -757,7 +849,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 note={
                   isSelectedAll
                     ? `Across ${tracked.length} wallets`
-                    : `On ${detectedChain !== null ? chainLabel(detectedChain) : "one chain"}`
+                    : selectedChainFilter !== null
+                      ? `On ${chainLabel(selectedChainFilter)}`
+                      : `Across all detected networks`
                 }
               />
 
@@ -777,9 +871,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 value={
                   isSelectedAll
                     ? "Multi-Wallet Consolidated"
-                    : data?.status === "complete"
-                      ? "Fully priced"
-                      : "Partially priced"
+                    : selectedChainFilter !== null
+                      ? `${chainLabel(selectedChainFilter)} view`
+                      : "Multi-Chain Consolidated"
                 }
                 note="Curated token list per chain — not exhaustive"
                 noteTone="ok"
@@ -812,16 +906,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     onClick={() => setSelectedChainFilter(null)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       selectedChainFilter === null
-                        ? "bg-primary-500 text-white shadow-xs"
+                        ? "bg-primary-500 text-white shadow-xs ring-2 ring-primary-300"
                         : "bg-white/80 hover:bg-white text-navy-700 border border-navy-100/80"
                     }`}
                   >
                     All Chains
                   </button>
-                  {detectedChain !== null && (
+                  {selectedChainFilter !== null && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
                       <span className="w-1.5 h-1.5 rounded-full bg-accentGreen animate-pulse" />
-                      <span>{chainLabel(detectedChain)}</span>
+                      <span>{chainLabel(selectedChainFilter)}</span>
                     </span>
                   )}
                 </div>
@@ -830,61 +924,56 @@ export default function WalletDashboardPage({ params }: PageProps) {
               {/* Grid of chains */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
                 {ALL_SUPPORTED_CHAINS.map((chain) => {
-                  const isActive = !isSelectedAll && detectedChain === chain.slug;
                   const isFiltered = selectedChainFilter === chain.slug;
-                  const isCompatible = isSelectedAll || (isCurrentEvm && chain.isEvm) || isActive;
+                  const walletHint = isSelectedAll ? null : detectAddressFormat(selected);
+                  const isCompatible =
+                    isSelectedAll ||
+                    (walletHint?.family === "evm"
+                      ? chain.isEvm
+                      : walletHint?.family === "algorand"
+                        ? chain.slug === "algorand"
+                        : walletHint?.family === "solana"
+                          ? chain.slug === "solana"
+                          : walletHint?.family === "bitcoin"
+                            ? chain.slug === "bitcoin"
+                            : true);
 
+                  const info = chainTotals[chain.slug];
                   let displayValue = "—";
                   let displayPct: string | null = null;
 
-                  if (isSelectedAll) {
-                    const info = chainTotals[chain.slug];
-                    if (info && info.hasAssets) {
-                      displayValue = formatUsd(info.totalUsd.toString()) ?? "$0";
-                      if (
-                        totalPortfolioValueUsd &&
-                        Number(totalPortfolioValueUsd) > 0 &&
-                        info.totalUsd > 0
-                      ) {
-                        displayPct = `${((info.totalUsd / Number(totalPortfolioValueUsd)) * 100).toFixed(1)}%`;
-                      }
-                    } else {
-                      displayValue = "$0";
+                  if (info && info.hasAssets) {
+                    displayValue = formatUsd(info.totalUsd.toString()) ?? "$0";
+                    if (
+                      totalPortfolioValueUsd &&
+                      Number(totalPortfolioValueUsd) > 0 &&
+                      info.totalUsd > 0
+                    ) {
+                      displayPct = `${((info.totalUsd / Number(totalPortfolioValueUsd)) * 100).toFixed(1)}%`;
                     }
-                  } else {
-                    if (isActive && data !== undefined) {
-                      displayValue = formatUsd(data.totalValueUsd) ?? "Pending";
-                      if (data.totalValueUsd !== undefined && Number(data.totalValueUsd) > 0) {
-                        displayPct = "100%";
-                      }
-                    } else if (isCompatible) {
-                      displayValue = "$0";
-                    }
+                  } else if (isCompatible) {
+                    displayValue = "$0";
                   }
 
-                  const hasBalance = isSelectedAll
-                    ? (chainTotals[chain.slug]?.hasAssets ?? false)
-                    : isActive;
+                  const hasBalance = info?.hasAssets ?? false;
 
                   return (
                     <div
                       key={chain.slug}
-                      onClick={() => handleChainClick(chain.slug)}
+                      onClick={() => isCompatible && handleChainClick(chain.slug)}
                       className={`group p-2.5 rounded-xl border transition-all select-none flex items-center justify-between gap-2 ${
-                        isActive || isFiltered
-                          ? "bg-primary-50/90 border-primary-300 ring-1 ring-primary-400 shadow-xs cursor-pointer"
+                        isFiltered
+                          ? "bg-primary-50/90 border-primary-300 ring-2 ring-primary-400 shadow-xs cursor-pointer"
                           : isCompatible
                             ? "bg-white/75 hover:bg-white border-navy-100/70 hover:border-primary-200 hover:shadow-xs cursor-pointer"
                             : "bg-white/30 border-navy-100/30 opacity-40 cursor-not-allowed"
                       }`}
                       title={
-                        isSelectedAll
-                          ? `Click to filter assets on ${chain.name}`
-                          : isActive
-                            ? `Currently viewing on ${chain.name}`
-                            : isCompatible
-                              ? `Click to view ${chain.name} balances`
-                              : `Not compatible with ${chainLabel(detectedChain ?? "")} address`
+                        isFiltered
+                          ? `Filtered to ${chain.name}. Click to view All Chains.`
+                          : isCompatible
+                            ? `Click to filter assets on ${chain.name}`
+                            : `Not compatible with ${chainLabel(detectedChain ?? "")} address`
                       }
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -894,14 +983,12 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         <div className="min-w-0">
                           <div className="text-xs font-bold text-navy-900 truncate flex items-center gap-1">
                             <span>{chain.name}</span>
-                            {(isActive || (isSelectedAll && hasBalance)) && (
+                            {hasBalance && (
                               <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
                             )}
                           </div>
                           <div className="text-[11px] font-semibold text-navy-600 flex items-center gap-1 mt-0.5">
-                            <span
-                              className={isActive || hasBalance ? "text-navy-900 font-black" : ""}
-                            >
+                            <span className={hasBalance ? "text-navy-900 font-black" : ""}>
                               {displayValue}
                             </span>
                             {displayPct !== null && (
@@ -914,13 +1001,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       </div>
 
                       <div className="flex-shrink-0">
-                        {isActive ? (
-                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-500 text-white">
-                            Live
-                          </span>
-                        ) : isFiltered ? (
+                        {isFiltered ? (
                           <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-600 text-white">
                             Filtered
+                          </span>
+                        ) : hasBalance ? (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700">
+                            Active
                           </span>
                         ) : isCompatible ? (
                           <span className="text-[10px] font-bold text-navy-400 group-hover:text-primary-600 transition-colors">
@@ -1079,7 +1166,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
                     <Zap className="w-3.5 h-3.5 fill-white" />
-                    <span>Consolidate {tracked.length} Wallets ($0.001 USDC)</span>
+                    <span>Consolidate {tracked.length} Wallets ($3.00 USDC)</span>
                   </button>
                 )}
               </div>
@@ -1088,7 +1175,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 <p className="mt-2 text-[10px] text-navy-500 font-medium flex items-center gap-1.5">
                   <Lock className="w-3 h-3 text-navy-400" />
                   <span>
-                    Adding a second wallet needs a connected wallet — unlocked for $0.001 USDC via
+                    Adding a second wallet needs a connected wallet — unlocked for $1.00 USDC via
                     x402 on Algorand.
                   </span>
                 </p>
@@ -1717,6 +1804,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       {reportModalAddresses !== null && (
         <PortfolioReportModal
           addresses={reportModalAddresses}
+          mode={modalMode}
           onClose={() => {
             setReportModalAddresses(null);
             setPendingWalletToAdd(null);

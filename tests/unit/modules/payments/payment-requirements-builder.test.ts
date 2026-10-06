@@ -17,11 +17,11 @@ describe("PaymentRequirementsBuilder", () => {
     expect(requirements.x402Version).toBe(2);
     expect(requirements.accepts).toHaveLength(1);
     // Amount stays a string so 6-decimal USDC and large values never hit float rounding.
-    // $0.01 — the agent-sized price band the Bazaar catalog clusters in, not $0.001.
+    // $0.50 — the live snapshot price band.
     const accept = requirements.accepts[0];
     expect(accept?.scheme).toBe("exact");
     expect(accept?.network).toBe(testMerchantConfig.network);
-    expect(accept?.amount).toBe("10000");
+    expect(accept?.amount).toBe("500000");
     expect(accept?.asset).toBe("10458941");
     expect(accept?.payTo).toBe(testMerchantConfig.payTo);
     expect(accept?.maxTimeoutSeconds).toBe(300);
@@ -46,7 +46,7 @@ describe("PaymentRequirementsBuilder", () => {
       (id) => testBuilder(id).build().accepts[0]?.amount
     );
 
-    expect(prices).toEqual(["10000", "2000", "1000"]);
+    expect(prices).toEqual(["500000", "1000000", "3000000"]);
     expect(new Set(prices).size).toBe(3);
   });
 

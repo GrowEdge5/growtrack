@@ -108,11 +108,11 @@ Growtrack implements the **x402 Specification (v2)** to monetize API access dire
 
 ### Composite Resource Catalog
 
-| Route                                    | Price (USDC) | Description                                                         | Target Caller                 |
-| :--------------------------------------- | :----------- | :------------------------------------------------------------------ | :---------------------------- |
-| `GET /v1/wallets/:chain/:address/live`   | **$0.01**    | Live, synchronous fresh wallet snapshot with real-time pricing      | AI Agents, Developers         |
-| `GET /v1/portfolio?addresses=...`        | **$0.02**    | Combined valuation totals and per-chain distribution across wallets | Portfolio Trackers            |
-| `GET /v1/portfolio/report?addresses=...` | **$0.05**    | Complete cross-chain consolidated financial statement               | UI Hero, Institutional Agents |
+| Route                                    | Price (USDC) | Description                                                         | Target Caller                   |
+| :--------------------------------------- | :----------- | :------------------------------------------------------------------ | :------------------------------ |
+| `GET /v1/wallets/:chain/:address/live`   | **$0.50**    | Live, synchronous fresh wallet snapshot with real-time pricing      | AI Agents, Developers           |
+| `GET /v1/portfolio?addresses=...`        | **$1.00**    | Multi-wallet tracking and combined valuation totals                 | Portfolio Trackers, Power Users |
+| `GET /v1/portfolio/report?addresses=...` | **$3.00**    | Complete cross-chain consolidated institutional financial statement | Institutional Audits, Web Pro   |
 
 ### Agent Discovery Endpoints
 
