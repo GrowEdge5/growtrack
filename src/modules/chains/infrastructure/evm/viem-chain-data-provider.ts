@@ -169,7 +169,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
   // failing the whole snapshot; only successful, non-zero balances are returned.
   // Missing tokens simply do not appear — nothing is fabricated or zero-filled.
   private async fetchTokenHoldings(owner: string): Promise<TokenHolding[]> {
-    const tokens = getErc20TokenList(this.chain.id);
+    const tokens = await getErc20TokenList(this.chain.id);
     if (tokens.length === 0) {
       return [];
     }

@@ -185,6 +185,34 @@ export function chainLabel(slug: string): string {
   return CHAIN_LABELS[slug.toLowerCase()] ?? slug;
 }
 
+const CHAIN_LOGOS: Readonly<Record<string, string>> = {
+  algorand: "/assets/coins/algorand.png",
+  algo: "/assets/coins/algorand.png",
+  ethereum: "/assets/coins/ethereum.png",
+  eth: "/assets/coins/ethereum.png",
+  solana: "/assets/coins/solana.png",
+  sol: "/assets/coins/solana.png",
+  bitcoin: "/assets/coins/bitcoin.svg",
+  btc: "/assets/coins/bitcoin.svg",
+  base: "/assets/coins/base.png",
+  arbitrum: "/assets/coins/arbitrum.png",
+  arb: "/assets/coins/arbitrum.png",
+  optimism: "/assets/coins/optimism.png",
+  op: "/assets/coins/optimism.png",
+  polygon: "/assets/coins/polygon.png",
+  pol: "/assets/coins/polygon.png",
+  matic: "/assets/coins/polygon.png",
+  bsc: "/assets/coins/bnb.png",
+  bnb: "/assets/coins/bnb.png",
+  avalanche: "/assets/coins/avalanche.png",
+  avax: "/assets/coins/avalanche.png"
+};
+
+export function getChainLogoSrc(slug?: string): string {
+  if (!slug) return "/assets/coins/ethereum.png";
+  return CHAIN_LOGOS[slug.toLowerCase()] ?? "/assets/coins/ethereum.png";
+}
+
 /**
  * A stable, dependency-free key for the token icon lookup. Native symbols map to
  * their chain's mark; everything else falls back to a monogram tile in the UI
@@ -197,13 +225,30 @@ export function coinKeyForSymbol(symbol: string): string {
     eth: "ethereum",
     weth: "ethereum",
     btc: "bitcoin",
+    wbtc: "wbtc",
+    btcb: "wbtc",
     sol: "solana",
     bnb: "bsc",
+    wbnb: "bsc",
     pol: "polygon",
     matic: "polygon",
+    wmatic: "polygon",
     avax: "avalanche",
+    wavax: "avalanche",
+    arb: "arbitrum",
+    op: "optimism",
     usdc: "usdc",
-    usdt: "usdt"
+    usdt: "usdt",
+    usdbc: "usdc",
+    axlusdc: "usdc",
+    axlusdt: "usdt",
+    dai: "dai",
+    link: "link",
+    uni: "uni",
+    aave: "aave",
+    pepe: "pepe",
+    cake: "cake",
+    shib: "shib"
   };
   return aliases[normalized] ?? normalized;
 }

@@ -48,7 +48,8 @@ import {
   explorerUrl,
   transactionUrl,
   chainLabel,
-  coinKeyForSymbol
+  coinKeyForSymbol,
+  getChainLogoSrc
 } from "@/lib/address";
 import { formatAmount, formatRelativeTime, formatUsd, shorten, toWholeUnits } from "@/lib/format";
 
@@ -1275,7 +1276,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           <div className="md:hidden p-3.5 space-y-2">
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="sm" />
+                                <GlassSquareIcon
+                                  coin={coinKeyForSymbol(row.symbol)}
+                                  chain={row.chainSlug}
+                                  size="sm"
+                                />
                                 <div className="min-w-0">
                                   <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
                                     <span className="truncate">{row.name}</span>
@@ -1345,7 +1350,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           {/* Desktop View (md+) */}
                           <div className="hidden md:grid grid-cols-12 items-center gap-3 p-4 sm:px-6 md:py-3.5">
                             <div className="md:col-span-4 flex items-center gap-3 min-w-0">
-                              <GlassSquareIcon coin={coinKeyForSymbol(row.symbol)} size="md" />
+                              <GlassSquareIcon
+                                coin={coinKeyForSymbol(row.symbol)}
+                                chain={row.chainSlug}
+                                size="md"
+                              />
                               <div className="min-w-0">
                                 <div className="font-bold text-sm text-navy-900 flex items-center gap-1.5 flex-wrap">
                                   <span>{row.name}</span>
@@ -1570,20 +1579,32 @@ export default function WalletDashboardPage({ params }: PageProps) {
                                 </td>
 
                                 <td className="py-3 px-3 font-mono font-bold text-navy-800">
-                                  {txLink ? (
-                                    <a
-                                      href={txLink}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
-                                      title={tx.hash}
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-xs border border-navy-100/80 p-0.5 flex items-center justify-center"
+                                      title={txChain ? chainLabel(txChain) : "Chain"}
                                     >
+                                      <img
+                                        src={getChainLogoSrc(txChain)}
+                                        alt={txChain ? chainLabel(txChain) : "Chain"}
+                                        className="w-full h-full object-contain rounded-full"
+                                      />
+                                    </div>
+                                    {txLink ? (
+                                      <a
+                                        href={txLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
+                                        title={tx.hash}
+                                      >
+                                        <span>{shorten(tx.hash, 8, 6)}</span>
+                                        <ExternalLink className="w-3 h-3 opacity-70" />
+                                      </a>
+                                    ) : (
                                       <span>{shorten(tx.hash, 8, 6)}</span>
-                                      <ExternalLink className="w-3 h-3 opacity-70" />
-                                    </a>
-                                  ) : (
-                                    <span>{shorten(tx.hash, 8, 6)}</span>
-                                  )}
+                                    )}
+                                  </div>
                                 </td>
 
                                 <td className="py-3 px-3 font-mono text-[11px] text-navy-600">
@@ -1714,7 +1735,19 @@ export default function WalletDashboardPage({ params }: PageProps) {
                             </div>
 
                             <div className="flex items-center justify-between gap-2 font-mono">
-                              <span className="text-navy-500 text-[11px]">Hash</span>
+                              <span className="text-navy-500 text-[11px] flex items-center gap-1.5">
+                                <div
+                                  className="w-3.5 h-3.5 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-xs border border-navy-100/80 p-0.5 flex items-center justify-center"
+                                  title={txChain ? chainLabel(txChain) : "Chain"}
+                                >
+                                  <img
+                                    src={getChainLogoSrc(txChain)}
+                                    alt={txChain ? chainLabel(txChain) : "Chain"}
+                                    className="w-full h-full object-contain rounded-full"
+                                  />
+                                </div>
+                                <span>Hash</span>
+                              </span>
                               {txLink ? (
                                 <a
                                   href={txLink}
@@ -1769,8 +1802,18 @@ export default function WalletDashboardPage({ params }: PageProps) {
                             )}
 
                             <div className="flex items-center justify-between pt-1 border-t border-navy-100/40 text-[10px]">
-                              <span className="text-navy-400 capitalize">
-                                {txChain ? chainLabel(txChain) : "Chain"}
+                              <span className="text-navy-500 capitalize flex items-center gap-1.5 font-medium">
+                                <div
+                                  className="w-3.5 h-3.5 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-xs border border-navy-100/80 p-0.5 flex items-center justify-center"
+                                  title={txChain ? chainLabel(txChain) : "Chain"}
+                                >
+                                  <img
+                                    src={getChainLogoSrc(txChain)}
+                                    alt={txChain ? chainLabel(txChain) : "Chain"}
+                                    className="w-full h-full object-contain rounded-full"
+                                  />
+                                </div>
+                                <span>{txChain ? chainLabel(txChain) : "Chain"}</span>
                               </span>
                               <span
                                 className={`font-bold capitalize ${
