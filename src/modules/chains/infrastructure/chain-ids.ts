@@ -1,9 +1,4 @@
-// Growtrack-internal registry ids for the non-EVM chains.
-//
-// These are NOT EIP-155 chainIds — neither Solana nor Bitcoin has such a concept.
-// The provider registry keys by slug, so these integers only need to be unique
-// among Growtrack's configured chains and must never collide with an EIP-155 id
-// (mainnet EVM occupies id 1, Algorand mainnet id 2).
+// Growtrack-internal registry ids for non-EVM and EVM chains.
 export const SOLANA_MAINNET_CHAIN_ID = 3;
 export const BITCOIN_MAINNET_CHAIN_ID = 4;
 export const BASE_MAINNET_CHAIN_ID = 8453;
@@ -12,3 +7,25 @@ export const OPTIMISM_MAINNET_CHAIN_ID = 10;
 export const POLYGON_MAINNET_CHAIN_ID = 137;
 export const BSC_MAINNET_CHAIN_ID = 56;
 export const AVALANCHE_MAINNET_CHAIN_ID = 43114;
+
+// Major & trending EVM L2 / L1 chains
+export const LINEA_MAINNET_CHAIN_ID = 59144;
+export const BLAST_MAINNET_CHAIN_ID = 81457;
+export const SCROLL_MAINNET_CHAIN_ID = 534352;
+export const ZKSYNC_MAINNET_CHAIN_ID = 324;
+export const INK_MAINNET_CHAIN_ID = 57073;
+export const MODE_MAINNET_CHAIN_ID = 34443;
+export const ZORA_MAINNET_CHAIN_ID = 7777777;
+export const GNOSIS_MAINNET_CHAIN_ID = 100;
+export const CELO_MAINNET_CHAIN_ID = 42220;
+export const SEI_MAINNET_CHAIN_ID = 1329;
+export const SONIC_MAINNET_CHAIN_ID = 146;
+export const OPBNB_MAINNET_CHAIN_ID = 204;
+export const TAIKO_MAINNET_CHAIN_ID = 167000;
+export const APECHAIN_MAINNET_CHAIN_ID = 33139;
+export const MANTLE_MAINNET_CHAIN_ID = 5000;
+export const XLAYER_MAINNET_CHAIN_ID = 196;
+export const UNICHAIN_MAINNET_CHAIN_ID = 130;
+export const BERACHAIN_MAINNET_CHAIN_ID = 80094;
+export const ZETACHAIN_MAINNET_CHAIN_ID = 7000;
+export const ZIRCUIT_MAINNET_CHAIN_ID = 48900;

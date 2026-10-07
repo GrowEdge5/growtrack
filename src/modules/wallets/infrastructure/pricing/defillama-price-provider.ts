@@ -36,7 +36,47 @@ const LLAMA_CHAINS: Readonly<Record<number, LlamaChain>> = {
   // BNB Smart Chain (id 56). Native currency is BNB.
   56: { slug: "bsc", nativeCoinKey: "coingecko:binancecoin" },
   // Avalanche C-Chain (id 43114). Native currency is AVAX.
-  43114: { slug: "avax", nativeCoinKey: "coingecko:avalanche-2" }
+  43114: { slug: "avax", nativeCoinKey: "coingecko:avalanche-2" },
+  // Linea (id 59144)
+  59144: { slug: "linea", nativeCoinKey: "coingecko:ethereum" },
+  // Blast (id 81457)
+  81457: { slug: "blast", nativeCoinKey: "coingecko:ethereum" },
+  // Scroll (id 534352)
+  534352: { slug: "scroll", nativeCoinKey: "coingecko:ethereum" },
+  // zkSync Era (id 324)
+  324: { slug: "era", nativeCoinKey: "coingecko:ethereum" },
+  // Ink (id 57073)
+  57073: { slug: "ink", nativeCoinKey: "coingecko:ethereum" },
+  // Mode (id 34443)
+  34443: { slug: "mode", nativeCoinKey: "coingecko:ethereum" },
+  // Zora (id 7777777)
+  7777777: { slug: "zora", nativeCoinKey: "coingecko:ethereum" },
+  // Gnosis (id 100)
+  100: { slug: "xdai", nativeCoinKey: "coingecko:xdai" },
+  // Celo (id 42220)
+  42220: { slug: "celo", nativeCoinKey: "coingecko:celo" },
+  // Sei (id 1329)
+  1329: { slug: "sei", nativeCoinKey: "coingecko:sei-network" },
+  // Sonic (id 146)
+  146: { slug: "sonic", nativeCoinKey: "coingecko:fantom" },
+  // opBNB (id 204)
+  204: { slug: "opbnb", nativeCoinKey: "coingecko:binancecoin" },
+  // Taiko (id 167000)
+  167000: { slug: "taiko", nativeCoinKey: "coingecko:ethereum" },
+  // ApeChain (id 33139)
+  33139: { slug: "apechain", nativeCoinKey: "coingecko:apecoin" },
+  // Mantle (id 5000)
+  5000: { slug: "mantle", nativeCoinKey: "coingecko:mantle" },
+  // X Layer (id 196)
+  196: { slug: "xlayer", nativeCoinKey: "coingecko:okb" },
+  // Unichain (id 130)
+  130: { slug: "unichain", nativeCoinKey: "coingecko:ethereum" },
+  // Berachain (id 80094)
+  80094: { slug: "berachain", nativeCoinKey: "coingecko:berachain-bera" },
+  // ZetaChain (id 7000)
+  7000: { slug: "zetachain", nativeCoinKey: "coingecko:zetachain" },
+  // Zircuit (id 48900)
+  48900: { slug: "zircuit", nativeCoinKey: "coingecko:ethereum" }
 };
 
 // DeFiLlama attaches a 0..1 confidence to each price. Anything below this is

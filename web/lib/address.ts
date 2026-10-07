@@ -118,7 +118,46 @@ const EXPLORERS: Readonly<Record<string, ExplorerConfig>> = {
   optimism: { url: "https://optimistic.etherscan.io/address/{address}", name: "OP Etherscan" },
   polygon: { url: "https://polygonscan.com/address/{address}", name: "Polygonscan" },
   bsc: { url: "https://bscscan.com/address/{address}", name: "BscScan" },
-  avalanche: { url: "https://snowtrace.io/address/{address}", name: "Snowtrace" }
+  avalanche: { url: "https://snowtrace.io/address/{address}", name: "Snowtrace" },
+  linea: { url: "https://lineascan.build/address/{address}", name: "Lineascan" },
+  blast: { url: "https://blastscan.io/address/{address}", name: "Blastscan" },
+  scroll: { url: "https://scrollscan.com/address/{address}", name: "Scrollscan" },
+  zksync: { url: "https://explorer.zksync.io/address/{address}", name: "zkSync Explorer" },
+  ink: { url: "https://explorer.inkonchain.com/address/{address}", name: "Ink Explorer" },
+  mode: { url: "https://explorer.mode.network/address/{address}", name: "Mode Explorer" },
+  zora: { url: "https://explorer.zora.energy/address/{address}", name: "Zora Explorer" },
+  gnosis: { url: "https://gnosisscan.io/address/{address}", name: "Gnosisscan" },
+  celo: { url: "https://celoscan.io/address/{address}", name: "Celoscan" },
+  sei: { url: "https://seitrace.com/address/{address}", name: "Seitrace" },
+  sonic: { url: "https://sonicscan.org/address/{address}", name: "Sonicscan" },
+  opbnb: { url: "https://opbnbscan.com/address/{address}", name: "opBNBScan" },
+  taiko: { url: "https://taikoscan.io/address/{address}", name: "Taikoscan" },
+  apechain: { url: "https://apescan.io/address/{address}", name: "Apescan" },
+  mantle: { url: "https://mantlescan.xyz/address/{address}", name: "Mantlescan" },
+  fantom: { url: "https://ftmscan.com/address/{address}", name: "FTMScan" },
+  cronos: { url: "https://cronoscan.com/address/{address}", name: "Cronoscan" },
+  hyperliquid: {
+    url: "https://app.hyperliquid.xyz/explorer/address/{address}",
+    name: "Hyperliquid"
+  },
+  core: { url: "https://scan.coredao.org/address/{address}", name: "Core Scan" },
+  monad: { url: "https://monadexplorer.com/address/{address}", name: "Monad Explorer" },
+  xlayer: {
+    url: "https://www.okx.com/web3/explorer/xlayer/address/{address}",
+    name: "OKX Explorer"
+  },
+  unichain: { url: "https://unichain.org/explorer/address/{address}", name: "Unichain Explorer" },
+  berachain: { url: "https://berascan.com/address/{address}", name: "Berascan" },
+  zetachain: { url: "https://zetachain.blockscout.com/address/{address}", name: "ZetaScan" },
+  zircuit: { url: "https://explorer.zircuit.com/address/{address}", name: "Zircuit Explorer" },
+  robinhood: { url: "https://robinhood.com/crypto", name: "Robinhood" },
+  hemi: { url: "https://explorer.hemi.xyz/address/{address}", name: "Hemi Explorer" },
+  fuse: { url: "https://explorer.fuse.io/address/{address}", name: "Fuse Explorer" },
+  plume: { url: "https://explorer.plumenetwork.xyz/address/{address}", name: "Plume Explorer" },
+  arc: { url: "https://arcscan.io/address/{address}", name: "Arc Explorer" },
+  cyber: { url: "https://cyberscan.co/address/{address}", name: "Cyberscan" },
+  plasma: { url: "https://plasmascan.to/address/{address}", name: "Plasma Explorer" },
+  immutable: { url: "https://explorer.immutable.com/address/{address}", name: "Immutable Explorer" }
 };
 
 /**
@@ -163,6 +202,44 @@ export function transactionUrl(chainSlug: string, txId: string): string | null {
       return `https://bscscan.com/tx/${encoded}`;
     case "avalanche":
       return `https://snowtrace.io/tx/${encoded}`;
+    case "linea":
+      return `https://lineascan.build/tx/${encoded}`;
+    case "blast":
+      return `https://blastscan.io/tx/${encoded}`;
+    case "scroll":
+      return `https://scrollscan.com/tx/${encoded}`;
+    case "zksync":
+      return `https://explorer.zksync.io/tx/${encoded}`;
+    case "ink":
+      return `https://explorer.inkonchain.com/tx/${encoded}`;
+    case "mode":
+      return `https://explorer.mode.network/tx/${encoded}`;
+    case "zora":
+      return `https://explorer.zora.energy/tx/${encoded}`;
+    case "gnosis":
+      return `https://gnosisscan.io/tx/${encoded}`;
+    case "celo":
+      return `https://celoscan.io/tx/${encoded}`;
+    case "sei":
+      return `https://seitrace.com/tx/${encoded}`;
+    case "sonic":
+      return `https://sonicscan.org/tx/${encoded}`;
+    case "opbnb":
+      return `https://opbnbscan.com/tx/${encoded}`;
+    case "taiko":
+      return `https://taikoscan.io/tx/${encoded}`;
+    case "apechain":
+      return `https://apescan.io/tx/${encoded}`;
+    case "mantle":
+      return `https://mantlescan.xyz/tx/${encoded}`;
+    case "fantom":
+      return `https://ftmscan.com/tx/${encoded}`;
+    case "cronos":
+      return `https://cronoscan.com/tx/${encoded}`;
+    case "hyperliquid":
+      return `https://app.hyperliquid.xyz/explorer/tx/${encoded}`;
+    case "berachain":
+      return `https://berascan.com/tx/${encoded}`;
     default:
       return null;
   }
@@ -178,7 +255,40 @@ const CHAIN_LABELS: Readonly<Record<string, string>> = {
   optimism: "Optimism",
   polygon: "Polygon",
   bsc: "BNB Chain",
-  avalanche: "Avalanche"
+  avalanche: "Avalanche",
+  linea: "Linea",
+  blast: "Blast",
+  scroll: "Scroll",
+  zksync: "zkSync Era",
+  ink: "Ink",
+  mode: "Mode",
+  zora: "Zora",
+  gnosis: "Gnosis",
+  celo: "Celo",
+  sei: "Sei",
+  sonic: "Sonic",
+  opbnb: "opBNB",
+  taiko: "Taiko",
+  apechain: "ApeChain",
+  mantle: "Mantle",
+  fantom: "Fantom",
+  cronos: "Cronos",
+  hyperliquid: "Hyperliquid",
+  core: "Core DAO",
+  monad: "Monad",
+  xlayer: "X Layer",
+  unichain: "Unichain",
+  berachain: "Berachain",
+  zetachain: "ZetaChain",
+  zircuit: "Zircuit",
+  robinhood: "Robinhood",
+  hemi: "Hemi",
+  fuse: "Fuse",
+  plume: "Plume",
+  arc: "Arc",
+  cyber: "Cyber",
+  plasma: "Plasma",
+  immutable: "Immutable"
 };
 
 export function chainLabel(slug: string): string {
@@ -205,7 +315,48 @@ const CHAIN_LOGOS: Readonly<Record<string, string>> = {
   bsc: "/assets/coins/bnb.png",
   bnb: "/assets/coins/bnb.png",
   avalanche: "/assets/coins/avalanche.png",
-  avax: "/assets/coins/avalanche.png"
+  avax: "/assets/coins/avalanche.png",
+  linea: "/assets/coins/linea.png",
+  blast: "/assets/coins/blast.png",
+  scroll: "/assets/coins/scroll.png",
+  zksync: "/assets/coins/zksync.png",
+  ink: "/assets/coins/ink.png",
+  mode: "/assets/coins/mode.png",
+  zora: "/assets/coins/zora.png",
+  gnosis: "/assets/coins/gnosis.png",
+  celo: "/assets/coins/celo.png",
+  sei: "/assets/coins/sei.png",
+  sonic: "/assets/coins/sonic.png",
+  opbnb: "/assets/coins/opbnb.png",
+  taiko: "/assets/coins/taiko.png",
+  apechain: "/assets/coins/apechain.png",
+  mantle: "/assets/coins/mantle.png",
+  fantom: "/assets/coins/fantom.png",
+  cronos: "/assets/coins/cronos.png",
+  hyperliquid: "/assets/coins/hyperliquid.svg",
+  core: "/assets/coins/core.png",
+  monad: "/assets/coins/monad.png",
+  xlayer: "/assets/coins/xlayer.png",
+  unichain: "/assets/coins/unichain.png",
+  berachain: "/assets/coins/berachain.png",
+  zetachain: "/assets/coins/zetachain.png",
+  zircuit: "/assets/coins/zircuit.png",
+  robinhood: "/assets/coins/robinhood.png",
+  hemi: "/assets/coins/hemi.png",
+  fuse: "/assets/coins/fuse.png",
+  plume: "/assets/coins/plume.png",
+  arc: "/assets/coins/arc.png",
+  cyber: "/assets/coins/cyber.png",
+  plasma: "/assets/coins/plasma.png",
+  immutable: "/assets/coins/immutable.png",
+  polymarket: "/assets/coins/polymarket.png",
+  pendle: "/assets/coins/pendle.png",
+  uniswap: "/assets/coins/uni.png",
+  velodrome: "/assets/coins/velodrome.png",
+  pancakeswap: "/assets/coins/pancakeswap.png",
+  aave: "/assets/coins/aave.png",
+  lighter: "/assets/coins/lighter.png",
+  variational: "/assets/coins/variational.png"
 };
 
 export function getChainLogoSrc(slug?: string): string {

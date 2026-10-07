@@ -25,7 +25,10 @@ import {
   Sparkles,
   ArrowUpRight,
   ArrowDownLeft,
-  FileCode
+  FileCode,
+  Activity,
+  TrendingUp,
+  Coins
 } from "lucide-react";
 
 import { Navbar } from "@/components/landing/Navbar";
@@ -38,9 +41,13 @@ import {
   ApiError,
   analyzeWallet,
   fetchChains,
+  fetchDefiPositions,
   type AnalyzeResponse,
   type ChainDescriptor,
-  type WalletTransaction
+  type WalletTransaction,
+  type WalletDefiOverview,
+  type DefiProtocolGroup,
+  type DefiPositionItem
 } from "@/lib/api";
 import {
   detectAddressFormat,
@@ -99,6 +106,39 @@ const ALL_SUPPORTED_CHAINS: readonly SupportedChain[] = [
   { slug: "polygon", name: "Polygon", symbol: "POL", isEvm: true },
   { slug: "optimism", name: "Optimism", symbol: "ETH", isEvm: true },
   { slug: "avalanche", name: "Avalanche", symbol: "AVAX", isEvm: true },
+  { slug: "linea", name: "Linea", symbol: "ETH", isEvm: true },
+  { slug: "blast", name: "Blast", symbol: "ETH", isEvm: true },
+  { slug: "scroll", name: "Scroll", symbol: "ETH", isEvm: true },
+  { slug: "zksync", name: "zkSync Era", symbol: "ETH", isEvm: true },
+  { slug: "ink", name: "Ink", symbol: "ETH", isEvm: true },
+  { slug: "mode", name: "Mode", symbol: "ETH", isEvm: true },
+  { slug: "zora", name: "Zora", symbol: "ETH", isEvm: true },
+  { slug: "gnosis", name: "Gnosis", symbol: "xDAI", isEvm: true },
+  { slug: "celo", name: "Celo", symbol: "CELO", isEvm: true },
+  { slug: "sei", name: "Sei", symbol: "SEI", isEvm: true },
+  { slug: "sonic", name: "Sonic", symbol: "S", isEvm: true },
+  { slug: "opbnb", name: "opBNB", symbol: "BNB", isEvm: true },
+  { slug: "taiko", name: "Taiko", symbol: "ETH", isEvm: true },
+  { slug: "apechain", name: "ApeChain", symbol: "APE", isEvm: true },
+  { slug: "mantle", name: "Mantle", symbol: "MNT", isEvm: true },
+  { slug: "fantom", name: "Fantom", symbol: "FTM", isEvm: true },
+  { slug: "cronos", name: "Cronos", symbol: "CRO", isEvm: true },
+  { slug: "hyperliquid", name: "Hyperliquid", symbol: "HYPE", isEvm: false },
+  { slug: "core", name: "Core DAO", symbol: "CORE", isEvm: true },
+  { slug: "monad", name: "Monad", symbol: "MON", isEvm: true },
+  { slug: "xlayer", name: "X Layer", symbol: "OKB", isEvm: true },
+  { slug: "unichain", name: "Unichain", symbol: "ETH", isEvm: true },
+  { slug: "berachain", name: "Berachain", symbol: "BERA", isEvm: true },
+  { slug: "zetachain", name: "ZetaChain", symbol: "ZETA", isEvm: true },
+  { slug: "zircuit", name: "Zircuit", symbol: "ETH", isEvm: true },
+  { slug: "robinhood", name: "Robinhood", symbol: "ETH", isEvm: true },
+  { slug: "hemi", name: "Hemi", symbol: "HEMI", isEvm: true },
+  { slug: "fuse", name: "Fuse", symbol: "FUSE", isEvm: true },
+  { slug: "plume", name: "Plume", symbol: "ETH", isEvm: true },
+  { slug: "arc", name: "Arc", symbol: "ARC", isEvm: true },
+  { slug: "cyber", name: "Cyber", symbol: "ETH", isEvm: true },
+  { slug: "plasma", name: "Plasma", symbol: "ETH", isEvm: true },
+  { slug: "immutable", name: "Immutable", symbol: "IMX", isEvm: true },
   { slug: "solana", name: "Solana", symbol: "SOL", isEvm: false },
   { slug: "bitcoin", name: "Bitcoin", symbol: "BTC", isEvm: false },
   { slug: "algorand", name: "Algorand", symbol: "ALGO", isEvm: false }
@@ -107,7 +147,28 @@ const ALL_SUPPORTED_CHAINS: readonly SupportedChain[] = [
 function getCandidateChains(address: string): string[] {
   const hint = detectAddressFormat(address);
   if (hint.family === "evm") {
-    return ["ethereum", "bsc", "base", "arbitrum", "polygon", "optimism", "avalanche"];
+    return [
+      "ethereum",
+      "base",
+      "arbitrum",
+      "bsc",
+      "polygon",
+      "optimism",
+      "avalanche",
+      "linea",
+      "blast",
+      "scroll",
+      "ink",
+      "mode",
+      "zora",
+      "gnosis",
+      "celo",
+      "sei",
+      "sonic",
+      "opbnb",
+      "taiko",
+      "apechain"
+    ];
   }
   if (hint.family === "solana") {
     return ["solana"];
@@ -158,6 +219,37 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [copied, setCopied] = useState(false);
 
   const [failedMap, setFailedMap] = useState<Record<string, boolean>>({});
+  const [chainSearch, setChainSearch] = useState("");
+  const [showAllChains, setShowAllChains] = useState(false);
+  const [defiOverview, setDefiOverview] = useState<WalletDefiOverview | null>(null);
+  const [defiLoading, setDefiLoading] = useState(false);
+  const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("All");
+
+  useEffect(() => {
+    const isAll = selected === "ALL";
+    const targetAddress = isAll ? tracked[0] : selected;
+    if (!targetAddress) return;
+    const hint = detectAddressFormat(targetAddress);
+    if (hint.family !== "evm") {
+      setDefiOverview(null);
+      return;
+    }
+    let isMounted = true;
+    setDefiLoading(true);
+    void fetchDefiPositions(targetAddress)
+      .then((res) => {
+        if (isMounted) setDefiOverview(res);
+      })
+      .catch(() => {
+        if (isMounted) setDefiOverview(null);
+      })
+      .finally(() => {
+        if (isMounted) setDefiLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [selected, tracked]);
 
   // A new address in the URL is a new primary wallet; reset the tracked set so the
   // page never mixes two different searches.
@@ -423,11 +515,70 @@ export default function WalletDashboardPage({ params }: PageProps) {
   }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, chains]);
 
   const isCurrentEvm = useMemo(() => {
-    if (detectedChain === null) return false;
-    return ["ethereum", "base", "arbitrum", "bsc", "polygon", "optimism", "avalanche"].includes(
-      detectedChain
-    );
-  }, [detectedChain]);
+    if (detectedChain === null) {
+      const hint = isSelectedAll ? null : detectAddressFormat(selected);
+      return hint?.family === "evm";
+    }
+    return ALL_SUPPORTED_CHAINS.find((c) => c.slug === detectedChain)?.isEvm ?? false;
+  }, [detectedChain, isSelectedAll, selected]);
+
+  const sortedChains = useMemo(() => {
+    const q = chainSearch.trim().toLowerCase();
+    const list = ALL_SUPPORTED_CHAINS.filter((c) => {
+      if (q.length === 0) return true;
+      return (
+        c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q) || c.slug.includes(q)
+      );
+    });
+
+    return [...list].sort((a, b) => {
+      const aInfo = chainTotals[a.slug];
+      const bInfo = chainTotals[b.slug];
+      const aHas = aInfo?.hasAssets ? 1 : 0;
+      const bHas = bInfo?.hasAssets ? 1 : 0;
+      if (aHas !== bHas) return bHas - aHas;
+      const aUsd = aInfo?.totalUsd ?? 0;
+      const bUsd = bInfo?.totalUsd ?? 0;
+      if (aUsd !== bUsd) return bUsd - aUsd;
+      return a.name.localeCompare(b.name);
+    });
+  }, [chainSearch, chainTotals]);
+
+  const displayedChains = useMemo(() => {
+    if (chainSearch.trim().length > 0 || showAllChains) {
+      return sortedChains;
+    }
+    const activeCount = sortedChains.filter((c) => chainTotals[c.slug]?.hasAssets).length;
+    return sortedChains.slice(0, Math.max(12, activeCount));
+  }, [sortedChains, chainSearch, showAllChains, chainTotals]);
+
+  const filteredProtocols = useMemo(() => {
+    if (!defiOverview?.protocols) return [];
+    if (defiCategoryFilter === "All") return defiOverview.protocols;
+    return defiOverview.protocols
+      .map((proto) => {
+        const matchingPositions = proto.positions.filter(
+          (pos) => pos.category.toLowerCase() === defiCategoryFilter.toLowerCase()
+        );
+        if (matchingPositions.length === 0) return null;
+        return {
+          ...proto,
+          positions: matchingPositions
+        };
+      })
+      .filter((p): p is DefiProtocolGroup => p !== null);
+  }, [defiOverview, defiCategoryFilter]);
+
+  const handleScanAllEvmChains = () => {
+    const evmChains = ALL_SUPPORTED_CHAINS.filter((c) => c.isEvm).map((c) => c.slug);
+    const target = isSelectedAll ? tracked[0] : selected;
+    for (const c of evmChains) {
+      const walletSnaps = snapshotsByWalletAndChain[target.toLowerCase()] ?? {};
+      if (!walletSnaps[c]) {
+        void loadWallet(target, c);
+      }
+    }
+  };
 
   const handleChainClick = (chainSlug: string) => {
     const targetChain = ALL_SUPPORTED_CHAINS.find((c) => c.slug === chainSlug);
@@ -883,7 +1034,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
             {/* DeBank-Style Multi-Chain Portfolio Breakdown */}
             <section className="glass-frosted rounded-2xl p-4 sm:p-5 shadow-glass border border-white">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-navy-100/60">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-navy-100/60">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-primary-100/80 border border-primary-200/80 flex items-center justify-center text-primary-600 flex-shrink-0">
                     <Layers className="w-4 h-4" />
@@ -892,7 +1043,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     <h3 className="text-sm font-black text-navy-900 tracking-tight flex items-center gap-2">
                       <span>Multi-Chain Portfolio Breakdown</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-navy-100 text-navy-600">
-                        10 Chains
+                        {ALL_SUPPORTED_CHAINS.length} Chains
                       </span>
                     </h3>
                     <p className="text-[11px] text-navy-500 font-medium">
@@ -901,7 +1052,30 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Search chains input */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-navy-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={chainSearch}
+                      onChange={(e) => setChainSearch(e.target.value)}
+                      placeholder="Search chains…"
+                      className="pl-8 pr-2.5 py-1 text-xs rounded-lg bg-white/90 border border-navy-100 focus:border-primary-400 outline-none w-32 sm:w-40 font-medium"
+                    />
+                  </div>
+
+                  {isCurrentEvm && (
+                    <button
+                      type="button"
+                      onClick={handleScanAllEvmChains}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 transition-all cursor-pointer shadow-xs"
+                      title="Load balances across all wired EVM chains"
+                    >
+                      Scan All EVM
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setSelectedChainFilter(null)}
@@ -913,6 +1087,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   >
                     All Chains
                   </button>
+
                   {selectedChainFilter !== null && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
                       <span className="w-1.5 h-1.5 rounded-full bg-accentGreen animate-pulse" />
@@ -924,7 +1099,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
               {/* Grid of chains */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
-                {ALL_SUPPORTED_CHAINS.map((chain) => {
+                {displayedChains.map((chain) => {
                   const isFiltered = selectedChainFilter === chain.slug;
                   const walletHint = isSelectedAll ? null : detectAddressFormat(selected);
                   const isCompatible =
@@ -1020,6 +1195,23 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   );
                 })}
               </div>
+
+              {/* Expand / Collapse 43+ chains toggle */}
+              {sortedChains.length > 12 && chainSearch.trim().length === 0 && (
+                <div className="mt-3.5 pt-2.5 border-t border-navy-100/40 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllChains((p) => !p)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/80 hover:bg-white text-navy-600 border border-navy-100/80 shadow-xs transition-all cursor-pointer"
+                  >
+                    <span>
+                      {showAllChains
+                        ? "Show Less"
+                        : `Show All ${ALL_SUPPORTED_CHAINS.length} Chains (Robinhood, Ink, X Layer, etc.)`}
+                    </span>
+                  </button>
+                </div>
+              )}
             </section>
 
             {/* Compact Wallets in this view */}
@@ -1198,7 +1390,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     { id: "portfolio", label: "Portfolio", count: rows.length },
                     { id: "nfts", label: "NFTs", count: null },
                     { id: "transactions", label: "Transactions", count: transactions.length },
-                    { id: "defi", label: "DeFi Positions", count: defiPositions.length }
+                    {
+                      id: "defi",
+                      label: "DeFi Positions",
+                      count: defiOverview?.protocols.length ?? 0
+                    }
                   ] as const
                 ).map((tab) => (
                   <button
@@ -1834,11 +2030,287 @@ export default function WalletDashboardPage({ params }: PageProps) {
               ))}
 
             {activeTab === "defi" && (
-              <ComingSoon
-                title="DeFi positions"
-                description="Lending, staking and liquidity positions are not decoded yet; the API returns an empty positions list."
-                detail="Showing invented protocol positions would be worse than showing none, so this stays empty until the protocols are actually read on-chain."
-              />
+              <div className="space-y-4">
+                {/* DeFi Overview Summary Card */}
+                <div className="glass-frosted rounded-2xl p-4 sm:p-5 shadow-glass border border-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-extrabold text-navy-400 uppercase tracking-wider">
+                        DeFi Net Worth
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accentGreen animate-pulse" />
+                        <span>Live Protocols</span>
+                      </span>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight flex items-baseline gap-2">
+                      <span>
+                        {defiOverview
+                          ? (formatUsd(defiOverview.totalDefiValueUsd) ?? "$0.00")
+                          : "$0.00"}
+                      </span>
+                      <span className="text-xs font-bold text-navy-400 uppercase">USD</span>
+                    </div>
+                    <p className="text-[11px] text-navy-500 font-medium">
+                      Decoded across Hyperliquid, Polymarket, Uniswap V4, Velodrome V2, Pendle V2,
+                      PancakeSwap &amp; Aave V3
+                    </p>
+                  </div>
+
+                  {/* Category filters */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      "All",
+                      "Liquidity Pool",
+                      "Deposit",
+                      "Perpetuals",
+                      "Prediction Market",
+                      "Yield & Staking"
+                    ].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setDefiCategoryFilter(cat)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          defiCategoryFilter === cat
+                            ? "bg-primary-500 text-white shadow-xs ring-2 ring-primary-300"
+                            : "bg-white/80 hover:bg-white text-navy-700 border border-navy-100/80"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Loading state */}
+                {defiLoading && (
+                  <div className="glass-frosted rounded-[24px] p-8 text-center border border-white shadow-glass space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto" />
+                    <div className="text-xs font-bold text-navy-800">
+                      Scanning DeFi protocols &amp; Hyperliquid API…
+                    </div>
+                    <p className="text-[11px] text-navy-500 max-w-sm mx-auto">
+                      Querying on-chain liquidity pools, prediction markets, and perpetuals state.
+                    </p>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!defiLoading && filteredProtocols.length === 0 && (
+                  <div className="glass-frosted rounded-[24px] p-8 text-center border border-white shadow-glass space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-600 mx-auto">
+                      <Coins className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-black text-navy-900">
+                      No active DeFi positions found
+                    </h4>
+                    <p className="text-xs text-navy-500 max-w-md mx-auto">
+                      {defiCategoryFilter !== "All"
+                        ? `No positions matching the "${defiCategoryFilter}" category were found on this address.`
+                        : "Checked live Hyperliquid spot/perp state, Polymarket prediction tokens, Uniswap V4, Velodrome V2, Pendle V2, PancakeSwap, and Aave V3. Showing real data only — no fabricated positions."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Protocols Cards List */}
+                {!defiLoading &&
+                  filteredProtocols.map((proto) => (
+                    <div
+                      key={proto.protocolId}
+                      className="glass-frosted rounded-[24px] overflow-hidden shadow-glass border border-white p-4 sm:p-5 space-y-4"
+                    >
+                      {/* Protocol Card Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-navy-100/60">
+                        <div className="flex items-center gap-3">
+                          <GlassSquareIcon coin={proto.protocolId} size="md" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-black text-navy-900 tracking-tight">
+                                {proto.name}
+                              </h3>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-navy-100/80 text-navy-700">
+                                {proto.category}
+                              </span>
+                              {proto.siteUrl && (
+                                <a
+                                  href={proto.siteUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-navy-400 hover:text-primary-600 transition-colors"
+                                  title={`Open ${proto.name}`}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-navy-500 mt-0.5">
+                              <div className="w-3.5 h-3.5 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-xs border border-navy-100 p-0.5 flex items-center justify-center">
+                                <img
+                                  src={getChainLogoSrc(proto.chainSlug)}
+                                  alt={proto.chainSlug}
+                                  className="w-full h-full object-contain rounded-full"
+                                />
+                              </div>
+                              <span>{chainLabel(proto.chainSlug)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="sm:text-right">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                            Protocol Value
+                          </div>
+                          <div className="text-lg font-black text-navy-900 font-mono">
+                            {formatUsd(proto.totalValueUsd) ?? `$${proto.totalValueUsd}`}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Table */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-navy-100/60 text-navy-400 font-bold uppercase tracking-wider text-[10px]">
+                              <th className="py-2.5 px-3">Position / Pool</th>
+                              <th className="py-2.5 px-3">Category</th>
+                              <th className="py-2.5 px-3">Underlying Assets</th>
+                              <th className="py-2.5 px-3">Rewards / Yield</th>
+                              <th className="py-2.5 px-3 text-right">Value</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-navy-100/40">
+                            {proto.positions.map((pos) => (
+                              <tr key={pos.id} className="hover:bg-white/60 transition-colors">
+                                <td className="py-3 px-3 font-bold text-navy-900 font-mono">
+                                  {pos.name}
+                                </td>
+                                <td className="py-3 px-3">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                    {pos.category}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <div className="flex flex-col gap-1">
+                                    {pos.tokens.map((tok, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="inline-flex items-center gap-1.5 text-xs text-navy-800 font-medium"
+                                      >
+                                        <GlassSquareIcon coin={tok.symbol} size="sm" />
+                                        <span className="font-mono font-bold">{tok.amount}</span>
+                                        <span className="text-navy-500 font-semibold">
+                                          {tok.symbol}
+                                        </span>
+                                        {tok.valueUsd && (
+                                          <span className="text-[11px] text-navy-400 font-mono">
+                                            ({formatUsd(tok.valueUsd)})
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3">
+                                  {pos.rewards && pos.rewards.length > 0 ? (
+                                    <div className="flex flex-col gap-1">
+                                      {pos.rewards.map((rew, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 font-medium"
+                                        >
+                                          <GlassSquareIcon coin={rew.symbol} size="sm" />
+                                          <span className="font-mono font-bold">{rew.amount}</span>
+                                          <span>{rew.symbol}</span>
+                                          {rew.valueUsd && (
+                                            <span className="text-[10px] text-amber-600 font-mono">
+                                              ({rew.valueUsd})
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-navy-400 text-xs italic">—</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 text-right font-mono font-bold text-navy-900 text-sm">
+                                  {formatUsd(pos.valueUsd) ?? `$${pos.valueUsd}`}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Cards */}
+                      <div className="md:hidden space-y-3">
+                        {proto.positions.map((pos) => (
+                          <div
+                            key={pos.id}
+                            className="glass-card-subtle rounded-xl p-3.5 border border-white/90 space-y-2.5 text-xs shadow-xs"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono font-bold text-navy-900">{pos.name}</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                {pos.category}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5 pt-1 border-t border-navy-100/40">
+                              <span className="text-[10px] font-bold uppercase text-navy-400">
+                                Assets:
+                              </span>
+                              {pos.tokens.map((tok, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between text-xs text-navy-800"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <GlassSquareIcon coin={tok.symbol} size="sm" />
+                                    <span className="font-mono font-bold">{tok.amount}</span>
+                                    <span>{tok.symbol}</span>
+                                  </div>
+                                  {tok.valueUsd && (
+                                    <span className="font-mono text-navy-500 font-semibold">
+                                      {formatUsd(tok.valueUsd)}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            {pos.rewards && pos.rewards.length > 0 && (
+                              <div className="space-y-1 pt-1 border-t border-navy-100/40">
+                                <span className="text-[10px] font-bold uppercase text-amber-600">
+                                  Rewards:
+                                </span>
+                                {pos.rewards.map((rew, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between text-[11px] text-amber-700 font-mono"
+                                  >
+                                    <span>
+                                      {rew.amount} {rew.symbol}
+                                    </span>
+                                    {rew.valueUsd && <span>{rew.valueUsd}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1.5 border-t border-navy-100/40">
+                              <span className="text-navy-500 text-[11px]">Position Value:</span>
+                              <span className="font-mono font-bold text-navy-900 text-sm">
+                                {formatUsd(pos.valueUsd) ?? `$${pos.valueUsd}`}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             )}
           </>
         )}

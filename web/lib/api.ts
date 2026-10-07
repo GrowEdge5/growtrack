@@ -156,6 +156,48 @@ export interface PortfolioReport {
   errors: PortfolioTargetError[];
 }
 
+export interface DefiTokenBalance {
+  symbol: string;
+  amount: string;
+  valueUsd?: string;
+}
+
+export interface DefiPositionItem {
+  id: string;
+  name: string;
+  category:
+    | "Liquidity Pool"
+    | "Deposit"
+    | "Perpetuals"
+    | "Prediction Market"
+    | "Lending"
+    | "Yield & Staking"
+    | string;
+  chainSlug: string;
+  tokens: DefiTokenBalance[];
+  rewards?: DefiTokenBalance[];
+  valueUsd: string;
+  details?: Record<string, unknown>;
+}
+
+export interface DefiProtocolGroup {
+  protocolId: string;
+  name: string;
+  category: string;
+  chainSlug: string;
+  logo: string;
+  siteUrl: string;
+  totalValueUsd: string;
+  positions: DefiPositionItem[];
+}
+
+export interface WalletDefiOverview {
+  address: string;
+  totalDefiValueUsd: string;
+  protocolsCount: number;
+  protocols: DefiProtocolGroup[];
+}
+
 /** RFC 7807 problem document, the API's error shape. */
 export interface ProblemDetails {
   type: string;
@@ -305,6 +347,14 @@ export async function fetchWalletSnapshot(
   return request<WalletSnapshotResponse>(
     `/v1/wallets/${encodeURIComponent(chain)}/${encodeURIComponent(address)}`
   );
+}
+
+/** Free: real-time DeFi protocol positions across Hyperliquid, Polymarket, Uniswap, etc. */
+export async function fetchDefiPositions(address: string): Promise<WalletDefiOverview> {
+  const body = await request<{ data: WalletDefiOverview }>(
+    `/v1/wallets/positions?address=${encodeURIComponent(address)}`
+  );
+  return body.data;
 }
 
 /** Paid: a fresh synchronous full snapshot, gated by x402. */

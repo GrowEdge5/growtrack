@@ -10,19 +10,33 @@ import type { ChainProviderRegistry } from "../modules/chains/application/ports/
 import { AlgorandChainDataProvider } from "../modules/chains/infrastructure/algorand/algorand-chain-data-provider.js";
 import { ALGORAND_MAINNET_CHAIN_ID } from "../modules/chains/infrastructure/algorand/algorand-asset-list.js";
 import {
+  APECHAIN_MAINNET_CHAIN_ID,
   ARBITRUM_MAINNET_CHAIN_ID,
   AVALANCHE_MAINNET_CHAIN_ID,
   BASE_MAINNET_CHAIN_ID,
   BITCOIN_MAINNET_CHAIN_ID,
+  BLAST_MAINNET_CHAIN_ID,
   BSC_MAINNET_CHAIN_ID,
+  CELO_MAINNET_CHAIN_ID,
+  GNOSIS_MAINNET_CHAIN_ID,
+  INK_MAINNET_CHAIN_ID,
+  LINEA_MAINNET_CHAIN_ID,
+  MODE_MAINNET_CHAIN_ID,
+  OPBNB_MAINNET_CHAIN_ID,
   OPTIMISM_MAINNET_CHAIN_ID,
   POLYGON_MAINNET_CHAIN_ID,
-  SOLANA_MAINNET_CHAIN_ID
+  SCROLL_MAINNET_CHAIN_ID,
+  SEI_MAINNET_CHAIN_ID,
+  SOLANA_MAINNET_CHAIN_ID,
+  SONIC_MAINNET_CHAIN_ID,
+  TAIKO_MAINNET_CHAIN_ID,
+  ZORA_MAINNET_CHAIN_ID
 } from "../modules/chains/infrastructure/chain-ids.js";
 import { BitcoinChainDataProvider } from "../modules/chains/infrastructure/bitcoin/bitcoin-chain-data-provider.js";
 import { SolanaChainDataProvider } from "../modules/chains/infrastructure/solana/solana-chain-data-provider.js";
 import { SolanaTokenMetadataSource } from "../modules/chains/infrastructure/solana/solana-token-metadata.js";
 import { ViemChainDataProvider } from "../modules/chains/infrastructure/evm/viem-chain-data-provider.js";
+import { DefiPositionService } from "../modules/defi/infrastructure/defi-position-service.js";
 import { AnalyzeWallet } from "../modules/wallets/application/analyze-wallet.js";
 import { GetPortfolioReport } from "../modules/wallets/application/get-portfolio-report.js";
 import { GetWalletIntelligence } from "../modules/wallets/application/get-wallet-intelligence.js";
@@ -58,6 +72,7 @@ export interface ApplicationContainer {
   requestWalletRefresh: RequestWalletRefresh;
   refreshWalletIntelligence: RefreshWalletIntelligence;
   getPortfolioReport: GetPortfolioReport;
+  defiPositionService: DefiPositionService;
   // One x402 requirements builder per priced resource, keyed by resource id. Each
   // route reads its own entry, which is what makes the Composite Entry's endpoints
   // independently priced while all settling to the single merchant payTo.
@@ -176,6 +191,111 @@ export function buildContainer(env: Environment): ApplicationContainer {
     rpcUrl: "https://api.avax.network/ext/bc/C/rpc",
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
+  const lineaProvider = new ViemChainDataProvider({
+    chainId: LINEA_MAINNET_CHAIN_ID,
+    chainName: "Linea",
+    chainSlug: "linea",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.linea.build",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const blastProvider = new ViemChainDataProvider({
+    chainId: BLAST_MAINNET_CHAIN_ID,
+    chainName: "Blast",
+    chainSlug: "blast",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.blast.io",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const scrollProvider = new ViemChainDataProvider({
+    chainId: SCROLL_MAINNET_CHAIN_ID,
+    chainName: "Scroll",
+    chainSlug: "scroll",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.scroll.io",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const inkProvider = new ViemChainDataProvider({
+    chainId: INK_MAINNET_CHAIN_ID,
+    chainName: "Ink",
+    chainSlug: "ink",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc-gel.inkonchain.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const modeProvider = new ViemChainDataProvider({
+    chainId: MODE_MAINNET_CHAIN_ID,
+    chainName: "Mode",
+    chainSlug: "mode",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://mainnet.mode.network",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const zoraProvider = new ViemChainDataProvider({
+    chainId: ZORA_MAINNET_CHAIN_ID,
+    chainName: "Zora",
+    chainSlug: "zora",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.zora.energy",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const gnosisProvider = new ViemChainDataProvider({
+    chainId: GNOSIS_MAINNET_CHAIN_ID,
+    chainName: "Gnosis Chain",
+    chainSlug: "gnosis",
+    nativeSymbol: "xDAI",
+    rpcUrl: "https://rpc.gnosischain.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const celoProvider = new ViemChainDataProvider({
+    chainId: CELO_MAINNET_CHAIN_ID,
+    chainName: "Celo",
+    chainSlug: "celo",
+    nativeSymbol: "CELO",
+    rpcUrl: "https://forno.celo.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const seiProvider = new ViemChainDataProvider({
+    chainId: SEI_MAINNET_CHAIN_ID,
+    chainName: "Sei",
+    chainSlug: "sei",
+    nativeSymbol: "SEI",
+    rpcUrl: "https://evm-rpc.sei-apis.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const sonicProvider = new ViemChainDataProvider({
+    chainId: SONIC_MAINNET_CHAIN_ID,
+    chainName: "Sonic",
+    chainSlug: "sonic",
+    nativeSymbol: "S",
+    rpcUrl: "https://rpc.soniclabs.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const opbnbProvider = new ViemChainDataProvider({
+    chainId: OPBNB_MAINNET_CHAIN_ID,
+    chainName: "opBNB",
+    chainSlug: "opbnb",
+    nativeSymbol: "BNB",
+    rpcUrl: "https://opbnb-mainnet-rpc.bnbchain.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const taikoProvider = new ViemChainDataProvider({
+    chainId: TAIKO_MAINNET_CHAIN_ID,
+    chainName: "Taiko",
+    chainSlug: "taiko",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.mainnet.taiko.xyz",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const apechainProvider = new ViemChainDataProvider({
+    chainId: APECHAIN_MAINNET_CHAIN_ID,
+    chainName: "ApeChain",
+    chainSlug: "apechain",
+    nativeSymbol: "APE",
+    rpcUrl: "https://apechain.calderachain.xyz/http",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+
   const providers = new DefaultChainProviderRegistry([
     provider,
     baseProvider,
@@ -184,10 +304,24 @@ export function buildContainer(env: Environment): ApplicationContainer {
     polygonProvider,
     bscProvider,
     avalancheProvider,
+    lineaProvider,
+    blastProvider,
+    scrollProvider,
+    inkProvider,
+    modeProvider,
+    zoraProvider,
+    gnosisProvider,
+    celoProvider,
+    seiProvider,
+    sonicProvider,
+    opbnbProvider,
+    taikoProvider,
+    apechainProvider,
     algorandProvider,
     solanaProvider,
     bitcoinProvider
   ]);
+  const defiPositionService = new DefiPositionService();
   const priceProvider = new DefiLlamaPriceProvider({
     baseUrl: env.PRICE_API_BASE_URL,
     timeoutMs: env.PRICE_TIMEOUT_MS
@@ -271,6 +405,7 @@ export function buildContainer(env: Environment): ApplicationContainer {
     // Aggregates the same refresh path across several wallets/chains — the
     // capability the paid portfolio routes sell.
     getPortfolioReport: new GetPortfolioReport(providers, refreshWalletIntelligence, systemClock),
+    defiPositionService,
     paymentBuilders,
     paymentFacilitator,
     getAlgorandPaymentParams: new GetAlgorandPaymentParams({

@@ -146,3 +146,44 @@ export const analyzeResponseSchema = z.object({
     stale: z.boolean()
   })
 });
+
+const defiTokenSchema = z.object({
+  symbol: z.string(),
+  amount: z.string(),
+  valueUsd: z.string().optional()
+});
+
+const defiPositionItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string(),
+  chainSlug: z.string(),
+  tokens: z.array(defiTokenSchema),
+  rewards: z.array(defiTokenSchema).optional(),
+  valueUsd: z.string(),
+  details: z.record(z.unknown()).optional()
+});
+
+const defiProtocolGroupSchema = z.object({
+  protocolId: z.string(),
+  name: z.string(),
+  category: z.string(),
+  chainSlug: z.string(),
+  logo: z.string(),
+  siteUrl: z.string(),
+  totalValueUsd: z.string(),
+  positions: z.array(defiPositionItemSchema)
+});
+
+export const defiPositionsQuerySchema = z.object({
+  address: z.string().min(1)
+});
+
+export const defiPositionsResponseSchema = z.object({
+  data: z.object({
+    address: z.string(),
+    totalDefiValueUsd: z.string(),
+    protocolsCount: z.number().int().nonnegative(),
+    protocols: z.array(defiProtocolGroupSchema)
+  })
+});

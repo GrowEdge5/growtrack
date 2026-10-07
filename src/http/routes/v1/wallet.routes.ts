@@ -6,6 +6,8 @@ import { createX402Guard } from "../../plugins/x402-guard.js";
 import {
   analyzeQuerySchema,
   analyzeResponseSchema,
+  defiPositionsQuerySchema,
+  defiPositionsResponseSchema,
   liveWalletResponseSchema,
   paymentRequiredSchema,
   refreshResponseSchema,
@@ -122,6 +124,24 @@ export function registerWalletRoutes(app: FastifyInstance, container: Applicatio
         data: serializeSnapshot(snapshot),
         meta: { source: "live" as const, stale: false as const }
       };
+    }
+  );
+
+  app.get(
+    "/v1/wallets/positions",
+    {
+      schema: {
+        tags: ["wallets", "defi"],
+        summary:
+          "Get real-time DeFi protocol positions across Hyperliquid, Polymarket, Uniswap, etc.",
+        querystring: defiPositionsQuerySchema,
+        response: { 200: defiPositionsResponseSchema }
+      }
+    },
+    async (request) => {
+      const { address } = defiPositionsQuerySchema.parse(request.query);
+      const data = await container.defiPositionService.getWalletDefiPositions(address);
+      return { data };
     }
   );
 }

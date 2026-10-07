@@ -3,42 +3,90 @@
 import React from "react";
 import { getChainLogoSrc } from "@/lib/address";
 
-export type SupportedCoin =
-  | "algo"
-  | "algorand"
-  | "eth"
-  | "ethereum"
-  | "btc"
-  | "bitcoin"
-  | "bnb"
-  | "bsc"
-  | "hype"
-  | "hyperliquid"
-  | "usdc"
-  | "usdt"
-  | "sol"
-  | "solana"
-  | "base"
-  | "arbitrum"
-  | "arb"
-  | "optimism"
-  | "op"
-  | "polygon"
-  | "pol"
-  | "matic"
-  | "avalanche"
-  | "avax"
-  | "dai"
-  | "link"
-  | "uni"
-  | "wbtc"
-  | "aave"
-  | "pepe"
-  | "cake"
-  | "shib";
+const KNOWN_COIN_LOGOS: Record<string, string> = {
+  algo: "/assets/coins/algorand.png",
+  algorand: "/assets/coins/algorand.png",
+  eth: "/assets/coins/ethereum.png",
+  ethereum: "/assets/coins/ethereum.png",
+  weth: "/assets/coins/ethereum.png",
+  btc: "/assets/coins/bitcoin.svg",
+  bitcoin: "/assets/coins/bitcoin.svg",
+  wbtc: "/assets/coins/wbtc.png",
+  btcb: "/assets/coins/wbtc.png",
+  bnb: "/assets/coins/bnb.png",
+  bsc: "/assets/coins/bnb.png",
+  wbnb: "/assets/coins/bnb.png",
+  sol: "/assets/coins/solana.png",
+  solana: "/assets/coins/solana.png",
+  base: "/assets/coins/base.png",
+  arbitrum: "/assets/coins/arbitrum.png",
+  arb: "/assets/coins/arbitrum.png",
+  optimism: "/assets/coins/optimism.png",
+  op: "/assets/coins/optimism.png",
+  polygon: "/assets/coins/polygon.png",
+  pol: "/assets/coins/polygon.png",
+  matic: "/assets/coins/polygon.png",
+  wmatic: "/assets/coins/polygon.png",
+  avalanche: "/assets/coins/avalanche.png",
+  avax: "/assets/coins/avalanche.png",
+  wavax: "/assets/coins/avalanche.png",
+  linea: "/assets/coins/linea.png",
+  blast: "/assets/coins/blast.png",
+  scroll: "/assets/coins/scroll.png",
+  zksync: "/assets/coins/zksync.png",
+  ink: "/assets/coins/ink.png",
+  mode: "/assets/coins/mode.png",
+  zora: "/assets/coins/zora.png",
+  gnosis: "/assets/coins/gnosis.png",
+  celo: "/assets/coins/celo.png",
+  sei: "/assets/coins/sei.png",
+  sonic: "/assets/coins/sonic.png",
+  opbnb: "/assets/coins/opbnb.png",
+  taiko: "/assets/coins/taiko.png",
+  apechain: "/assets/coins/apechain.png",
+  mantle: "/assets/coins/mantle.png",
+  fantom: "/assets/coins/fantom.png",
+  cronos: "/assets/coins/cronos.png",
+  hyperliquid: "/assets/coins/hyperliquid.svg",
+  hype: "/assets/coins/hyperliquid.svg",
+  core: "/assets/coins/core.png",
+  monad: "/assets/coins/monad.png",
+  xlayer: "/assets/coins/xlayer.png",
+  unichain: "/assets/coins/unichain.png",
+  berachain: "/assets/coins/berachain.png",
+  zetachain: "/assets/coins/zetachain.png",
+  zircuit: "/assets/coins/zircuit.png",
+  robinhood: "/assets/coins/robinhood.png",
+  hemi: "/assets/coins/hemi.png",
+  fuse: "/assets/coins/fuse.png",
+  plume: "/assets/coins/plume.png",
+  arc: "/assets/coins/arc.png",
+  cyber: "/assets/coins/cyber.png",
+  plasma: "/assets/coins/plasma.png",
+  immutable: "/assets/coins/immutable.png",
+  usdc: "/assets/coins/usdc.png",
+  usdt: "/assets/coins/usdt.png",
+  usdbc: "/assets/coins/usdc.png",
+  axlusdc: "/assets/coins/usdc.png",
+  axlusdt: "/assets/coins/usdt.png",
+  dai: "/assets/coins/dai.png",
+  link: "/assets/coins/link.png",
+  uni: "/assets/coins/uni.png",
+  uniswap: "/assets/coins/uni.png",
+  aave: "/assets/coins/aave.png",
+  pepe: "/assets/coins/pepe.png",
+  cake: "/assets/coins/pancakeswap.png",
+  pancakeswap: "/assets/coins/pancakeswap.png",
+  shib: "/assets/coins/shib.png",
+  polymarket: "/assets/coins/polymarket.png",
+  pendle: "/assets/coins/pendle.png",
+  velodrome: "/assets/coins/velodrome.png",
+  lighter: "/assets/coins/lighter.png",
+  variational: "/assets/coins/variational.png"
+};
 
-interface GlassSquareIconProps {
-  coin: SupportedCoin | string;
+export interface GlassSquareIconProps {
+  coin: string;
   chain?: string;
   className?: string;
   iconClassName?: string;
@@ -68,205 +116,24 @@ export function GlassSquareIcon({
     lg: "w-5 h-5 -bottom-1 -right-1 p-0.5"
   }[size];
 
-  // Render the official logo asset
-  const renderCoin = () => {
-    switch (normalized) {
-      case "algo":
-      case "algorand":
-        return (
-          <img
-            src="/assets/coins/algorand.png"
-            alt="Algorand"
-            className={`w-full h-full object-contain ${iconClassName}`}
-          />
-        );
-      case "eth":
-      case "ethereum":
-        return (
-          <img
-            src="/assets/coins/ethereum.png"
-            alt="Ethereum"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "btc":
-      case "bitcoin":
-        return (
-          <img
-            src="/assets/coins/bitcoin.svg"
-            alt="Bitcoin"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "bnb":
-      case "bsc":
-        return (
-          <img
-            src="/assets/coins/bnb.png"
-            alt="BNB Chain"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "hype":
-      case "hyperliquid":
-        return (
-          <img
-            src="/assets/coins/hyperliquid.svg"
-            alt="Hyperliquid"
-            className={`w-full h-full object-contain ${iconClassName}`}
-          />
-        );
-      case "usdc":
-      case "usdbc":
-      case "axlusdc":
-        return (
-          <img
-            src="/assets/coins/usdc.png"
-            alt="USDC"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "usdt":
-      case "axlusdt":
-        return (
-          <img
-            src="/assets/coins/usdt.png"
-            alt="USDT"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "sol":
-      case "solana":
-        return (
-          <img
-            src="/assets/coins/solana.png"
-            alt="Solana"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "base":
-        return (
-          <img
-            src="/assets/coins/base.png"
-            alt="Base"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "arbitrum":
-      case "arb":
-        return (
-          <img
-            src="/assets/coins/arbitrum.png"
-            alt="Arbitrum"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "optimism":
-      case "op":
-        return (
-          <img
-            src="/assets/coins/optimism.png"
-            alt="Optimism"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "polygon":
-      case "pol":
-      case "matic":
-        return (
-          <img
-            src="/assets/coins/polygon.png"
-            alt="Polygon"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "avalanche":
-      case "avax":
-        return (
-          <img
-            src="/assets/coins/avalanche.png"
-            alt="Avalanche"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "dai":
-        return (
-          <img
-            src="/assets/coins/dai.png"
-            alt="Dai"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "link":
-        return (
-          <img
-            src="/assets/coins/link.png"
-            alt="ChainLink"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "uni":
-        return (
-          <img
-            src="/assets/coins/uni.png"
-            alt="Uniswap"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "wbtc":
-        return (
-          <img
-            src="/assets/coins/wbtc.png"
-            alt="Wrapped BTC"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "aave":
-        return (
-          <img
-            src="/assets/coins/aave.png"
-            alt="Aave"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "pepe":
-        return (
-          <img
-            src="/assets/coins/pepe.png"
-            alt="Pepe"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "cake":
-        return (
-          <img
-            src="/assets/coins/cake.png"
-            alt="PancakeSwap"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      case "shib":
-        return (
-          <img
-            src="/assets/coins/shib.png"
-            alt="Shiba Inu"
-            className={`w-full h-full object-contain rounded-full ${iconClassName}`}
-          />
-        );
-      default:
-        return (
-          <div className="w-full h-full rounded-full bg-primary-100 border border-primary-200 flex items-center justify-center text-primary-700 font-extrabold text-[10px] uppercase">
-            {normalized.slice(0, 3)}
-          </div>
-        );
-    }
-  };
+  const logoSrc =
+    KNOWN_COIN_LOGOS[normalized] ?? (chain ? KNOWN_COIN_LOGOS[chain.toLowerCase()] : undefined);
 
   return (
     <div
       className={`glass-coin-tile relative flex items-center justify-center border border-white/90 shadow-xs flex-shrink-0 ${containerSizeClasses} ${className}`}
     >
-      {renderCoin()}
+      {logoSrc ? (
+        <img
+          src={logoSrc}
+          alt={coin}
+          className={`w-full h-full object-contain rounded-full ${iconClassName}`}
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-primary-100 border border-primary-200 flex items-center justify-center text-primary-700 font-extrabold text-[10px] uppercase">
+          {normalized.slice(0, 3)}
+        </div>
+      )}
 
       {/* DeBank-style chain overlay badge */}
       {chain && (
