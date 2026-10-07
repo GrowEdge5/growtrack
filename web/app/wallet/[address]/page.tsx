@@ -155,6 +155,9 @@ function getCandidateChains(address: string): string[] {
       "polygon",
       "optimism",
       "avalanche",
+      "robinhood",
+      "zksync",
+      "mantle",
       "linea",
       "blast",
       "scroll",
@@ -167,7 +170,9 @@ function getCandidateChains(address: string): string[] {
       "sonic",
       "opbnb",
       "taiko",
-      "apechain"
+      "apechain",
+      "xlayer",
+      "cronos"
     ];
   }
   if (hint.family === "solana") {
@@ -271,9 +276,29 @@ export default function WalletDashboardPage({ params }: PageProps) {
       .catch(() => setChains([]));
   }, []);
 
+  // Parse initial chain query parameter from URL (e.g. ?chain=hood or ?chain=robinhood)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const chainQuery = searchParams.get("chain");
+      if (chainQuery) {
+        const normalized = chainQuery.toLowerCase().trim();
+        const resolved = normalized === "hood" ? "robinhood" : normalized;
+        setSelectedChainFilter(resolved);
+      }
+    }
+  }, []);
+
   const loadWallet = useCallback(async (walletAddress: string, specificChain?: string) => {
     const key = walletAddress.toLowerCase();
-    const chainsToLoad = specificChain ? [specificChain] : getCandidateChains(walletAddress);
+    const candidateList = specificChain ? [specificChain] : getCandidateChains(walletAddress);
+    const chainsToLoad = Array.from(
+      new Set(
+        selectedChainFilter && !specificChain
+          ? [...candidateList, selectedChainFilter]
+          : candidateList
+      )
+    );
 
     setLoadingMap((prev) => ({ ...prev, [key]: true }));
     setLoadError(null);
@@ -465,6 +490,35 @@ export default function WalletDashboardPage({ params }: PageProps) {
     return hasAnyPriced ? sum.toFixed(2) : undefined;
   }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
+  // DeFi positions value matching the current chain filter view (or all DeFi value if All Chains)
+  const defiValueForFilterUsd = useMemo(() => {
+    if (!defiOverview?.protocols) return 0;
+    if (selectedChainFilter !== null) {
+      let sum = 0;
+      for (const proto of defiOverview.protocols) {
+        for (const pos of proto.positions) {
+          if (pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()) {
+            const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+            if (!isNaN(val)) sum += val;
+          }
+        }
+      }
+      return sum;
+    }
+    const val = parseFloat(defiOverview.totalDefiValueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+    return isNaN(val) ? 0 : val;
+  }, [defiOverview, selectedChainFilter]);
+
+  // Total Net Worth combining token holdings and DeFi positions (matching DeBank)
+  const totalNetWorthUsd = useMemo(() => {
+    const portfolioVal = totalPortfolioValueUsd ? parseFloat(totalPortfolioValueUsd) : 0;
+    const combined = portfolioVal + defiValueForFilterUsd;
+    if (totalPortfolioValueUsd === undefined && defiValueForFilterUsd === 0) {
+      return undefined;
+    }
+    return combined.toFixed(2);
+  }, [totalPortfolioValueUsd, defiValueForFilterUsd]);
+
   const filteredRows = useMemo(() => {
     const query = searchToken.trim().toLowerCase();
     return rows.filter((row) => {
@@ -511,8 +565,26 @@ export default function WalletDashboardPage({ params }: PageProps) {
         }
       }
     }
+
+    // Include DeFi positions in chain totals
+    if (defiOverview?.protocols) {
+      for (const proto of defiOverview.protocols) {
+        for (const pos of proto.positions) {
+          const slug = pos.chainSlug.toLowerCase();
+          if (map[slug]) {
+            const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+            if (!isNaN(val) && val > 0) {
+              map[slug].hasAssets = true;
+              map[slug].totalUsd += val;
+              map[slug].assetCount += 1;
+            }
+          }
+        }
+      }
+    }
+
     return map;
-  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, chains]);
+  }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, chains, defiOverview]);
 
   const isCurrentEvm = useMemo(() => {
     if (detectedChain === null) {
@@ -983,16 +1055,18 @@ export default function WalletDashboardPage({ params }: PageProps) {
             {/* Compact Summary Cards */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <SummaryCard
-                label={isSelectedAll ? "Consolidated value (priced)" : "Wallet value (priced)"}
-                value={formatUsd(totalPortfolioValueUsd) ?? "Pending pricing"}
+                label={isSelectedAll ? "Consolidated Net Worth" : "Total Net Worth"}
+                value={formatUsd(totalNetWorthUsd) ?? "Pending pricing"}
                 note={
-                  totalPortfolioValueUsd === undefined
+                  totalNetWorthUsd === undefined
                     ? "No trusted price for these assets yet"
-                    : unpricedCount > 0
-                      ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
-                      : "Every discovered asset is priced"
+                    : defiValueForFilterUsd > 0 && totalPortfolioValueUsd !== undefined
+                      ? `Includes $${Number(totalPortfolioValueUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Assets + $${defiValueForFilterUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DeFi`
+                      : unpricedCount > 0
+                        ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
+                        : "Every discovered asset is priced"
                 }
-                noteTone={totalPortfolioValueUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
+                noteTone={totalNetWorthUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
               />
 
               <SummaryCard
@@ -1408,7 +1482,23 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     }`}
                   >
                     <span>{tab.label}</span>
-                    {tab.count !== null && tab.count > 0 && (
+                    {tab.id === "defi" &&
+                    defiOverview?.totalDefiValueUsd &&
+                    Number(defiOverview.totalDefiValueUsd) > 0 ? (
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          activeTab === tab.id
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                            : "bg-navy-100 text-navy-700"
+                        }`}
+                      >
+                        $
+                        {Number(defiOverview.totalDefiValueUsd).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </span>
+                    ) : tab.count !== null && tab.count > 0 ? (
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                           activeTab === tab.id
@@ -1418,7 +1508,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       >
                         {tab.count}
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 ))}
               </div>

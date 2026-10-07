@@ -18,18 +18,23 @@ import {
   BLAST_MAINNET_CHAIN_ID,
   BSC_MAINNET_CHAIN_ID,
   CELO_MAINNET_CHAIN_ID,
+  CRONOS_MAINNET_CHAIN_ID,
   GNOSIS_MAINNET_CHAIN_ID,
   INK_MAINNET_CHAIN_ID,
   LINEA_MAINNET_CHAIN_ID,
+  MANTLE_MAINNET_CHAIN_ID,
   MODE_MAINNET_CHAIN_ID,
   OPBNB_MAINNET_CHAIN_ID,
   OPTIMISM_MAINNET_CHAIN_ID,
   POLYGON_MAINNET_CHAIN_ID,
+  ROBINHOOD_MAINNET_CHAIN_ID,
   SCROLL_MAINNET_CHAIN_ID,
   SEI_MAINNET_CHAIN_ID,
   SOLANA_MAINNET_CHAIN_ID,
   SONIC_MAINNET_CHAIN_ID,
   TAIKO_MAINNET_CHAIN_ID,
+  XLAYER_MAINNET_CHAIN_ID,
+  ZKSYNC_MAINNET_CHAIN_ID,
   ZORA_MAINNET_CHAIN_ID
 } from "../modules/chains/infrastructure/chain-ids.js";
 import { BitcoinChainDataProvider } from "../modules/chains/infrastructure/bitcoin/bitcoin-chain-data-provider.js";
@@ -295,6 +300,46 @@ export function buildContainer(env: Environment): ApplicationContainer {
     rpcUrl: "https://apechain.calderachain.xyz/http",
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
+  const robinhoodProvider = new ViemChainDataProvider({
+    chainId: ROBINHOOD_MAINNET_CHAIN_ID,
+    chainName: "Robinhood",
+    chainSlug: "robinhood",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.mainnet.chain.robinhood.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const xlayerProvider = new ViemChainDataProvider({
+    chainId: XLAYER_MAINNET_CHAIN_ID,
+    chainName: "X Layer",
+    chainSlug: "xlayer",
+    nativeSymbol: "OKB",
+    rpcUrl: "https://rpc.xlayer.tech",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const mantleProvider = new ViemChainDataProvider({
+    chainId: MANTLE_MAINNET_CHAIN_ID,
+    chainName: "Mantle",
+    chainSlug: "mantle",
+    nativeSymbol: "MNT",
+    rpcUrl: "https://rpc.mantle.xyz",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const zksyncProvider = new ViemChainDataProvider({
+    chainId: ZKSYNC_MAINNET_CHAIN_ID,
+    chainName: "zkSync Era",
+    chainSlug: "zksync",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://mainnet.era.zksync.io",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const cronosProvider = new ViemChainDataProvider({
+    chainId: CRONOS_MAINNET_CHAIN_ID,
+    chainName: "Cronos",
+    chainSlug: "cronos",
+    nativeSymbol: "CRO",
+    rpcUrl: "https://evm.cronos.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
 
   const providers = new DefaultChainProviderRegistry([
     provider,
@@ -317,6 +362,11 @@ export function buildContainer(env: Environment): ApplicationContainer {
     opbnbProvider,
     taikoProvider,
     apechainProvider,
+    robinhoodProvider,
+    xlayerProvider,
+    mantleProvider,
+    zksyncProvider,
+    cronosProvider,
     algorandProvider,
     solanaProvider,
     bitcoinProvider

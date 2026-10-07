@@ -149,8 +149,14 @@ const EXPLORERS: Readonly<Record<string, ExplorerConfig>> = {
   unichain: { url: "https://unichain.org/explorer/address/{address}", name: "Unichain Explorer" },
   berachain: { url: "https://berascan.com/address/{address}", name: "Berascan" },
   zetachain: { url: "https://zetachain.blockscout.com/address/{address}", name: "ZetaScan" },
-  zircuit: { url: "https://explorer.zircuit.com/address/{address}", name: "Zircuit Explorer" },
-  robinhood: { url: "https://robinhood.com/crypto", name: "Robinhood" },
+  robinhood: {
+    url: "https://robinhoodchain.blockscout.com/address/{address}",
+    name: "Robinhood Explorer"
+  },
+  hood: {
+    url: "https://robinhoodchain.blockscout.com/address/{address}",
+    name: "Robinhood Explorer"
+  },
   hemi: { url: "https://explorer.hemi.xyz/address/{address}", name: "Hemi Explorer" },
   fuse: { url: "https://explorer.fuse.io/address/{address}", name: "Fuse Explorer" },
   plume: { url: "https://explorer.plumenetwork.xyz/address/{address}", name: "Plume Explorer" },
@@ -240,6 +246,9 @@ export function transactionUrl(chainSlug: string, txId: string): string | null {
       return `https://app.hyperliquid.xyz/explorer/tx/${encoded}`;
     case "berachain":
       return `https://berascan.com/tx/${encoded}`;
+    case "robinhood":
+    case "hood":
+      return `https://robinhoodchain.blockscout.com/tx/${encoded}`;
     default:
       return null;
   }
@@ -282,6 +291,7 @@ const CHAIN_LABELS: Readonly<Record<string, string>> = {
   zetachain: "ZetaChain",
   zircuit: "Zircuit",
   robinhood: "Robinhood",
+  hood: "Robinhood",
   hemi: "Hemi",
   fuse: "Fuse",
   plume: "Plume",
@@ -342,6 +352,7 @@ const CHAIN_LOGOS: Readonly<Record<string, string>> = {
   zetachain: "/assets/coins/zetachain.png",
   zircuit: "/assets/coins/zircuit.png",
   robinhood: "/assets/coins/robinhood.png",
+  hood: "/assets/coins/robinhood.png",
   hemi: "/assets/coins/hemi.png",
   fuse: "/assets/coins/fuse.png",
   plume: "/assets/coins/plume.png",

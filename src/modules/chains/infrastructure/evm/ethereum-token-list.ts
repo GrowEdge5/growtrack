@@ -537,6 +537,90 @@ export const AVALANCHE_TOKENS: readonly Erc20Token[] = [
   }
 ];
 
+// Curated zkSync Era tokens (Chain ID 324)
+export const ZKSYNC_TOKENS: readonly Erc20Token[] = [
+  {
+    address: "0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6
+  },
+  {
+    address: "0x493257fD37EDB34451f62EDf8D2a0C418852bA4C",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 6
+  },
+  {
+    address: "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91",
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    decimals: 18
+  },
+  {
+    address: "0xBBeB516fb02a01611cBBE0453Fe3c580D7281011",
+    symbol: "WBTC",
+    name: "Wrapped BTC",
+    decimals: 8
+  }
+];
+
+// Curated Mantle tokens (Chain ID 5000)
+export const MANTLE_TOKENS: readonly Erc20Token[] = [
+  {
+    address: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6
+  },
+  {
+    address: "0x201EBa5CC46D216Ce6DC03F6a759e80766E956Ae",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 6
+  },
+  {
+    address: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8",
+    symbol: "WMNT",
+    name: "Wrapped Mantle",
+    decimals: 18
+  },
+  {
+    address: "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    decimals: 18
+  }
+];
+
+// Curated Cronos tokens (Chain ID 25)
+export const CRONOS_TOKENS: readonly Erc20Token[] = [
+  {
+    address: "0xc21223249CA28397B4B6541dfFaEcC539BfF0c59",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6
+  },
+  {
+    address: "0x66e428c3f67a68878562e79A0234c1F83c208770",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 6
+  },
+  {
+    address: "0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23",
+    symbol: "WCRO",
+    name: "Wrapped CRO",
+    decimals: 18
+  },
+  {
+    address: "0xe44Fd7fC971CB17d770ceF02b50232233644146e",
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    decimals: 18
+  }
+];
+
 const CURATED_LISTS: Readonly<Record<number, readonly Erc20Token[]>> = {
   1: ETHEREUM_MAINNET_TOKENS,
   8453: BASE_TOKENS,
@@ -544,7 +628,10 @@ const CURATED_LISTS: Readonly<Record<number, readonly Erc20Token[]>> = {
   56: BSC_TOKENS,
   137: POLYGON_TOKENS,
   10: OPTIMISM_TOKENS,
-  43114: AVALANCHE_TOKENS
+  43114: AVALANCHE_TOKENS,
+  324: ZKSYNC_TOKENS,
+  5000: MANTLE_TOKENS,
+  25: CRONOS_TOKENS
 };
 
 /**

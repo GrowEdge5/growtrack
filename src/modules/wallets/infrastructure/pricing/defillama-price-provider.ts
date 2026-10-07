@@ -76,7 +76,11 @@ const LLAMA_CHAINS: Readonly<Record<number, LlamaChain>> = {
   // ZetaChain (id 7000)
   7000: { slug: "zetachain", nativeCoinKey: "coingecko:zetachain" },
   // Zircuit (id 48900)
-  48900: { slug: "zircuit", nativeCoinKey: "coingecko:ethereum" }
+  48900: { slug: "zircuit", nativeCoinKey: "coingecko:ethereum" },
+  // Robinhood (id 4663)
+  4663: { slug: "robinhood", nativeCoinKey: "coingecko:ethereum" },
+  // Cronos (id 25)
+  25: { slug: "cronos", nativeCoinKey: "coingecko:crypto-com-chain" }
 };
 
 // DeFiLlama attaches a 0..1 confidence to each price. Anything below this is
