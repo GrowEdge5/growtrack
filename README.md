@@ -29,53 +29,81 @@ On top of the intelligence layer, Growtrack implements the **HTTP 402 "Payment R
 
 ## User Guide: How to Use Growtrack
 
-Whether you are a new visitor, an institution, or a judge evaluating the project, follow this quick walkthrough to experience Growtrack:
+> 📄 **PDF Version Available**: You can also download our complete [Growtrack Beginner User Guide (PDF)](Growtrack_Beginner_User_Guide.pdf) with visual step-by-step annotations.
+
+Whether you are a new community user, a DeFi power user, or a judge evaluating the project, follow this visual step-by-step walkthrough to get started:
 
 ### Step 1: Look Up Any Wallet for Free (Zero Setup)
 
-1. Open the Growtrack dashboard in your browser (`http://localhost:3001` or `https://growtrack.pro`).
+1. Open the Growtrack dashboard at [growtrack.pro](https://growtrack.pro).
 2. In the hero search bar, paste any public wallet address:
    - **Ethereum / EVM**: `0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` (or any ENS name / 0x address)
    - **Algorand**: `JJNP4JGSR5ICF5NTMVC4TO7CE4KM2FDL7G4LAEEFIK2KVGL6RTPLPGMTB4`
    - **Bitcoin**: `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
    - **Solana**: `GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE`
-3. Click **Search** or click one of the quick whale preset chips (`vitalik.eth`, `Satoshi`, `Algorand Foundation`).
-4. **Result**: Growtrack automatically detects the blockchain format, fetches live on-chain balances and tokens via upstream RPCs, prices them in real-time, and renders a clean financial overview.
+3. Click the blue **Search** button or pick one of the quick presets (`vitalik.eth`, `Satoshi`, `Algorand Foundation`).
+4. To prepare for x402 multi-wallet consolidation or report generation, click **"Connect Wallet"**.
 
-### Step 2: Explore On-Chain Intelligence
+![Step 1: Search Wallet & Connect](docs/guide/step1_search_and_connect.png)
 
-- **Portfolio Overview**: View total portfolio valuation in USD and native asset holdings.
-- **Token Holdings**: Inspect curated ERC-20, ASA, or SPL token breakdowns with live prices, exact decimals, and allocation percentages.
-- **Live Transaction Ledger**: Switch to the **Transactions** tab to see confirmed on-chain activity with direct links to official network block explorers (Etherscan, Solscan, Blockstream, Lora).
+---
 
-### Step 3: Multi-Wallet Tracking
+### Step 2: Connect Your Algorand Wallet (Pera / Lute / Defly)
 
-- In the top bar, click `+ Add Wallet` or click the whale preset pills to add more addresses to your tracked session.
-- Switch between wallets with one click to monitor multiple portfolios simultaneously.
+To unlock x402-powered features (such as multi-wallet consolidation and full institutional statements), connect an Algorand signer:
 
-### Step 4: Generate Consolidated Report via Algorand x402
+- **Mobile Users**: Select **Pera Wallet** or **Defly Wallet** and scan the QR code.
+- **Desktop / Chrome Extension**: Select **Lute Wallet** for instant 1-click signing.
 
-1. Click the **"Generate full report (x402)"** button on the top right.
-2. If your Algorand wallet is not yet connected, choose your preferred wallet provider (**Pera Wallet**, **Defly**, or **Lute**).
-3. The app initiates the official **x402 micropayment handshake**:
-   - The server answers with an authentic `HTTP 402 Payment Required` response containing payment specifications (Network: Algorand MainNet, Asset: USDC `31566704`, Recipient: `payTo`).
-   - Your Algorand wallet prompts you to sign a gasless micro-transaction.
-   - The **GoPlausible Facilitator** verifies and settles the payment on Algorand MainNet within seconds.
-4. **Result**: The modal unlocks, revealing a consolidated multi-chain financial report that aggregates totals, per-chain breakdowns, and unpriced exposure across all tracked addresses.
+![Step 2: Select Algorand Wallet](docs/guide/step2_select_wallet.png)
+
+---
+
+### Step 3: Multi-Chain Breakdown & Generate Full Report
+
+- **Total Net Worth**: Live aggregated valuation combining direct token assets and real-time DeFi protocol positions (Hyperliquid, Polymarket, Uniswap, Pendle, Velodrome) — calculated just like DeBank.
+- **50+ Chains Covered**: Click any chain pill (e.g. **Robinhood**, **Base**, **Arbitrum**, **Polygon**, **zkSync**, **Mantle**, **X Layer**, **Cronos**) to inspect holdings on that specific network.
+- **Generate Full Report ($3.00 USDC via x402)**: Click the **"Generate full report ($3.00 USDC)"** button at top right to initiate an authentic Algorand MainNet micropayment.
+
+![Step 3: Total Net Worth and Generate Report](docs/guide/step3_generate_report.png)
+
+---
+
+### Step 4: Multi-Wallet Portfolio Consolidation ($1.00 USDC via x402)
+
+Consolidate multiple personal wallets into a single unified net worth view:
+
+1. Paste your second wallet address (EVM, Solana, Bitcoin, or Algorand) into the **"Watching one wallet"** input field.
+2. Click **"+ Add wallet"** and approve the **$1.00 USDC** x402 micropayment on Algorand.
+3. Your portfolios are now unified and can be switched or viewed together in **"All Wallets"** mode!
+
+![Step 4: Add Second Wallet](docs/guide/step4_add_wallet.png)
+
+---
+
+### Step 5: Full Institutional Report & On-Chain Settlement Verification
+
+Once payment is settled:
+
+- The full multi-wallet statement unlocks instantly.
+- The green banner displays the **Algorand transaction ID** proving genuine on-chain payment.
+- Click **"Verify on-chain"** to verify the settlement on the official Algorand block explorer (Lora / AlgoKit).
+
+![Step 5: Payment Settled on Algorand](docs/guide/step5_report_settled.png)
 
 ---
 
 ## Supported Blockchains & Read Architecture
 
-Growtrack reads native balances, token holdings, and transactions behind a unified `ChainDataProvider` interface:
+Growtrack reads native balances, token holdings, and live DeFi positions behind a unified `ChainDataProvider` interface:
 
-| Blockchain         | Identifier                                                    | Native Coin                 | Data Source / Upstream Port                | Features                                                            |
-| :----------------- | :------------------------------------------------------------ | :-------------------------- | :----------------------------------------- | :------------------------------------------------------------------ |
-| **Ethereum (EVM)** | `ethereum`                                                    | `ETH`                       | Multicall3 batch RPC + Blockscout REST     | Native balance, curated ERC-20s, USD pricing, tx ledger             |
-| **Algorand**       | `algorand`                                                    | `ALGO`                      | Algonode algod REST + Indexer              | ALGO balance, curated ASAs (USDC/USDt), round times, tx index       |
-| **Bitcoin**        | `bitcoin`                                                     | `BTC`                       | Esplora REST API                           | UTXO balance, real input/output ledger entries, block confirmations |
-| **Solana**         | `solana`                                                      | `SOL`                       | Keyless Solana JSON-RPC + Jupiter metadata | SOL balance, SPL token accounts, slot confirmations                 |
-| **EVM L2s**        | `base`, `arbitrum`, `polygon`, `optimism`, `bsc`, `avalanche` | `ETH`, `POL`, `BNB`, `AVAX` | Public node JSON-RPC endpoints             | Address format detection & multi-chain routing                      |
+| Blockchain           | Identifier                                                                                                                                                                                                                       | Native Coin                                            | Data Source / Upstream Port                   | Features                                                                                                                                   |
+| :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------- | :-------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ethereum (EVM)**   | `ethereum`                                                                                                                                                                                                                       | `ETH`                                                  | Multicall3 batch RPC + Blockscout REST        | Native balance, curated ERC-20s, USD pricing, tx ledger                                                                                    |
+| **Algorand**         | `algorand`                                                                                                                                                                                                                       | `ALGO`                                                 | Algonode algod REST + Indexer                 | ALGO balance, curated ASAs (USDC/USDt), round times, tx index                                                                              |
+| **Bitcoin**          | `bitcoin`                                                                                                                                                                                                                        | `BTC`                                                  | Esplora REST API                              | UTXO balance, real input/output ledger entries, block confirmations                                                                        |
+| **Solana**           | `solana`                                                                                                                                                                                                                         | `SOL`                                                  | Keyless Solana JSON-RPC + Jupiter metadata    | SOL balance, SPL token accounts, slot confirmations                                                                                        |
+| **50+ Chains & L2s** | `robinhood`, `base`, `arbitrum`, `bsc`, `polygon`, `optimism`, `avalanche`, `zksync`, `mantle`, `xlayer`, `cronos`, `linea`, `scroll`, `ink`, `mode`, `sonic`, `sei`, `celo`, `taiko`, `apechain`, `unichain`, `berachain`, etc. | `ETH`, `OKB`, `MNT`, `CRO`, `BNB`, `AVAX`, `POL`, etc. | Verified High-Speed Mainnet RPCs + Multicall3 | Native balances, token discovery, real-time DeFi positions (Hyperliquid, Uniswap, Polymarket, Pendle), DeBank-style consolidated net worth |
 
 ---
 
@@ -105,14 +133,6 @@ Growtrack implements the **x402 Specification (v2)** to monetize API access dire
 - **Facilitator**: `https://facilitator.goplausible.xyz`
 - **Competition Tag**: `x402-global-challenge`
 - **Merchant `payTo`**: `F232WLNRKX5JDW3PMP6DQDUF4LEXOZE3JDO5O6O6GU7SFQQLMP2HRQDSEA` (Opted into USDC)
-
-### Composite Resource Catalog
-
-| Route                                    | Price (USDC) | Description                                                         | Target Caller                   |
-| :--------------------------------------- | :----------- | :------------------------------------------------------------------ | :------------------------------ |
-| `GET /v1/wallets/:chain/:address/live`   | **$0.50**    | Live, synchronous fresh wallet snapshot with real-time pricing      | AI Agents, Developers           |
-| `GET /v1/portfolio?addresses=...`        | **$1.00**    | Multi-wallet tracking and combined valuation totals                 | Portfolio Trackers, Power Users |
-| `GET /v1/portfolio/report?addresses=...` | **$3.00**    | Complete cross-chain consolidated institutional financial statement | Institutional Audits, Web Pro   |
 
 ### Agent Discovery Endpoints
 
@@ -232,48 +252,6 @@ npm run lint
 | **MainNet Settlements**        | 12+ real on-chain MainNet settlements completed and permanently verifiable on Lora             | Verified |
 | **Non-Custodial Architecture** | Growtrack holds zero private keys and never signs on behalf of users                           | Verified |
 | **Public HTTPS Deployment**    | Configured for `https://growtrack.pro` with valid Let's Encrypt TLS certificate                | Ready    |
-
----
-
-## Security Audit Remediation (2026-09-28)
-
-A full read-only security audit was performed. The following issues were identified and fixed:
-
-### Fixed
-
-| #   | Severity     | Issue                                                                                                                            | Fix                                                                                                                                                                                                                                            |
-| --- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **CRITICAL** | x402 defaults to Algorand Testnet — production could accidentally settle on the wrong network                                    | Startup validation now **rejects** testnet `X402_NETWORK` and `X402_ASSET_ID` when `NODE_ENV=production` and `X402_ENABLED=true`. Process fails to boot instead of silently using testnet. Also requires `X402_PUBLIC_BASE_URL` in production. |
-| 2   | **HIGH**     | `/metrics` publicly exposes Prometheus process internals (memory, GC, event loop)                                                | `/metrics` route is now only registered when `NODE_ENV !== "production"`. Health checks (`/health/live`, `/health/ready`) remain available in all environments.                                                                                |
-| 3   | **HIGH**     | `/docs` Swagger UI publicly exposes full API schema for reconnaissance                                                           | Swagger UI is now only registered when `NODE_ENV !== "production"`. OpenAPI spec generation remains active internally.                                                                                                                         |
-| 4   | **HIGH**     | `POST /v1/wallets/:chain/:address/refresh` had only global rate limiting (300/min), enabling queue flooding via address rotation | Added per-IP rate limit of **30 requests/minute** (configurable via `REFRESH_RATE_LIMIT_MAX`). Uses the same `@fastify/rate-limit` mechanism as the existing analyze endpoint. Combined with existing BullMQ SHA-256 job deduplication.        |
-
-### Verification Results
-
-| Check                                     | Result                                        |
-| ----------------------------------------- | --------------------------------------------- |
-| TypeScript typecheck (backend + frontend) | ✅ Pass                                       |
-| ESLint                                    | ✅ Pass                                       |
-| Unit + E2E tests (86/86 across 15 suites) | ✅ Pass                                       |
-| Backend build (`build:api`)               | ✅ Pass                                       |
-| Frontend build (`build:web`)              | ✅ Pass                                       |
-| x402 guard tests                          | ✅ Pass (10 unit + 3 e2e)                     |
-| Wallet security model                     | ✅ Unchanged — non-custodial, no private keys |
-
-### Requires Railway Action
-
-Verify that the production Railway environment has these variables set correctly:
-
-| Variable               | Required Value                                                    |
-| ---------------------- | ----------------------------------------------------------------- |
-| `NODE_ENV`             | `production`                                                      |
-| `X402_ENABLED`         | `true`                                                            |
-| `X402_NETWORK`         | `algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=` (MainNet) |
-| `X402_ASSET_ID`        | `31566704` (MainNet USDC)                                         |
-| `X402_PAY_TO`          | The merchant's funded Algorand address (opted into USDC)          |
-| `X402_PUBLIC_BASE_URL` | `https://growtrack.pro`                                           |
-
-> **The application will now refuse to start** if `NODE_ENV=production` + `X402_ENABLED=true` with testnet defaults. This is intentional fail-closed behavior.
 
 ---
 
