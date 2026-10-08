@@ -146,11 +146,11 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 md:p-8 bg-[#0A2350]/[0.25] backdrop-blur-[6px] overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 md:p-8 bg-[#0A2350]/[0.25] backdrop-blur-[6px] overflow-y-auto portfolio-report-modal-overlay"
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-3xl glass-frosted rounded-[24px] sm:rounded-[32px] p-4 sm:p-7 shadow-2xl border border-white my-2 sm:my-4"
+        className="w-full max-w-3xl glass-frosted rounded-[24px] sm:rounded-[32px] p-4 sm:p-7 shadow-2xl border border-white my-2 sm:my-4 portfolio-report-modal-card"
       >
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-navy-100/60">
@@ -177,7 +177,7 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
             type="button"
             onClick={onClose}
             aria-label="Close report"
-            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-navy-100/70 text-navy-500 hover:text-navy-900 flex items-center justify-center shadow-xs cursor-pointer"
+            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-navy-100/70 text-navy-500 hover:text-navy-900 flex items-center justify-center shadow-xs cursor-pointer no-print"
           >
             <X className="w-4 h-4" />
           </button>
@@ -382,7 +382,7 @@ function ReportView({
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-navy-50 border border-navy-200 text-xs font-bold text-navy-700 shadow-xs transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-navy-50 border border-navy-200 text-xs font-bold text-navy-700 shadow-xs transition-all cursor-pointer no-print"
         >
           <Printer className="w-3.5 h-3.5 text-primary-500" />
           <span>Print / Save PDF</span>

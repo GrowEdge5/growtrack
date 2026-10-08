@@ -179,8 +179,15 @@ export async function payAndRetry<T>(
     wallet.address,
     networkContext(params)
   );
-  const signedPayment = signed[built.paymentIndex];
-  if (signedPayment === undefined || signedPayment === null) {
+  // Pick the user's signed payment transaction. Resolves either from the exact group index,
+  // or falls back to the single signed entry if a wallet connector collapsed the array.
+  const signedPayment =
+    signed[built.paymentIndex] ??
+    (signed.length === 1 && signed[0] != null
+      ? signed[0]
+      : signed.find((entry) => entry != null && entry.length > 0));
+
+  if (signedPayment === undefined || signedPayment === null || signedPayment.length === 0) {
     throw new X402Error("The wallet did not sign the payment.", "SIGNATURE_DECLINED");
   }
 

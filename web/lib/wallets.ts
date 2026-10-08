@@ -196,6 +196,19 @@ const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
         return { txn: decoded, signers };
       });
       const signed = await pera.signTransaction([group], signer);
+      // PeraWalletConnect's internal transport uses .filter(Boolean), which drops null
+      // entries for transactions that had signers: [] (such as sponsored fee payers).
+      // We map the returned signatures back to their original transaction indices.
+      if (signed.length < group.length) {
+        let signedIdx = 0;
+        return group.map((item) => {
+          if (Array.isArray(item.signers) && item.signers.length === 0) {
+            return null;
+          }
+          const bytes = signed[signedIdx++];
+          return bytes == null ? null : bytesToBase64(bytes);
+        });
+      }
       return signed.map((bytes: Uint8Array | null) =>
         bytes == null ? null : bytesToBase64(bytes)
       );
@@ -226,6 +239,16 @@ const CONNECTORS: Readonly<Record<WalletId, Connector>> = {
         return { txn: decoded, signers };
       });
       const signed = await defly.signTransaction([group], signer);
+      if (signed.length < group.length) {
+        let signedIdx = 0;
+        return group.map((item) => {
+          if (Array.isArray(item.signers) && item.signers.length === 0) {
+            return null;
+          }
+          const bytes = signed[signedIdx++];
+          return bytes == null ? null : bytesToBase64(bytes);
+        });
+      }
       return signed.map((bytes: Uint8Array | null) =>
         bytes == null ? null : bytesToBase64(bytes)
       );

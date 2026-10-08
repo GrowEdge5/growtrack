@@ -18,66 +18,40 @@ const CHAINS: ChainConfig[] = [
 
 export function AnimatedChainText() {
   const [chainIndex, setChainIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState("");
+  const [subIndex, setSubIndex] = useState(CHAINS[0].name.length);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
-    // Detect prefers-reduced-motion
-    if (typeof window !== "undefined") {
-      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-      setReducedMotion(mediaQuery.matches);
-      const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-      mediaQuery.addEventListener("change", handler);
-      return () => mediaQuery.removeEventListener("change", handler);
-    }
-  }, []);
+    const currentWord = CHAINS[chainIndex].name;
 
-  useEffect(() => {
-    if (reducedMotion) {
-      setDisplayedText(CHAINS[chainIndex].name);
-      const timer = setTimeout(() => {
-        setChainIndex((prev) => (prev + 1) % CHAINS.length);
-      }, 2000);
-      return () => clearTimeout(timer);
+    // Finished typing the current word: pause before starting delete
+    if (!isDeleting && subIndex === currentWord.length) {
+      const pauseTimer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 1400);
+      return () => clearTimeout(pauseTimer);
     }
 
-    const currentChain = CHAINS[chainIndex];
-    const targetText = currentChain.name;
-
-    let timeout: NodeJS.Timeout;
-
-    if (!isDeleting) {
-      // Typing character by character
-      if (displayedText.length < targetText.length) {
-        timeout = setTimeout(() => {
-          setDisplayedText(targetText.slice(0, displayedText.length + 1));
-        }, 110);
-      } else {
-        // Pause after completing the word (~1200ms)
-        timeout = setTimeout(() => {
-          setIsDeleting(true);
-        }, 1200);
-      }
-    } else {
-      // Deleting character by character
-      if (displayedText.length > 0) {
-        timeout = setTimeout(() => {
-          setDisplayedText(targetText.slice(0, displayedText.length - 1));
-        }, 70);
-      } else {
-        // Pause briefly before next word
-        timeout = setTimeout(() => {
-          setIsDeleting(false);
-          setChainIndex((prev) => (prev + 1) % CHAINS.length);
-        }, 300);
-      }
+    // Finished deleting: move to next chain and start typing
+    if (isDeleting && subIndex === 0) {
+      setIsDeleting(false);
+      setChainIndex((prev) => (prev + 1) % CHAINS.length);
+      return;
     }
 
-    return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, chainIndex, reducedMotion]);
+    // Typing or deleting next character
+    const typingTimer = setTimeout(
+      () => {
+        setSubIndex((prev) => prev + (isDeleting ? -1 : 1));
+      },
+      isDeleting ? 50 : 100
+    );
+
+    return () => clearTimeout(typingTimer);
+  }, [subIndex, isDeleting, chainIndex]);
 
   const currentChain = CHAINS[chainIndex];
+  const displayedText = currentChain.name.substring(0, subIndex);
 
   return (
     <span
