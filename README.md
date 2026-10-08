@@ -132,7 +132,7 @@ Growtrack implements the **x402 Specification (v2)** to monetize API access dire
 - **Asset ID**: `31566704` (MainNet USDC, 6 decimals)
 - **Facilitator**: `https://facilitator.goplausible.xyz`
 - **Competition Tag**: `x402-global-challenge`
-- **Merchant `payTo`**: `F232WLNRKX5JDW3PMP6DQDUF4LEXOZE3JDO5O6O6GU7SFQQLMP2HRQDSEA` (Opted into USDC)
+- **Merchant `payTo`**: `BBGDH6PTIDBHDRA2VYELPMIO7D7RSJD7NB4GUTZRXXUYYUW3ZKBYWM6VPE` (Opted into USDC)
 
 ### Agent Discovery Endpoints
 

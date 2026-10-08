@@ -12,7 +12,8 @@ const CHAINS: ChainConfig[] = [
   { name: "EVM", color: "#2563EB" },
   { name: "BSC", color: "#F3BA2F" },
   { name: "BTC", color: "#F7931A" },
-  { name: "SOL", color: "#9945FF" }
+  { name: "SOL", color: "#9945FF" },
+  { name: "50+ CHAINS", color: "#10B981" }
 ];
 
 export function AnimatedChainText() {
@@ -80,7 +81,7 @@ export function AnimatedChainText() {
 
   return (
     <span
-      className="inline-flex items-baseline min-w-[75px] sm:min-w-[95px] text-left transition-colors duration-200"
+      className="inline-flex items-baseline min-w-[75px] sm:min-w-[95px] text-left transition-colors duration-200 whitespace-nowrap"
       style={{ color: currentChain.color }}
     >
       <span>{displayedText}</span>
