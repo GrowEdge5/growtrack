@@ -32,6 +32,7 @@ COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/web ./web
+COPY --from=build /app/web/.next ./web/.next
 COPY package*.json ./
 EXPOSE 3000
 # START_SCRIPT picks the entrypoint per service (main.js = api, worker.js = worker).
