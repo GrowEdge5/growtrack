@@ -9,7 +9,7 @@ import { chainsQuerySchema, chainsResponseSchema, detectResponseSchema } from ".
 const ADDRESS_HINTS: Readonly<Record<string, { format: string; example: string }>> = {
   eip155: {
     format: "0x-prefixed 20-byte hex (EIP-55)",
-    example: "0xd8dA680F17485f5fE14a58674455179eBBfC1F40"
+    example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
   },
   algorand: {
     format: "58-character base32 with checksum",

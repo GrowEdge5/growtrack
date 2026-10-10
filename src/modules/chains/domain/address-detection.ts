@@ -39,6 +39,12 @@ const BITCOIN_LEGACY_BYTES = new Set([23, 25]);
 // provider; this identifies the family so a paste can be routed.
 const BITCOIN_BECH32 = /^(bc1|tb1)[023456789acdefghjklmnpqrstuvwxyz]{8,87}$/;
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+const ENS_NAME = /^[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*\.eth$/i;
+
+// Whether an address string is an ENS name format (e.g. vitalik.eth).
+export function isEnsName(address: string): boolean {
+  return ENS_NAME.test(address.trim());
+}
 
 // Detects which chain families a pasted address could belong to, using syntax only.
 //
@@ -74,7 +80,7 @@ export function isSolanaAddress(address: string): boolean {
 }
 
 function formatsFor(address: string): AddressFormat[] {
-  if (EVM_ADDRESS.test(address)) {
+  if (EVM_ADDRESS.test(address) || ENS_NAME.test(address)) {
     return ["evm"];
   }
   if (BITCOIN_BECH32.test(address.toLowerCase())) {

@@ -104,14 +104,22 @@ export function Footer() {
           </a>
         </div>
 
-        {/* Right: developer entry points that actually exist */}
-        <div className="flex items-center gap-4 text-xs font-semibold text-navy-500">
-          <Link href="#x402" className="hover:text-primary-600 transition-colors">
-            x402 Protocol
+        {/* Right: developer and trust entry points */}
+        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-navy-500">
+          <Link href="/about" className="hover:text-primary-600 transition-colors">
+            About
           </Link>
-          <span className="text-navy-300">|</span>
-          <Link href="#capabilities" className="hover:text-primary-600 transition-colors">
-            Capabilities
+          <span className="text-navy-300">·</span>
+          <Link href="/privacy" className="hover:text-primary-600 transition-colors">
+            Privacy
+          </Link>
+          <span className="text-navy-300">·</span>
+          <Link href="/terms" className="hover:text-primary-600 transition-colors">
+            Terms
+          </Link>
+          <span className="text-navy-300">·</span>
+          <Link href="#x402" className="hover:text-primary-600 transition-colors">
+            x402
           </Link>
         </div>
       </div>

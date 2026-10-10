@@ -35,6 +35,43 @@ export function registerDiscoveryRoutes(
     return reply.status(404).send();
   });
 
+  app.get("/opengraph-image.png", async (_request, reply) => {
+    const ogPath = path.resolve(process.cwd(), "web", "public", "opengraph-image.png");
+    if (fs.existsSync(ogPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(ogPath));
+    }
+    const pngPath = path.resolve(process.cwd(), "web", "public", "logo.png");
+    if (fs.existsSync(pngPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(pngPath));
+    }
+    return reply.status(404).send();
+  });
+
+  app.get("/og.png", async (_request, reply) => {
+    const ogPath = path.resolve(process.cwd(), "web", "public", "opengraph-image.png");
+    if (fs.existsSync(ogPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(ogPath));
+    }
+    return reply.status(404).send();
+  });
+
+  app.get("/apple-touch-icon.png", async (_request, reply) => {
+    const iconPath = path.resolve(process.cwd(), "web", "public", "apple-touch-icon.png");
+    if (fs.existsSync(iconPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(iconPath));
+    }
+    const pngPath = path.resolve(process.cwd(), "web", "public", "logo.png");
+    if (fs.existsSync(pngPath)) {
+      reply.type("image/png").header("cache-control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(pngPath));
+    }
+    return reply.status(404).send();
+  });
+
   app.get("/logo.svg", async (_request, reply) => {
     reply.type("image/svg+xml").header("cache-control", "public, max-age=86400");
     return LOGO_SVG;

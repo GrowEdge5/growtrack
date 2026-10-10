@@ -147,33 +147,7 @@ const ALL_SUPPORTED_CHAINS: readonly SupportedChain[] = [
 function getCandidateChains(address: string): string[] {
   const hint = detectAddressFormat(address);
   if (hint.family === "evm") {
-    return [
-      "ethereum",
-      "base",
-      "arbitrum",
-      "bsc",
-      "polygon",
-      "optimism",
-      "avalanche",
-      "robinhood",
-      "zksync",
-      "mantle",
-      "linea",
-      "blast",
-      "scroll",
-      "ink",
-      "mode",
-      "zora",
-      "gnosis",
-      "celo",
-      "sei",
-      "sonic",
-      "opbnb",
-      "taiko",
-      "apechain",
-      "xlayer",
-      "cronos"
-    ];
+    return ALL_SUPPORTED_CHAINS.filter((c) => c.isEvm).map((c) => c.slug);
   }
   if (hint.family === "solana") {
     return ["solana"];
@@ -910,7 +884,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Layers className="w-3.5 h-3.5 text-primary-500" />
-                        10 Layer 1 and Layer 2 chains
+                        40+ Layer 1 and Layer 2 chains
                       </span>
                     </div>
                   </>

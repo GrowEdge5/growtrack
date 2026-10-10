@@ -12,20 +12,32 @@ import { ALGORAND_MAINNET_CHAIN_ID } from "../modules/chains/infrastructure/algo
 import {
   APECHAIN_MAINNET_CHAIN_ID,
   ARBITRUM_MAINNET_CHAIN_ID,
+  ARC_MAINNET_CHAIN_ID,
   AVALANCHE_MAINNET_CHAIN_ID,
   BASE_MAINNET_CHAIN_ID,
+  BERACHAIN_MAINNET_CHAIN_ID,
   BITCOIN_MAINNET_CHAIN_ID,
   BLAST_MAINNET_CHAIN_ID,
   BSC_MAINNET_CHAIN_ID,
   CELO_MAINNET_CHAIN_ID,
+  CORE_MAINNET_CHAIN_ID,
   CRONOS_MAINNET_CHAIN_ID,
+  CYBER_MAINNET_CHAIN_ID,
+  FANTOM_MAINNET_CHAIN_ID,
+  FUSE_MAINNET_CHAIN_ID,
   GNOSIS_MAINNET_CHAIN_ID,
+  HEMI_MAINNET_CHAIN_ID,
+  HYPERLIQUID_EVM_CHAIN_ID,
+  IMMUTABLE_MAINNET_CHAIN_ID,
   INK_MAINNET_CHAIN_ID,
   LINEA_MAINNET_CHAIN_ID,
   MANTLE_MAINNET_CHAIN_ID,
   MODE_MAINNET_CHAIN_ID,
+  MONAD_TESTNET_CHAIN_ID,
   OPBNB_MAINNET_CHAIN_ID,
   OPTIMISM_MAINNET_CHAIN_ID,
+  PLASMA_MAINNET_CHAIN_ID,
+  PLUME_MAINNET_CHAIN_ID,
   POLYGON_MAINNET_CHAIN_ID,
   ROBINHOOD_MAINNET_CHAIN_ID,
   SCROLL_MAINNET_CHAIN_ID,
@@ -33,7 +45,10 @@ import {
   SOLANA_MAINNET_CHAIN_ID,
   SONIC_MAINNET_CHAIN_ID,
   TAIKO_MAINNET_CHAIN_ID,
+  UNICHAIN_MAINNET_CHAIN_ID,
   XLAYER_MAINNET_CHAIN_ID,
+  ZETACHAIN_MAINNET_CHAIN_ID,
+  ZIRCUIT_MAINNET_CHAIN_ID,
   ZKSYNC_MAINNET_CHAIN_ID,
   ZORA_MAINNET_CHAIN_ID
 } from "../modules/chains/infrastructure/chain-ids.js";
@@ -340,6 +355,126 @@ export function buildContainer(env: Environment): ApplicationContainer {
     rpcUrl: "https://evm.cronos.org",
     timeoutMs: env.PROVIDER_TIMEOUT_MS
   });
+  const fantomProvider = new ViemChainDataProvider({
+    chainId: FANTOM_MAINNET_CHAIN_ID,
+    chainName: "Fantom",
+    chainSlug: "fantom",
+    nativeSymbol: "FTM",
+    rpcUrl: "https://rpc.ftm.tools",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const coreProvider = new ViemChainDataProvider({
+    chainId: CORE_MAINNET_CHAIN_ID,
+    chainName: "Core DAO",
+    chainSlug: "core",
+    nativeSymbol: "CORE",
+    rpcUrl: "https://rpc.coredao.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const zetachainProvider = new ViemChainDataProvider({
+    chainId: ZETACHAIN_MAINNET_CHAIN_ID,
+    chainName: "ZetaChain",
+    chainSlug: "zetachain",
+    nativeSymbol: "ZETA",
+    rpcUrl: "https://zetachain-evm.blockpi.network/v1/rpc/public",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const zircuitProvider = new ViemChainDataProvider({
+    chainId: ZIRCUIT_MAINNET_CHAIN_ID,
+    chainName: "Zircuit",
+    chainSlug: "zircuit",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://zircuit1-mainnet.p2pify.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const berachainProvider = new ViemChainDataProvider({
+    chainId: BERACHAIN_MAINNET_CHAIN_ID,
+    chainName: "Berachain",
+    chainSlug: "berachain",
+    nativeSymbol: "BERA",
+    rpcUrl: "https://rpc.berachain.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const unichainProvider = new ViemChainDataProvider({
+    chainId: UNICHAIN_MAINNET_CHAIN_ID,
+    chainName: "Unichain",
+    chainSlug: "unichain",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://mainnet.unichain.org",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const hemiProvider = new ViemChainDataProvider({
+    chainId: HEMI_MAINNET_CHAIN_ID,
+    chainName: "Hemi",
+    chainSlug: "hemi",
+    nativeSymbol: "HEMI",
+    rpcUrl: "https://rpc.hemi.network/rpc",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const fuseProvider = new ViemChainDataProvider({
+    chainId: FUSE_MAINNET_CHAIN_ID,
+    chainName: "Fuse",
+    chainSlug: "fuse",
+    nativeSymbol: "FUSE",
+    rpcUrl: "https://rpc.fuse.io",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const cyberProvider = new ViemChainDataProvider({
+    chainId: CYBER_MAINNET_CHAIN_ID,
+    chainName: "Cyber",
+    chainSlug: "cyber",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://cyber.alt.technology",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const plumeProvider = new ViemChainDataProvider({
+    chainId: PLUME_MAINNET_CHAIN_ID,
+    chainName: "Plume",
+    chainSlug: "plume",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://phoenix-rpc.plumenetwork.xyz",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const immutableProvider = new ViemChainDataProvider({
+    chainId: IMMUTABLE_MAINNET_CHAIN_ID,
+    chainName: "Immutable",
+    chainSlug: "immutable",
+    nativeSymbol: "IMX",
+    rpcUrl: "https://rpc.immutable.com",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const monadProvider = new ViemChainDataProvider({
+    chainId: MONAD_TESTNET_CHAIN_ID,
+    chainName: "Monad",
+    chainSlug: "monad",
+    nativeSymbol: "MON",
+    rpcUrl: "https://testnet-rpc.monad.xyz",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const hyperliquidProvider = new ViemChainDataProvider({
+    chainId: HYPERLIQUID_EVM_CHAIN_ID,
+    chainName: "Hyperliquid",
+    chainSlug: "hyperliquid",
+    nativeSymbol: "HYPE",
+    rpcUrl: "https://rpc.hyperliquid.xyz/evm",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const arcProvider = new ViemChainDataProvider({
+    chainId: ARC_MAINNET_CHAIN_ID,
+    chainName: "Arc",
+    chainSlug: "arc",
+    nativeSymbol: "ARC",
+    rpcUrl: "https://rpc.arc.market",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
+  const plasmaProvider = new ViemChainDataProvider({
+    chainId: PLASMA_MAINNET_CHAIN_ID,
+    chainName: "Plasma",
+    chainSlug: "plasma",
+    nativeSymbol: "ETH",
+    rpcUrl: "https://rpc.plasma.to",
+    timeoutMs: env.PROVIDER_TIMEOUT_MS
+  });
 
   const providers = new DefaultChainProviderRegistry([
     provider,
@@ -367,6 +502,21 @@ export function buildContainer(env: Environment): ApplicationContainer {
     mantleProvider,
     zksyncProvider,
     cronosProvider,
+    fantomProvider,
+    coreProvider,
+    zetachainProvider,
+    zircuitProvider,
+    berachainProvider,
+    unichainProvider,
+    hemiProvider,
+    fuseProvider,
+    cyberProvider,
+    plumeProvider,
+    immutableProvider,
+    monadProvider,
+    hyperliquidProvider,
+    arcProvider,
+    plasmaProvider,
     algorandProvider,
     solanaProvider,
     bitcoinProvider

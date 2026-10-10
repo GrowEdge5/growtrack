@@ -1,5 +1,6 @@
 import type { ChainProviderRegistry } from "../../chains/application/ports/chain-data-provider.js";
-import { detectAddress } from "../../chains/domain/address-detection.js";
+import { detectAddress, isEnsName } from "../../chains/domain/address-detection.js";
+import { defaultEnsResolver } from "../../chains/infrastructure/evm/ens-resolver.js";
 import { GrowtrackError } from "../../../shared/domain/errors.js";
 import type { WalletSnapshot } from "../domain/wallet-snapshot.js";
 import type { GetWalletIntelligence } from "./get-wallet-intelligence.js";
@@ -35,8 +36,16 @@ export class AnalyzeWallet {
   ) {}
 
   public async execute(address: string, requestedChain?: string): Promise<AnalyzeResult> {
-    const chain = this.resolveChain(address, requestedChain);
-    const trimmed = address.trim();
+    let targetAddress = address.trim();
+    if (isEnsName(targetAddress)) {
+      const resolved = await defaultEnsResolver.resolve(targetAddress);
+      if (resolved) {
+        targetAddress = resolved;
+      }
+    }
+
+    const chain = this.resolveChain(targetAddress, requestedChain);
+    const trimmed = targetAddress;
 
     // Serve a fresh-enough snapshot when one exists, so a repeated search does not
     // re-hit keyless public endpoints.

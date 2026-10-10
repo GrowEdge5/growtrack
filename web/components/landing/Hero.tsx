@@ -273,8 +273,8 @@ export function Hero() {
           </div>
 
           <p className="mt-2 text-xs sm:text-sm text-navy-500 max-w-xl mx-auto font-normal">
-            Multi-chain portfolio tracking, DeFi insights, NFTs, and real-time data — powered by
-            x402.
+            Multi-chain portfolio tracking, real-time DeFi intelligence, and instant valuations —
+            powered by x402.
           </p>
         </div>
 
@@ -293,7 +293,7 @@ export function Hero() {
                   setAddress(e.target.value);
                   if (error !== null) setError(null);
                 }}
-                placeholder="Search address/Web3 ID"
+                placeholder="Search address or ENS (e.g. vitalik.eth, 0x…, ALGO, SOL, BTC)"
                 autoComplete="off"
                 spellCheck="false"
                 className="w-full bg-transparent text-navy-900 placeholder-navy-400 text-xs sm:text-base outline-none font-mono"
@@ -353,7 +353,7 @@ export function Hero() {
           {/* Under Search Prompt & Carousel Indicator */}
           <div className="mt-2.5 text-center">
             <div className="text-xs sm:text-sm font-semibold text-navy-800 tracking-tight">
-              enter address and see the power of x402
+              Enter any wallet address or ENS name to experience real-time x402 intelligence
             </div>
             <div className="flex items-center justify-center gap-1.5 mt-1.5">
               <span className="w-5 h-1.5 rounded-full bg-navy-200" />

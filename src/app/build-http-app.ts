@@ -84,7 +84,7 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
     const url = request.raw.url ?? "";
     if (url.startsWith("/v1/") || url.startsWith("/health/")) {
       return reply.status(404).send({
-        type: "https://growtrack.dev/problems/not-found",
+        type: "https://growtrack.pro/problems/not-found",
         title: "Route not found",
         status: 404,
         detail: `Route ${request.method}:${url} not found`,
@@ -96,7 +96,7 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
       reply.raw.writeHead(404, { "content-type": "application/json" });
       reply.raw.end(
         JSON.stringify({
-          type: "https://growtrack.dev/problems/not-found",
+          type: "https://growtrack.pro/problems/not-found",
           title: "Page not found",
           status: 404,
           detail: `Path ${url} was not found on this server`,

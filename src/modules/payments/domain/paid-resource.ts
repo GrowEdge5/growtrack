@@ -113,7 +113,7 @@ export function buildPaidResources(
         "on Algorand.",
       queryParams: {
         addresses:
-          "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA680F17485f5fE14a58674455179eBBfC1F40"
+          "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
       },
       queryParamsSchema: {
         addresses: {
@@ -154,7 +154,7 @@ export function buildPaidResources(
         "statement. Pay $3.00 per report in USDC on Algorand.",
       queryParams: {
         addresses:
-          "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA680F17485f5fE14a58674455179eBBfC1F40"
+          "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
       },
       queryParamsSchema: {
         addresses: {

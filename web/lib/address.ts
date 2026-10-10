@@ -20,12 +20,13 @@ const BITCOIN_BECH32 = /^(bc1|tb1)[023456789acdefghjklmnpqrstuvwxyz]{8,87}$/i;
 const BITCOIN_LEGACY = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/;
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const ALGORAND_SHAPE = /^[A-Z2-7]{58}$/;
+const ENS_NAME = /^[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*\.eth$/i;
 
 const EMPTY: AddressFormatHint = {
   family: "unknown",
   label: "Awaiting input",
   isValid: false,
-  hint: "Enter an EVM (0x…), Algorand, Solana or Bitcoin address"
+  hint: "Enter an EVM (0x…), ENS (.eth), Algorand, Solana or Bitcoin address"
 };
 
 /**
@@ -39,12 +40,21 @@ export function detectAddressFormat(raw: string): AddressFormatHint {
     return EMPTY;
   }
 
+  if (ENS_NAME.test(query)) {
+    return {
+      family: "evm",
+      label: "ENS Domain",
+      isValid: true,
+      hint: "Valid Ethereum Name Service (ENS) identifier — resolves automatically"
+    };
+  }
+
   if (EVM_ADDRESS.test(query)) {
     return {
       family: "evm",
       label: "Ethereum (EVM)",
       isValid: true,
-      hint: "Valid EVM address — Ethereum mainnet reads are supported"
+      hint: "Valid EVM address — Multi-chain L1 & L2 indexing supported"
     };
   }
   if (query.startsWith("0x")) {

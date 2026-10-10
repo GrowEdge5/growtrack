@@ -11,13 +11,40 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Growtrack | Multichain wallet intelligence",
+  metadataBase: new URL("https://growtrack.pro"),
+  title: "Growtrack | Multichain Wallet Intelligence",
   description:
-    "Look up any EVM, Algorand, Solana or Bitcoin address and see its real holdings and USD value. Pay per query in USDC on Algorand via x402.",
+    "Real-time multi-chain portfolio tracking, live on-chain DeFi intelligence, and x402 micropayments on Algorand rails. Look up any EVM, Algorand, Solana, or Bitcoin address.",
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",
-    apple: "/logo.png"
+    apple: "/apple-touch-icon.png"
+  },
+  openGraph: {
+    title: "Growtrack | Multichain Wallet Intelligence",
+    description:
+      "Real-time multi-chain portfolio tracking, live on-chain DeFi intelligence, and x402 micropayments on Algorand rails.",
+    url: "https://growtrack.pro",
+    siteName: "Growtrack",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1024,
+        height: 1024,
+        alt: "Growtrack Logo"
+      }
+    ],
+    locale: "en_US",
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Growtrack | Multichain Wallet Intelligence",
+    description:
+      "Real-time multi-chain portfolio tracking, live on-chain DeFi intelligence, and x402 micropayments on Algorand rails.",
+    site: "@growtrackpro",
+    creator: "@growtrackpro",
+    images: ["/opengraph-image.png"]
   }
 };
 

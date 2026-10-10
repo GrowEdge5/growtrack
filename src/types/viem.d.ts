@@ -34,6 +34,13 @@ declare module "viem" {
       contracts: readonly ViemMulticallContract[];
       allowFailure?: boolean;
     }): Promise<ViemMulticallResult[]>;
+    readContract(args: {
+      address: string;
+      abi: unknown;
+      functionName: string;
+      args?: readonly unknown[];
+    }): Promise<unknown>;
+    getEnsAddress(args: { name: string }): Promise<string | null>;
   }
 
   export interface ViemTransportOptions {

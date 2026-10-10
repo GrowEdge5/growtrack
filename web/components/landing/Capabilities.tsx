@@ -87,8 +87,8 @@ export function Capabilities() {
                   <span className="text-primary-500">One Unified View.</span>
                 </h3>
                 <p className="mt-2.5 text-xs text-navy-500 leading-relaxed">
-                  Connect any address to track net worth, token balances, DeFi positions, NFTs and
-                  more — without switching networks or wallets.
+                  Connect any address to track net worth, token balances, and real-time DeFi
+                  positions across major ecosystems — without switching networks or wallets.
                 </p>
               </div>
               <div className="mt-5 pt-3 border-t border-navy-100/60">
@@ -180,8 +180,8 @@ export function Capabilities() {
                   Intelligence on Demand.
                 </h3>
                 <p className="mt-2.5 text-xs text-navy-500 leading-relaxed">
-                  No recurring subscriptions. Pay per query using x402 and unlock powerful wallet
-                  analytics, risk insights, and more.
+                  No recurring subscriptions. Pay per query using x402 and unlock real-time wallet
+                  analytics, multi-chain intelligence, and institutional reports.
                 </p>
               </div>
               <div className="mt-5 pt-3 border-t border-navy-100/60">
@@ -278,14 +278,14 @@ export function Capabilities() {
 
                   {/* Inside Center of Donut */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-navy-400">
-                      Total Value
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                      Illustrative Preview
                     </span>
                     <span className="text-2xl font-black text-navy-900 tracking-tight mt-0.5">
                       $24,819
                     </span>
-                    <span className="text-xs font-extrabold text-accentGreen flex items-center gap-0.5 mt-0.5">
-                      ↗ +12.4%
+                    <span className="text-[10px] font-bold text-navy-400 mt-0.5">
+                      Example Layout
                     </span>
                   </div>
                 </div>
@@ -360,15 +360,15 @@ export function Capabilities() {
                   <div className="flex items-center justify-center gap-1 text-primary-500 mb-0.5">
                     <Wallet className="w-3.5 h-3.5" />
                   </div>
-                  <div className="text-base font-black text-navy-900">12</div>
-                  <div className="text-[10px] font-semibold text-navy-400">Wallets Tracked</div>
+                  <div className="text-base font-black text-navy-900">Multi</div>
+                  <div className="text-[10px] font-semibold text-navy-400">Wallet Intelligence</div>
                 </div>
 
                 <div className="p-2 rounded-xl bg-white/60 border border-white/80">
                   <div className="flex items-center justify-center gap-1 text-primary-500 mb-0.5">
                     <Layers className="w-3.5 h-3.5" />
                   </div>
-                  <div className="text-base font-black text-navy-900">5+</div>
+                  <div className="text-base font-black text-navy-900">40+</div>
                   <div className="text-[10px] font-semibold text-navy-400">Chains Supported</div>
                 </div>
 
