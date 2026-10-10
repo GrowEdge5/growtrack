@@ -9,11 +9,13 @@ declare module "viem" {
     };
     rpcUrls: {
       default: {
-        http: string[];
+        http: readonly string[] | string[];
       };
     };
     contracts?: {
       multicall3?: { address: string; blockCreated?: number };
+      ensUniversalResolver?: { address: string; blockCreated?: number };
+      [key: string]: unknown;
     };
   }
 
@@ -49,7 +51,7 @@ declare module "viem" {
   }
 
   export function createPublicClient(options: {
-    chain: ViemChainDefinition;
+    chain?: unknown;
     transport: unknown;
   }): ViemPublicClient;
 
@@ -59,5 +61,12 @@ declare module "viem" {
 
   export function http(url: string, options?: ViemTransportOptions): unknown;
 
+  export function fallback(transports: unknown[], options?: unknown): unknown;
+
   export function isAddress(address: string): boolean;
+}
+
+declare module "viem/chains" {
+  import type { ViemChainDefinition } from "viem";
+  export const mainnet: ViemChainDefinition;
 }

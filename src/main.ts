@@ -21,7 +21,7 @@ if (fs.existsSync(webNextDir) && fs.existsSync(nextBin) && process.env.START_WEB
   app.log.info("Starting background Next.js web application on port 3001");
   nextProcess = spawn(process.execPath, [nextBin, "start", "web", "-p", "3001"], {
     stdio: "inherit",
-    env: { ...process.env, PORT: "3001" }
+    env: { ...process.env, PORT: "3001", API_PROXY_TARGET: `http://127.0.0.1:${env.PORT}` }
   });
   nextProcess.on("error", (err) => {
     app.log.warn({ err }, "Could not start Next.js background process");

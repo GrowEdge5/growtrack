@@ -82,7 +82,7 @@ export async function buildHttpApp(container: ApplicationContainer): Promise<Fas
 
   app.setNotFoundHandler((request, reply) => {
     const url = request.raw.url ?? "";
-    if (url.startsWith("/v1/") || url.startsWith("/health/")) {
+    if (url.startsWith("/v1/") || url.startsWith("/health/") || url === "/health") {
       return reply.status(404).send({
         type: "https://growtrack.pro/problems/not-found",
         title: "Route not found",

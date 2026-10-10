@@ -42,7 +42,7 @@ export function proxyToWeb(
       reply.raw.writeHead(502, { "content-type": "application/json" });
       reply.raw.end(
         JSON.stringify({
-          type: "https://growtrack.dev/problems/gateway-error",
+          type: "https://growtrack.pro/problems/gateway-error",
           title: "Frontend Unavailable",
           status: 502,
           detail: "The web frontend service is starting or unreachable.",

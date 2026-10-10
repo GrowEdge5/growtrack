@@ -8,7 +8,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error, request, reply) => {
     if (hasZodFastifySchemaValidationErrors(error)) {
       sendProblem(reply, {
-        type: "https://growtrack.dev/problems/validation-error",
+        type: "https://growtrack.pro/problems/validation-error",
         title: "Request validation failed",
         status: 400,
         detail: "The request does not match the expected schema",
@@ -28,7 +28,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
           ? String(error.message)
           : "Too many requests. Please wait a moment and try again.";
       sendProblem(reply, {
-        type: "https://growtrack.dev/problems/rate-limited",
+        type: "https://growtrack.pro/problems/rate-limited",
         title: "Rate limit exceeded",
         status: 429,
         detail: message,
@@ -39,7 +39,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     if (error instanceof GrowtrackError) {
       sendProblem(reply, {
-        type: `https://growtrack.dev/problems/${error.code.toLowerCase().replaceAll("_", "-")}`,
+        type: `https://growtrack.pro/problems/${error.code.toLowerCase().replaceAll("_", "-")}`,
         title: error.name,
         status: error.statusCode,
         detail: error.message,
@@ -50,7 +50,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     request.log.error({ err: error }, "Unhandled request error");
     sendProblem(reply, {
-      type: "https://growtrack.dev/problems/internal-error",
+      type: "https://growtrack.pro/problems/internal-error",
       title: "Internal server error",
       status: 500,
       detail: "An unexpected error occurred",

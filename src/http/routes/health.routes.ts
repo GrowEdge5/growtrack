@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { ApplicationContainer } from "../../app/build-container.js";
 
 export function registerHealthRoutes(app: FastifyInstance, container: ApplicationContainer): void {
+  app.get("/health", () => ({ status: "ok" }));
   app.get("/health/live", () => ({ status: "ok" }));
 
   app.get("/health/ready", async (_request, reply) => {

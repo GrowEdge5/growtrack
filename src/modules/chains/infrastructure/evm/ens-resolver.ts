@@ -1,19 +1,18 @@
-import { createPublicClient, defineChain, http, isAddress } from "viem";
+import { createPublicClient, fallback, http, isAddress } from "viem";
+import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
 
 export class EnsResolver {
   private readonly client;
 
   public constructor(rpcUrl: string = "https://ethereum-rpc.publicnode.com") {
-    const ethereumChain = defineChain({
-      id: 1,
-      name: "Ethereum",
-      nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-      rpcUrls: { default: { http: [rpcUrl] } }
-    });
     this.client = createPublicClient({
-      chain: ethereumChain,
-      transport: http(rpcUrl, { retryCount: 2, timeout: 8000 })
+      chain: mainnet,
+      transport: fallback([
+        http(rpcUrl, { retryCount: 2, timeout: 8000 }),
+        http("https://cloudflare-eth.com", { retryCount: 2, timeout: 8000 }),
+        http("https://eth.llamarpc.com", { retryCount: 2, timeout: 8000 })
+      ])
     });
   }
 
