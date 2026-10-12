@@ -22,9 +22,9 @@ const environmentSchema = z
     // because a deploy serves the SPA and the API from one root domain while local
     // development calls the same API from localhost.
     CORS_ORIGIN: z.string().min(1).default("http://localhost:3000"),
-    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
-    // Budget for guest analysis route. Allows normal exploration without false positives.
-    ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1200),
+    // Budget for guest analysis route. Allows multi-wallet exploration across all chains without false positives.
+    ANALYZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(600),
     // Budget for the refresh endpoint. Lower than the global limit because each
     // refresh triggers an upstream RPC call and a queue job — abuse here exhausts
     // provider quotas. 30/min is generous for human use (tracking 10+ wallets)

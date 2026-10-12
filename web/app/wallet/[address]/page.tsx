@@ -200,35 +200,45 @@ export default function WalletDashboardPage({ params }: PageProps) {
   const [failedMap, setFailedMap] = useState<Record<string, boolean>>({});
   const [chainSearch, setChainSearch] = useState("");
   const [showAllChains, setShowAllChains] = useState(false);
-  const [defiOverview, setDefiOverview] = useState<WalletDefiOverview | null>(null);
+  const [defiByWallet, setDefiByWallet] = useState<Record<string, WalletDefiOverview>>({});
   const [defiLoading, setDefiLoading] = useState(false);
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("All");
 
   useEffect(() => {
-    const isAll = selected === "ALL";
-    const targetAddress = isAll ? tracked[0] : selected;
-    if (!targetAddress) return;
-    const hint = detectAddressFormat(targetAddress);
-    if (hint.family !== "evm") {
-      setDefiOverview(null);
+    let isMounted = true;
+    const evmAddresses = tracked.filter((addr) => detectAddressFormat(addr).family === "evm");
+    if (evmAddresses.length === 0) {
+      setDefiByWallet({});
       return;
     }
-    let isMounted = true;
+
     setDefiLoading(true);
-    void fetchDefiPositions(targetAddress)
-      .then((res) => {
-        if (isMounted) setDefiOverview(res);
+    void Promise.allSettled(
+      evmAddresses.map(async (addr) => {
+        const res = await fetchDefiPositions(addr);
+        return { key: addr.toLowerCase(), res };
       })
-      .catch(() => {
-        if (isMounted) setDefiOverview(null);
+    )
+      .then((results) => {
+        if (!isMounted) return;
+        setDefiByWallet((prev) => {
+          const next = { ...prev };
+          for (const item of results) {
+            if (item.status === "fulfilled" && item.value.res) {
+              next[item.value.key] = item.value.res;
+            }
+          }
+          return next;
+        });
       })
       .finally(() => {
         if (isMounted) setDefiLoading(false);
       });
+
     return () => {
       isMounted = false;
     };
-  }, [selected, tracked]);
+  }, [tracked]);
 
   // A new address in the URL is a new primary wallet; reset the tracked set so the
   // page never mixes two different searches.
@@ -240,6 +250,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setSelected(rawAddress);
       setSelectedChainFilter(null);
       setSnapshotsByWalletAndChain({});
+      setDefiByWallet({});
       setFailedMap({});
     }
   }, [rawAddress]);
@@ -263,57 +274,107 @@ export default function WalletDashboardPage({ params }: PageProps) {
     }
   }, []);
 
-  const loadWallet = useCallback(async (walletAddress: string, specificChain?: string) => {
-    const key = walletAddress.toLowerCase();
-    const candidateList = specificChain ? [specificChain] : getCandidateChains(walletAddress);
-    const chainsToLoad = Array.from(
-      new Set(
-        selectedChainFilter && !specificChain
-          ? [...candidateList, selectedChainFilter]
-          : candidateList
-      )
-    );
-
-    setLoadingMap((prev) => ({ ...prev, [key]: true }));
-    setLoadError(null);
-
-    try {
-      const results = await Promise.allSettled(
-        chainsToLoad.map(async (chain) => {
-          const res = await analyzeWallet(walletAddress, chain);
-          return { chain, res };
-        })
+  const loadWallet = useCallback(
+    async (walletAddress: string, specificChain?: string) => {
+      const key = walletAddress.toLowerCase();
+      const candidateList = specificChain ? [specificChain] : getCandidateChains(walletAddress);
+      const allChainsToLoad = Array.from(
+        new Set(
+          selectedChainFilter && !specificChain
+            ? [...candidateList, selectedChainFilter]
+            : candidateList
+        )
       );
 
-      let hasSuccess = false;
-      let firstErr: unknown = null;
+      setLoadingMap((prev) => ({ ...prev, [key]: true }));
+      setLoadError(null);
 
-      setSnapshotsByWalletAndChain((prev) => {
-        const walletCopy = { ...(prev[key] ?? {}) };
-        for (const item of results) {
-          if (item.status === "fulfilled") {
-            walletCopy[item.value.chain] = item.value.res;
-            hasSuccess = true;
-          } else {
-            if (!firstErr) firstErr = item.reason;
+      // If EVM with many chains, prioritize high-cap chains (ETH, Base, Arbitrum, etc.) first
+      // so whale balances ($10M-$20M) load in <1s without socket saturation.
+      const isEvmMulti = !specificChain && allChainsToLoad.length > 5;
+      const priorityChains = isEvmMulti
+        ? Array.from(
+            new Set([
+              ...(selectedChainFilter ? [selectedChainFilter] : []),
+              "ethereum",
+              "base",
+              "arbitrum",
+              "optimism",
+              "polygon",
+              "bsc",
+              "avalanche"
+            ])
+          ).filter((c) => allChainsToLoad.includes(c))
+        : allChainsToLoad;
+
+      const secondaryChains = isEvmMulti
+        ? allChainsToLoad.filter((c) => !priorityChains.includes(c))
+        : [];
+
+      try {
+        // Stage 1: Load priority chains first
+        const stage1Results = await Promise.allSettled(
+          priorityChains.map(async (chain) => {
+            const res = await analyzeWallet(walletAddress, chain);
+            return { chain, res };
+          })
+        );
+
+        let hasSuccess = false;
+        let firstErr: unknown = null;
+
+        setSnapshotsByWalletAndChain((prev) => {
+          const walletCopy = { ...(prev[key] ?? {}) };
+          for (const item of stage1Results) {
+            if (item.status === "fulfilled") {
+              walletCopy[item.value.chain] = item.value.res;
+              hasSuccess = true;
+            } else {
+              if (!firstErr) firstErr = item.reason;
+            }
+          }
+          return { ...prev, [key]: walletCopy };
+        });
+
+        if (hasSuccess) {
+          setFailedMap((prev) => ({ ...prev, [key]: false }));
+        } else if (firstErr && secondaryChains.length === 0) {
+          setFailedMap((prev) => ({ ...prev, [key]: true }));
+          setLoadError(describeLoadError(firstErr, walletAddress));
+        }
+
+        // Stage 2: Load secondary chains in controlled batches of 5 so browser connections and RPCs don't stall
+        if (secondaryChains.length > 0) {
+          const batchSize = 5;
+          for (let i = 0; i < secondaryChains.length; i += batchSize) {
+            const batch = secondaryChains.slice(i, i + batchSize);
+            const batchResults = await Promise.allSettled(
+              batch.map(async (chain) => {
+                const res = await analyzeWallet(walletAddress, chain);
+                return { chain, res };
+              })
+            );
+            setSnapshotsByWalletAndChain((prev) => {
+              const walletCopy = { ...(prev[key] ?? {}) };
+              for (const item of batchResults) {
+                if (item.status === "fulfilled") {
+                  walletCopy[item.value.chain] = item.value.res;
+                  hasSuccess = true;
+                }
+              }
+              return { ...prev, [key]: walletCopy };
+            });
           }
         }
-        return { ...prev, [key]: walletCopy };
-      });
-
-      if (hasSuccess) {
-        setFailedMap((prev) => ({ ...prev, [key]: false }));
-      } else if (firstErr) {
+      } catch (error) {
         setFailedMap((prev) => ({ ...prev, [key]: true }));
-        setLoadError(describeLoadError(firstErr, walletAddress));
+        setLoadError(describeLoadError(error, walletAddress));
+      } finally {
+        setLoadingMap((prev) => ({ ...prev, [key]: false }));
       }
-    } catch (error) {
-      setFailedMap((prev) => ({ ...prev, [key]: true }));
-      setLoadError(describeLoadError(error, walletAddress));
-    } finally {
-      setLoadingMap((prev) => ({ ...prev, [key]: false }));
-    }
-  }, []);
+    },
+    [selectedChainFilter]
+  );
 
   // Ensure all tracked wallets have their snapshots fetched
   useEffect(() => {
@@ -464,26 +525,65 @@ export default function WalletDashboardPage({ params }: PageProps) {
     return hasAnyPriced ? sum.toFixed(2) : undefined;
   }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
+  // Consolidated DeFi overview: aggregates all tracked wallets when All Wallets is active,
+  // or displays the single selected wallet's DeFi positions when an individual wallet is selected.
+  const defiOverview = useMemo<WalletDefiOverview | null>(() => {
+    if (isSelectedAll) {
+      const allProtocols: DefiProtocolGroup[] = [];
+      let totalDefiVal = 0;
+      for (const addr of tracked) {
+        const walletDefi = defiByWallet[addr.toLowerCase()];
+        if (walletDefi) {
+          const val = parseFloat(walletDefi.totalDefiValueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+          if (!isNaN(val)) totalDefiVal += val;
+          if (Array.isArray(walletDefi.protocols)) {
+            for (const proto of walletDefi.protocols) {
+              allProtocols.push({
+                ...proto,
+                name: tracked.length > 1 ? `${proto.name} (${shorten(addr, 4, 3)})` : proto.name
+              });
+            }
+          }
+        }
+      }
+      if (allProtocols.length === 0 && totalDefiVal === 0) {
+        return null;
+      }
+      return {
+        address: "All Wallets (Consolidated)",
+        totalDefiValueUsd: totalDefiVal.toFixed(2),
+        protocolsCount: allProtocols.length,
+        protocols: allProtocols
+      };
+    }
+    return defiByWallet[selected.toLowerCase()] ?? null;
+  }, [isSelectedAll, tracked, selected, defiByWallet]);
+
   // DeFi positions value matching the current chain filter view (or all DeFi value if All Chains)
   const defiValueForFilterUsd = useMemo(() => {
-    if (!defiOverview?.protocols) return 0;
-    if (selectedChainFilter !== null) {
-      let sum = 0;
-      for (const proto of defiOverview.protocols) {
+    const walletsToProcess = isSelectedAll ? tracked : [selected];
+    let sum = 0;
+    for (const addr of walletsToProcess) {
+      const walletDefi = defiByWallet[addr.toLowerCase()];
+      if (!walletDefi?.protocols) continue;
+      for (const proto of walletDefi.protocols) {
         for (const pos of proto.positions) {
-          if (pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()) {
+          if (
+            selectedChainFilter === null ||
+            pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
+          ) {
             const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
             if (!isNaN(val)) sum += val;
           }
         }
       }
-      return sum;
     }
-    const val = parseFloat(defiOverview.totalDefiValueUsd?.replace(/[^0-9.-]+/g, "") || "0");
-    return isNaN(val) ? 0 : val;
-  }, [defiOverview, selectedChainFilter]);
+    return sum;
+  }, [isSelectedAll, tracked, selected, defiByWallet, selectedChainFilter]);
 
   // Total Net Worth combining token holdings and DeFi positions (matching DeBank)
+  // When All Wallets is active: Consolidated sum of (Holdings + DeFi) for wallet 1 + wallet 2 + wallet 3 ...
+  // When a specific wallet is clicked: Exact sum of (Holdings + DeFi) for only that selected wallet.
   const totalNetWorthUsd = useMemo(() => {
     const portfolioVal = totalPortfolioValueUsd ? parseFloat(totalPortfolioValueUsd) : 0;
     const combined = portfolioVal + defiValueForFilterUsd;
@@ -492,6 +592,49 @@ export default function WalletDashboardPage({ params }: PageProps) {
     }
     return combined.toFixed(2);
   }, [totalPortfolioValueUsd, defiValueForFilterUsd]);
+
+  // Per-wallet Net Worth (Holdings + DeFi) for display on wallet selector pills
+  const walletNetWorthMap = useMemo(() => {
+    const map: Record<string, { holdings: number; defi: number; total: number; hasData: boolean }> =
+      {};
+    for (const addr of tracked) {
+      const key = addr.toLowerCase();
+      let holdings = 0;
+      let hasHoldings = false;
+      const walletSnaps = snapshotsByWalletAndChain[key] ?? {};
+      for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+        if (selectedChainFilter !== null && chainSlug !== selectedChainFilter) continue;
+        if (snap?.data?.totalValueUsd !== undefined) {
+          holdings += Number(snap.data.totalValueUsd);
+          hasHoldings = true;
+        }
+      }
+
+      let defi = 0;
+      const walletDefi = defiByWallet[key];
+      if (walletDefi?.protocols) {
+        for (const proto of walletDefi.protocols) {
+          for (const pos of proto.positions) {
+            if (
+              selectedChainFilter === null ||
+              pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
+            ) {
+              const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+              if (!isNaN(val)) defi += val;
+            }
+          }
+        }
+      }
+
+      map[key] = {
+        holdings,
+        defi,
+        total: holdings + defi,
+        hasData: hasHoldings || defi > 0
+      };
+    }
+    return map;
+  }, [tracked, snapshotsByWalletAndChain, defiByWallet, selectedChainFilter]);
 
   const filteredRows = useMemo(() => {
     const query = searchToken.trim().toLowerCase();
@@ -777,6 +920,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
       delete copy[entryToRemove.toLowerCase()];
       return copy;
     });
+    setDefiByWallet((prev) => {
+      const copy = { ...prev };
+      delete copy[entryToRemove.toLowerCase()];
+      return copy;
+    });
     if (selected.toLowerCase() === entryToRemove.toLowerCase()) {
       setSelected(remaining.length > 1 ? "ALL" : remaining[0]);
     }
@@ -1033,12 +1181,14 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 value={formatUsd(totalNetWorthUsd) ?? "Pending pricing"}
                 note={
                   totalNetWorthUsd === undefined
-                    ? "No trusted price for these assets yet"
+                    ? "Pending valuation for discovered assets"
                     : defiValueForFilterUsd > 0 && totalPortfolioValueUsd !== undefined
                       ? `Includes $${Number(totalPortfolioValueUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Assets + $${defiValueForFilterUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DeFi`
-                      : unpricedCount > 0
-                        ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
-                        : "Every discovered asset is priced"
+                      : defiValueForFilterUsd > 0
+                        ? `Includes $${defiValueForFilterUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DeFi positions`
+                        : unpricedCount > 0
+                          ? `Excludes ${unpricedCount} unpriced asset${unpricedCount === 1 ? "" : "s"}`
+                          : "Every discovered asset is priced"
                 }
                 noteTone={totalNetWorthUsd === undefined || unpricedCount > 0 ? "warn" : "ok"}
               />
@@ -1091,7 +1241,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     <h3 className="text-sm font-black text-navy-900 tracking-tight flex items-center gap-2">
                       <span>Multi-Chain Portfolio Breakdown</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-navy-100 text-navy-600">
-                        {ALL_SUPPORTED_CHAINS.length} Chains
+                        50+ Chains
                       </span>
                     </h3>
                     <p className="text-[11px] text-navy-500 font-medium">
@@ -1255,7 +1405,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     <span>
                       {showAllChains
                         ? "Show Less"
-                        : `Show All ${ALL_SUPPORTED_CHAINS.length} Chains (Robinhood, Ink, X Layer, etc.)`}
+                        : "Show All 50+ Chains (Robinhood, Ink, X Layer, etc.)"}
                     </span>
                   </button>
                 </div>
@@ -1294,6 +1444,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     >
                       <Layers className="w-3.5 h-3.5" />
                       <span>All Wallets ({tracked.length}) · Consolidated</span>
+                      {totalNetWorthUsd !== undefined && isSelectedAll && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-white/20 text-white">
+                          {formatUsd(totalNetWorthUsd)}
+                        </span>
+                      )}
                     </button>
                   )}
 
@@ -1303,14 +1458,16 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     const displayName =
                       KNOWN_NAMES[entry.toLowerCase()] ??
                       (index === 0 ? "Searched" : `Wallet ${index + 1}`);
+                    const wInfo = walletNetWorthMap[entry.toLowerCase()];
+                    const wVal = wInfo && wInfo.hasData ? formatUsd(wInfo.total) : null;
 
                     return (
                       <div
                         key={entry}
                         onClick={() => setSelected(entry)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer select-none ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "bg-primary-500 text-white shadow-xs"
+                            ? "bg-primary-500 text-white shadow-xs ring-2 ring-primary-300"
                             : "bg-white/80 text-navy-700 hover:bg-white border border-navy-100/60"
                         }`}
                         title={entry}
@@ -1318,6 +1475,17 @@ export default function WalletDashboardPage({ params }: PageProps) {
                         <span>
                           {displayName} · {shorten(entry, 4, 3)}
                         </span>
+                        {wVal && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-black ${
+                              isSelected
+                                ? "bg-white/20 text-white"
+                                : "bg-primary-50 text-primary-700 border border-primary-200/60"
+                            }`}
+                          >
+                            {wVal}
+                          </span>
+                        )}
                         {tracked.length > 1 && (
                           <button
                             type="button"

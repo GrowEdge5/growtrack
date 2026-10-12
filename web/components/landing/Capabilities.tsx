@@ -368,7 +368,7 @@ export function Capabilities() {
                   <div className="flex items-center justify-center gap-1 text-primary-500 mb-0.5">
                     <Layers className="w-3.5 h-3.5" />
                   </div>
-                  <div className="text-base font-black text-navy-900">40+</div>
+                  <div className="text-base font-black text-navy-900">50+</div>
                   <div className="text-[10px] font-semibold text-navy-400">Chains Supported</div>
                 </div>
 

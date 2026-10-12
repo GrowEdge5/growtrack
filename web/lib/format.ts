@@ -14,14 +14,24 @@ export function formatUsd(value: string | number | undefined): string | null {
   if (value === undefined || value === null || value === "") {
     return null;
   }
-  const numeric = typeof value === "number" ? value : Number(value);
+  const numeric =
+    typeof value === "number" ? value : Number(String(value).replace(/[^0-9.-]+/g, ""));
   if (!Number.isFinite(numeric)) {
     return null;
   }
 
   const absolute = Math.abs(numeric);
+  if (absolute >= 1_000_000_000) {
+    return `$${(numeric / 1_000_000_000).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}B`;
+  }
   if (absolute >= 1_000_000) {
-    return `$${(numeric / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}M`;
+    return `$${(numeric / 1_000_000).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}M`;
   }
 
   // Sub-cent USD values exist on-chain but are meaningless at 2 decimals, so tiny
