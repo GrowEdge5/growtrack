@@ -42,10 +42,10 @@ export default function AboutPage() {
             </div>
             <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
               <Cpu className="w-6 h-6 text-primary-400 mb-3" />
-              <h3 className="font-bold text-base mb-1">40+ Blockchains</h3>
+              <h3 className="font-bold text-base mb-1">50+ Blockchains</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
                 Aggregating real-time holdings across Ethereum, Base, Arbitrum, Algorand, Solana,
-                Bitcoin, and 35+ EVM Layer 1 and Layer 2 networks.
+                Bitcoin, and 45+ EVM Layer 1 and Layer 2 networks.
               </p>
             </div>
             <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08]">

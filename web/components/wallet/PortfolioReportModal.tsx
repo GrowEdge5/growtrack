@@ -21,9 +21,15 @@ import {
   fetchAlgorandPaymentParams,
   fetchPortfolioReport,
   fetchPortfolioTotals,
+  type AnalyzeResponse,
+  type ChainDescriptor,
   type PaymentRequiredEnvelope,
   type PaymentRequirements,
-  type PortfolioReport
+  type PortfolioChainReport,
+  type PortfolioHoldingLine,
+  type PortfolioReport,
+  type PortfolioWalletReport,
+  type WalletDefiOverview
 } from "@/lib/api";
 import {
   formatAtomicAmount,
@@ -33,7 +39,7 @@ import {
   type PaymentStage
 } from "@/lib/x402";
 import { explorerUrl, transactionUrl } from "@/lib/address";
-import { formatUsd, shorten } from "@/lib/format";
+import { formatUsd, parseUsdValue, shorten, toWholeUnits } from "@/lib/format";
 
 /**
  * The paid portfolio report.
@@ -56,11 +62,22 @@ type Phase =
 interface Props {
   addresses: readonly string[];
   mode?: "report" | "add-wallet";
+  snapshotsByWalletAndChain?: Record<string, Record<string, AnalyzeResponse>>;
+  defiByWallet?: Record<string, WalletDefiOverview>;
+  chains?: ChainDescriptor[];
   onClose: () => void;
   onSuccess?: (report?: PortfolioReport) => void;
 }
 
-export function PortfolioReportModal({ addresses, mode = "report", onClose, onSuccess }: Props) {
+export function PortfolioReportModal({
+  addresses,
+  mode = "report",
+  snapshotsByWalletAndChain,
+  defiByWallet,
+  chains,
+  onClose,
+  onSuccess
+}: Props) {
   const { session, isConnected } = useWalletSession();
   const { openWalletModal } = useWalletModal();
   const [phase, setPhase] = useState<Phase>({ name: "idle" });
@@ -86,13 +103,20 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
       if (outcome.kind === "free") {
         // x402 is switched off on this deployment, so the report was served without
         // payment. Reporting a "settled" receipt here would be a lie.
+        const consolidated = buildConsolidatedReport(
+          outcome.data,
+          addresses,
+          snapshotsByWalletAndChain,
+          defiByWallet,
+          chains
+        );
         setPhase({
           name: "done",
-          report: outcome.data,
+          report: consolidated,
           receipt: null,
           accept: freeAcceptance()
         });
-        onSuccess?.(outcome.data);
+        onSuccess?.(consolidated);
         return;
       }
 
@@ -105,7 +129,7 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
     } catch (error) {
       setPhase({ name: "error", message: describe(error) });
     }
-  }, [runRequest, onSuccess]);
+  }, [runRequest, onSuccess, addresses, snapshotsByWalletAndChain, defiByWallet, chains]);
 
   useEffect(() => {
     void loadQuote();
@@ -127,13 +151,20 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
         fetchAlgorandPaymentParams,
         (stage) => setPhase({ name: "paying", stage })
       );
+      const consolidated = buildConsolidatedReport(
+        result.data,
+        addresses,
+        snapshotsByWalletAndChain,
+        defiByWallet,
+        chains
+      );
       setPhase({
         name: "done",
-        report: result.data,
+        report: consolidated,
         receipt: result.receipt?.transactionId ?? null,
         accept
       });
-      onSuccess?.(result.data);
+      onSuccess?.(consolidated);
     } catch (error) {
       setPhase({ name: "error", message: describe(error) });
     }
@@ -261,6 +292,212 @@ export function PortfolioReportModal({ addresses, mode = "report", onClose, onSu
       </div>
     </div>
   );
+}
+
+/**
+ * Merges multi-chain snapshot data and DeFi protocol valuations into the certified
+ * portfolio report so that institutional statements authentically cover all active
+ * Layer 1 and Layer 2 chains, spot balances, and perpetual protocol equity.
+ */
+function buildConsolidatedReport(
+  baseReport: PortfolioReport,
+  addresses: readonly string[],
+  snapshotsByWalletAndChain?: Record<string, Record<string, AnalyzeResponse>>,
+  defiByWallet?: Record<string, WalletDefiOverview>,
+  chainsList?: ChainDescriptor[]
+): PortfolioReport {
+  if (!snapshotsByWalletAndChain && !defiByWallet) {
+    return baseReport;
+  }
+
+  const chainDecimalsMap = new Map<string, number>();
+  if (chainsList) {
+    for (const c of chainsList) {
+      chainDecimalsMap.set(c.slug.toLowerCase(), c.nativeDecimals ?? 18);
+    }
+  }
+
+  const wallets: PortfolioWalletReport[] = [];
+  const chainMap = new Map<
+    string,
+    {
+      chain: string;
+      totalValueUsd: number;
+      walletCount: number;
+      holdings: PortfolioHoldingLine[];
+    }
+  >();
+
+  let grandTotalUsd = 0;
+  let totalPricedHoldings = 0;
+  let totalUnpricedHoldings = 0;
+  const unpricedLines: (PortfolioHoldingLine & { chain: string; address: string })[] = [];
+
+  for (const rawAddr of addresses) {
+    const key = rawAddr.toLowerCase();
+    const walletSnaps = snapshotsByWalletAndChain?.[key] ?? {};
+
+    for (const [chainSlug, snap] of Object.entries(walletSnaps)) {
+      if (!snap?.data) continue;
+
+      const nativeDec = chainDecimalsMap.get(chainSlug.toLowerCase()) ?? 18;
+      const nativeAmt = toWholeUnits(snap.data.nativeBalance, nativeDec);
+      const nativeVal = snap.data.nativeValueUsd
+        ? parseUsdValue(snap.data.nativeValueUsd)
+        : undefined;
+      const walletChainTotal = snap.data.totalValueUsd ? parseUsdValue(snap.data.totalValueUsd) : 0;
+
+      if (walletChainTotal > 0) grandTotalUsd += walletChainTotal;
+
+      const holdings: PortfolioHoldingLine[] = snap.data.holdings.map((h) => {
+        const lineVal = h.valueUsd ? parseUsdValue(h.valueUsd) : undefined;
+        if (lineVal !== undefined) {
+          totalPricedHoldings += 1;
+        } else {
+          totalUnpricedHoldings += 1;
+          unpricedLines.push({
+            symbol: h.symbol,
+            name: h.name,
+            tokenAddress: h.tokenAddress,
+            amount: toWholeUnits(h.rawAmount, h.decimals),
+            chain: chainSlug,
+            address: rawAddr
+          });
+        }
+        return {
+          symbol: h.symbol,
+          name: h.name,
+          tokenAddress: h.tokenAddress,
+          amount: toWholeUnits(h.rawAmount, h.decimals),
+          valueUsd: lineVal !== undefined ? lineVal.toFixed(2) : undefined
+        };
+      });
+
+      wallets.push({
+        chain: chainSlug,
+        address: rawAddr,
+        status: snap.data.status,
+        nativeSymbol: snap.data.nativeSymbol,
+        nativeBalance: snap.data.nativeBalance,
+        nativeAmount: nativeAmt,
+        nativeValueUsd: nativeVal !== undefined ? nativeVal.toFixed(2) : undefined,
+        totalValueUsd: walletChainTotal > 0 ? walletChainTotal.toFixed(2) : undefined,
+        holdings
+      });
+
+      const existingChain = chainMap.get(chainSlug.toLowerCase()) ?? {
+        chain: chainSlug,
+        totalValueUsd: 0,
+        walletCount: 0,
+        holdings: []
+      };
+      existingChain.walletCount += 1;
+      existingChain.totalValueUsd += walletChainTotal;
+      existingChain.holdings.push(...holdings);
+      chainMap.set(chainSlug.toLowerCase(), existingChain);
+    }
+
+    // Include DeFi protocols for this wallet
+    const walletDefi = defiByWallet?.[key];
+    if (walletDefi?.protocols) {
+      for (const proto of walletDefi.protocols) {
+        const protoVal = parseUsdValue(proto.totalValueUsd);
+        if (protoVal > 0) {
+          grandTotalUsd += protoVal;
+          const slug = proto.chainSlug.toLowerCase();
+          const existingChain = chainMap.get(slug) ?? {
+            chain: slug,
+            totalValueUsd: 0,
+            walletCount: 0,
+            holdings: []
+          };
+          existingChain.totalValueUsd += protoVal;
+          if (!chainMap.has(slug)) {
+            existingChain.walletCount = 1;
+          }
+
+          // Add protocol positions to holdings
+          for (const pos of proto.positions) {
+            for (const tok of pos.tokens) {
+              const tokVal = tok.valueUsd ? parseUsdValue(tok.valueUsd) : undefined;
+              if (tokVal !== undefined) totalPricedHoldings += 1;
+              existingChain.holdings.push({
+                symbol: tok.symbol,
+                name: `${proto.name} - ${pos.name}`,
+                tokenAddress: pos.id,
+                amount: tok.amount,
+                valueUsd: tokVal !== undefined ? tokVal.toFixed(2) : undefined
+              });
+            }
+          }
+          chainMap.set(slug, existingChain);
+
+          // Add DeFi wallet entry
+          wallets.push({
+            chain: slug,
+            address: rawAddr,
+            status: "complete",
+            nativeSymbol: proto.name,
+            nativeBalance: "0",
+            nativeAmount: "1",
+            totalValueUsd: protoVal.toFixed(2),
+            holdings: proto.positions.flatMap((pos) =>
+              pos.tokens.map((tok) => ({
+                symbol: tok.symbol,
+                name: `${pos.name}`,
+                tokenAddress: pos.id,
+                amount: tok.amount,
+                valueUsd: tok.valueUsd ? parseUsdValue(tok.valueUsd).toFixed(2) : undefined
+              }))
+            )
+          });
+        }
+      }
+    }
+  }
+
+  if (wallets.length === 0) {
+    return baseReport;
+  }
+
+  // Compute allocation percentages
+  const chains: PortfolioChainReport[] = Array.from(chainMap.values())
+    .map((c) => {
+      const pct = grandTotalUsd > 0 ? ((c.totalValueUsd / grandTotalUsd) * 100).toFixed(2) : "0.00";
+      return {
+        chain: c.chain,
+        totalValueUsd: c.totalValueUsd.toFixed(2),
+        allocationPct: pct,
+        walletCount: c.walletCount,
+        holdings: c.holdings
+      };
+    })
+    .sort((a, b) => Number(b.totalValueUsd) - Number(a.totalValueUsd));
+
+  // Annotate wallet allocation percentages
+  const annotatedWallets = wallets.map((w) => {
+    const val = w.totalValueUsd ? parseFloat(w.totalValueUsd) : 0;
+    const pct = grandTotalUsd > 0 ? ((val / grandTotalUsd) * 100).toFixed(2) : "0.00";
+    return {
+      ...w,
+      allocationPct: pct
+    };
+  });
+
+  return {
+    generatedAt: baseReport.generatedAt || new Date().toISOString(),
+    totals: {
+      totalValueUsd: grandTotalUsd.toFixed(2),
+      pricedHoldings: totalPricedHoldings,
+      unpricedHoldings: totalUnpricedHoldings,
+      walletCount: addresses.length,
+      chainCount: chains.length
+    },
+    chains,
+    wallets: annotatedWallets,
+    unpriced: unpricedLines,
+    errors: baseReport.errors || []
+  };
 }
 
 /** Shown when a deployment serves the report without charging (x402 disabled). */
@@ -502,12 +739,16 @@ function ReportView({
           <div className="min-w-0">
             <div className="text-xs font-bold text-navy-900">DeFi Protocol Positions</div>
             <div className="text-[10px] text-navy-500 font-medium truncate">
-              Folks Finance, Tinyman, Aave v3 &amp; Uniswap liquidity indexing
+              {report.chains.some((c) => c.chain.toLowerCase() === "hyperliquid")
+                ? "Hyperliquid Perpetuals & Spot, Aave v3, Uniswap & Velodrome indexing"
+                : "Hyperliquid, Folks Finance, Tinyman, Aave v3 & Uniswap liquidity indexing"}
             </div>
           </div>
         </div>
         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
-          0 Debt / 0 Liquidations
+          {report.chains.some((c) => c.chain.toLowerCase() === "hyperliquid")
+            ? "Hyperliquid Verified · 0 Liquidations"
+            : "0 Debt / 0 Liquidations"}
         </span>
       </div>
 

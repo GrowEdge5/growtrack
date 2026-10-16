@@ -399,17 +399,22 @@ export class DefiPositionService {
       const positions: DefiPositionItem[] = [];
       let totalValueUsd = 0;
 
-      // Handle spot balances
+      // Handle spot balances (excluding USDC margin hold already tracked in perp clearinghouse)
       if (spotRes.status === "fulfilled" && spotRes.value.ok) {
         const spotData = (await spotRes.value.json()) as HyperliquidSpotState;
         if (Array.isArray(spotData.balances)) {
           for (const bal of spotData.balances) {
-            const amount = parseFloat(bal.total) || 0;
-            if (amount > 0) {
+            const total = parseFloat(bal.total) || 0;
+            const hold = parseFloat(bal.hold) || 0;
+            const free = Math.max(0, total - hold);
+            if (total > 0 || free > 0) {
               let valUsd = parseFloat(bal.entryNtl) || 0;
               if (valUsd === 0) {
-                if (bal.coin.includes("USD")) valUsd = amount;
-                else if (bal.coin === "HYPE") valUsd = amount * 65.0;
+                if (bal.coin === "USDC" || bal.coin.includes("USD")) {
+                  valUsd = free;
+                } else if (bal.coin === "HYPE") {
+                  valUsd = (free > 0 ? free : total) * 65.0;
+                }
               }
               totalValueUsd += valUsd;
 
@@ -421,7 +426,7 @@ export class DefiPositionService {
                 tokens: [
                   {
                     symbol: bal.coin,
-                    amount: bal.total,
+                    amount: bal.coin === "USDC" ? free.toString() : bal.total,
                     valueUsd: valUsd > 0 ? valUsd.toFixed(2) : undefined
                   }
                 ],
@@ -467,9 +472,13 @@ export class DefiPositionService {
             const pos = ap.position;
             if (pos && parseFloat(pos.szi ?? "0") !== 0) {
               const posVal = parseFloat(pos.positionValue ?? "0") || 0;
+              const pnl = parseFloat(pos.unrealizedPnl ?? "0") || 0;
+              const isShort = (pos.szi ?? "").startsWith("-");
+              const direction = isShort ? "Short" : "Long";
+              const lev = pos.leverage?.value ? `${pos.leverage.value}x` : "";
               positions.push({
                 id: `hl-pos-${pos.coin?.toLowerCase()}`,
-                name: `${pos.coin} Perp`,
+                name: `${pos.coin} Perp (${direction} ${lev})`.trim(),
                 category: "Perpetuals",
                 chainSlug: "hyperliquid",
                 tokens: [
@@ -479,8 +488,9 @@ export class DefiPositionService {
                     valueUsd: posVal.toFixed(2)
                   }
                 ],
-                valueUsd: posVal.toFixed(2),
+                valueUsd: pnl.toFixed(2),
                 details: {
+                  notionalValue: pos.positionValue,
                   entryPrice: pos.entryPx,
                   liquidationPrice: pos.liquidationPx,
                   unrealizedPnl: pos.unrealizedPnl,

@@ -58,7 +58,14 @@ import {
   coinKeyForSymbol,
   getChainLogoSrc
 } from "@/lib/address";
-import { formatAmount, formatRelativeTime, formatUsd, shorten, toWholeUnits } from "@/lib/format";
+import {
+  formatAmount,
+  formatRelativeTime,
+  formatUsd,
+  parseUsdValue,
+  shorten,
+  toWholeUnits
+} from "@/lib/format";
 
 const KNOWN_NAMES: Readonly<Record<string, string>> = {
   "0xd8da6bf26964af9d7eed9e03e53415d37aa96045": "vitalik.eth",
@@ -534,7 +541,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
       for (const addr of tracked) {
         const walletDefi = defiByWallet[addr.toLowerCase()];
         if (walletDefi) {
-          const val = parseFloat(walletDefi.totalDefiValueUsd?.replace(/[^0-9.-]+/g, "") || "0");
+          const val = parseUsdValue(walletDefi.totalDefiValueUsd);
           if (!isNaN(val)) totalDefiVal += val;
           if (Array.isArray(walletDefi.protocols)) {
             for (const proto of walletDefi.protocols) {
@@ -567,14 +574,12 @@ export default function WalletDashboardPage({ params }: PageProps) {
       const walletDefi = defiByWallet[addr.toLowerCase()];
       if (!walletDefi?.protocols) continue;
       for (const proto of walletDefi.protocols) {
-        for (const pos of proto.positions) {
-          if (
-            selectedChainFilter === null ||
-            pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
-          ) {
-            const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
-            if (!isNaN(val)) sum += val;
-          }
+        if (
+          selectedChainFilter === null ||
+          proto.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
+        ) {
+          const val = parseUsdValue(proto.totalValueUsd);
+          if (!isNaN(val)) sum += val;
         }
       }
     }
@@ -614,14 +619,12 @@ export default function WalletDashboardPage({ params }: PageProps) {
       const walletDefi = defiByWallet[key];
       if (walletDefi?.protocols) {
         for (const proto of walletDefi.protocols) {
-          for (const pos of proto.positions) {
-            if (
-              selectedChainFilter === null ||
-              pos.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
-            ) {
-              const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
-              if (!isNaN(val)) defi += val;
-            }
+          if (
+            selectedChainFilter === null ||
+            proto.chainSlug.toLowerCase() === selectedChainFilter.toLowerCase()
+          ) {
+            const val = parseUsdValue(proto.totalValueUsd);
+            if (!isNaN(val)) defi += val;
           }
         }
       }
@@ -686,15 +689,13 @@ export default function WalletDashboardPage({ params }: PageProps) {
     // Include DeFi positions in chain totals
     if (defiOverview?.protocols) {
       for (const proto of defiOverview.protocols) {
-        for (const pos of proto.positions) {
-          const slug = pos.chainSlug.toLowerCase();
-          if (map[slug]) {
-            const val = parseFloat(pos.valueUsd?.replace(/[^0-9.-]+/g, "") || "0");
-            if (!isNaN(val) && val > 0) {
-              map[slug].hasAssets = true;
-              map[slug].totalUsd += val;
-              map[slug].assetCount += 1;
-            }
+        const slug = proto.chainSlug.toLowerCase();
+        if (map[slug]) {
+          const val = parseUsdValue(proto.totalValueUsd);
+          if (!isNaN(val) && val > 0) {
+            map[slug].hasAssets = true;
+            map[slug].totalUsd += val;
+            map[slug].assetCount += proto.positions.length;
           }
         }
       }
@@ -1032,7 +1033,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Layers className="w-3.5 h-3.5 text-primary-500" />
-                        40+ Layer 1 and Layer 2 chains
+                        50+ Layer 1 and Layer 2 chains
                       </span>
                     </div>
                   </>
@@ -2552,6 +2553,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
         <PortfolioReportModal
           addresses={reportModalAddresses}
           mode={modalMode}
+          snapshotsByWalletAndChain={snapshotsByWalletAndChain}
+          defiByWallet={defiByWallet}
+          chains={chains}
           onClose={() => {
             setReportModalAddresses(null);
             setPendingWalletToAdd(null);

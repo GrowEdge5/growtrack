@@ -9,13 +9,44 @@ const UNPRICED_LABEL = "Unpriced";
 
 export const UNPRICED = UNPRICED_LABEL;
 
+/**
+ * Safely parses any USD or currency string/number into a numeric value,
+ * properly preserving 'B' (billions), 'M' (millions), 'K' (thousands), commas,
+ * dollar signs, and negative values.
+ */
+export function parseUsdValue(value: string | number | undefined | null): number {
+  if (value === undefined || value === null || value === "") {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+  const raw = String(value).trim();
+  const isBillion = /b$/i.test(raw);
+  const isMillion = /m$/i.test(raw);
+  const isThousand = /k$/i.test(raw);
+
+  const clean = raw.replace(/[^0-9.-]+/g, "");
+  if (clean === "" || clean === "-") {
+    return 0;
+  }
+  const parsed = parseFloat(clean);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  if (isBillion) return parsed * 1_000_000_000;
+  if (isMillion) return parsed * 1_000_000;
+  if (isThousand) return parsed * 1_000;
+  return parsed;
+}
+
 /** Big numbers lose their meaning past a point; abbreviate only above the millions. */
 export function formatUsd(value: string | number | undefined): string | null {
   if (value === undefined || value === null || value === "") {
     return null;
   }
-  const numeric =
-    typeof value === "number" ? value : Number(String(value).replace(/[^0-9.-]+/g, ""));
+  const numeric = typeof value === "number" ? value : parseUsdValue(value);
   if (!Number.isFinite(numeric)) {
     return null;
   }
