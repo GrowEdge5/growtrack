@@ -330,8 +330,6 @@ function buildConsolidatedReport(
 
   let grandTotalUsd = 0;
   let totalPricedHoldings = 0;
-  let totalUnpricedHoldings = 0;
-  const unpricedLines: (PortfolioHoldingLine & { chain: string; address: string })[] = [];
 
   for (const rawAddr of addresses) {
     const key = rawAddr.toLowerCase();
@@ -344,34 +342,49 @@ function buildConsolidatedReport(
       const nativeAmt = toWholeUnits(snap.data.nativeBalance, nativeDec);
       const nativeVal = snap.data.nativeValueUsd
         ? parseUsdValue(snap.data.nativeValueUsd)
-        : undefined;
+        : 0;
       const walletChainTotal = snap.data.totalValueUsd ? parseUsdValue(snap.data.totalValueUsd) : 0;
 
-      if (walletChainTotal > 0) grandTotalUsd += walletChainTotal;
+      // Filter to keep ONLY holdings with real positive USD value (> 0)
+      const pricedHoldings = snap.data.holdings.filter((h) => {
+        const lineVal = h.valueUsd ? parseUsdValue(h.valueUsd) : 0;
+        return lineVal > 0;
+      });
 
-      const holdings: PortfolioHoldingLine[] = snap.data.holdings.map((h) => {
-        const lineVal = h.valueUsd ? parseUsdValue(h.valueUsd) : undefined;
-        if (lineVal !== undefined) {
-          totalPricedHoldings += 1;
-        } else {
-          totalUnpricedHoldings += 1;
-          unpricedLines.push({
-            symbol: h.symbol,
-            name: h.name,
-            tokenAddress: h.tokenAddress,
-            amount: toWholeUnits(h.rawAmount, h.decimals),
-            chain: chainSlug,
-            address: rawAddr
-          });
-        }
+      // Completely skip chains/wallets that have 0 or unpriced value
+      const hasPositiveValue =
+        walletChainTotal > 0 || nativeVal > 0 || pricedHoldings.length > 0;
+      if (!hasPositiveValue) {
+        continue;
+      }
+
+      // Compute effective total for this wallet on this chain
+      const effectiveChainTotal = Math.max(
+        walletChainTotal,
+        nativeVal +
+          pricedHoldings.reduce(
+            (acc, h) => acc + (h.valueUsd ? parseUsdValue(h.valueUsd) : 0),
+            0
+          )
+      );
+
+      if (effectiveChainTotal > 0) grandTotalUsd += effectiveChainTotal;
+
+      const holdings: PortfolioHoldingLine[] = pricedHoldings.map((h) => {
+        const lineVal = parseUsdValue(h.valueUsd);
+        totalPricedHoldings += 1;
         return {
           symbol: h.symbol,
           name: h.name,
           tokenAddress: h.tokenAddress,
           amount: toWholeUnits(h.rawAmount, h.decimals),
-          valueUsd: lineVal !== undefined ? lineVal.toFixed(2) : undefined
+          valueUsd: lineVal.toFixed(2)
         };
       });
+
+      if (nativeVal > 0) {
+        totalPricedHoldings += 1;
+      }
 
       wallets.push({
         chain: chainSlug,
@@ -380,8 +393,8 @@ function buildConsolidatedReport(
         nativeSymbol: snap.data.nativeSymbol,
         nativeBalance: snap.data.nativeBalance,
         nativeAmount: nativeAmt,
-        nativeValueUsd: nativeVal !== undefined ? nativeVal.toFixed(2) : undefined,
-        totalValueUsd: walletChainTotal > 0 ? walletChainTotal.toFixed(2) : undefined,
+        nativeValueUsd: nativeVal > 0 ? nativeVal.toFixed(2) : undefined,
+        totalValueUsd: effectiveChainTotal.toFixed(2),
         holdings
       });
 
@@ -392,7 +405,7 @@ function buildConsolidatedReport(
         holdings: []
       };
       existingChain.walletCount += 1;
-      existingChain.totalValueUsd += walletChainTotal;
+      existingChain.totalValueUsd += effectiveChainTotal;
       existingChain.holdings.push(...holdings);
       chainMap.set(chainSlug.toLowerCase(), existingChain);
     }
@@ -416,18 +429,23 @@ function buildConsolidatedReport(
             existingChain.walletCount = 1;
           }
 
-          // Add protocol positions to holdings
+          const pricedPositionsTokens: PortfolioHoldingLine[] = [];
+          // Add protocol positions to holdings, filtering out 0 or unpriced items
           for (const pos of proto.positions) {
             for (const tok of pos.tokens) {
               const tokVal = tok.valueUsd ? parseUsdValue(tok.valueUsd) : undefined;
-              if (tokVal !== undefined) totalPricedHoldings += 1;
-              existingChain.holdings.push({
-                symbol: tok.symbol,
-                name: `${proto.name} - ${pos.name}`,
-                tokenAddress: pos.id,
-                amount: tok.amount,
-                valueUsd: tokVal !== undefined ? tokVal.toFixed(2) : undefined
-              });
+              if (tokVal !== undefined && tokVal > 0) {
+                totalPricedHoldings += 1;
+                const line: PortfolioHoldingLine = {
+                  symbol: tok.symbol,
+                  name: `${proto.name} - ${pos.name}`,
+                  tokenAddress: pos.id,
+                  amount: tok.amount,
+                  valueUsd: tokVal.toFixed(2)
+                };
+                existingChain.holdings.push(line);
+                pricedPositionsTokens.push(line);
+              }
             }
           }
           chainMap.set(slug, existingChain);
@@ -441,15 +459,7 @@ function buildConsolidatedReport(
             nativeBalance: "0",
             nativeAmount: "1",
             totalValueUsd: protoVal.toFixed(2),
-            holdings: proto.positions.flatMap((pos) =>
-              pos.tokens.map((tok) => ({
-                symbol: tok.symbol,
-                name: `${pos.name}`,
-                tokenAddress: pos.id,
-                amount: tok.amount,
-                valueUsd: tok.valueUsd ? parseUsdValue(tok.valueUsd).toFixed(2) : undefined
-              }))
-            )
+            holdings: pricedPositionsTokens
           });
         }
       }
@@ -460,10 +470,12 @@ function buildConsolidatedReport(
     return baseReport;
   }
 
-  // Compute allocation percentages
+  // Compute allocation percentages ONLY for chains with strictly positive total value
   const chains: PortfolioChainReport[] = Array.from(chainMap.values())
+    .filter((c) => c.totalValueUsd > 0)
     .map((c) => {
-      const pct = grandTotalUsd > 0 ? ((c.totalValueUsd / grandTotalUsd) * 100).toFixed(2) : "0.00";
+      const pct =
+        grandTotalUsd > 0 ? ((c.totalValueUsd / grandTotalUsd) * 100).toFixed(2) : "0.00";
       return {
         chain: c.chain,
         totalValueUsd: c.totalValueUsd.toFixed(2),
@@ -474,8 +486,13 @@ function buildConsolidatedReport(
     })
     .sort((a, b) => Number(b.totalValueUsd) - Number(a.totalValueUsd));
 
-  // Annotate wallet allocation percentages
-  const annotatedWallets = wallets.map((w) => {
+  // Annotate wallet allocation percentages ONLY for active wallets
+  const activeWallets = wallets.filter(
+    (w) =>
+      (w.totalValueUsd ? parseUsdValue(w.totalValueUsd) > 0 : false) || w.holdings.length > 0
+  );
+
+  const annotatedWallets = activeWallets.map((w) => {
     const val = w.totalValueUsd ? parseFloat(w.totalValueUsd) : 0;
     const pct = grandTotalUsd > 0 ? ((val / grandTotalUsd) * 100).toFixed(2) : "0.00";
     return {
@@ -489,13 +506,13 @@ function buildConsolidatedReport(
     totals: {
       totalValueUsd: grandTotalUsd.toFixed(2),
       pricedHoldings: totalPricedHoldings,
-      unpricedHoldings: totalUnpricedHoldings,
+      unpricedHoldings: 0,
       walletCount: addresses.length,
       chainCount: chains.length
     },
     chains,
     wallets: annotatedWallets,
-    unpriced: unpricedLines,
+    unpriced: [],
     errors: baseReport.errors || []
   };
 }
@@ -662,13 +679,18 @@ function ReportView({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat
           label="Total value"
-          value={formatUsd(report.totals.totalValueUsd) ?? "Pending pricing"}
+          value={formatUsd(report.totals.totalValueUsd) ?? "$0.00"}
         />
         <Stat label="Wallets" value={String(report.totals.walletCount)} />
-        <Stat label="Chains" value={String(report.totals.chainCount)} />
         <Stat
-          label="Priced / unpriced"
-          value={`${report.totals.pricedHoldings} / ${report.totals.unpricedHoldings}`}
+          label="Active Chains"
+          value={String(
+            report.chains.filter((c) => parseUsdValue(c.totalValueUsd) > 0).length
+          )}
+        />
+        <Stat
+          label="Priced Holdings"
+          value={`${report.totals.pricedHoldings} assets`}
         />
       </div>
 
@@ -683,49 +705,53 @@ function ReportView({
             <span className="text-primary-600">100% Consolidated</span>
           </div>
           <div className="w-full h-3 rounded-full bg-navy-100/70 overflow-hidden flex">
-            {report.chains.map((chain, i) => {
-              const pct = Number(chain.allocationPct ?? 0);
-              if (pct <= 0) return null;
-              const barColors = [
-                "bg-blue-600",
-                "bg-emerald-500",
-                "bg-purple-500",
-                "bg-amber-500",
-                "bg-cyan-500",
-                "bg-indigo-500",
-                "bg-rose-500"
-              ];
-              return (
-                <div
-                  key={chain.chain}
-                  style={{ width: `${pct}%` }}
-                  className={`${barColors[i % barColors.length]} h-full transition-all`}
-                  title={`${chain.chain}: ${pct}%`}
-                />
-              );
-            })}
+            {report.chains
+              .filter((chain) => parseUsdValue(chain.totalValueUsd) > 0)
+              .map((chain, i) => {
+                const pct = Number(chain.allocationPct ?? 0);
+                if (pct <= 0) return null;
+                const barColors = [
+                  "bg-blue-600",
+                  "bg-emerald-500",
+                  "bg-purple-500",
+                  "bg-amber-500",
+                  "bg-cyan-500",
+                  "bg-indigo-500",
+                  "bg-rose-500"
+                ];
+                return (
+                  <div
+                    key={chain.chain}
+                    style={{ width: `${pct}%` }}
+                    className={`${barColors[i % barColors.length]} h-full transition-all`}
+                    title={`${chain.chain}: ${pct}%`}
+                  />
+                );
+              })}
           </div>
           <div className="flex items-center gap-3.5 flex-wrap text-[10px] text-navy-500 font-medium pt-0.5">
-            {report.chains.map((chain, i) => {
-              const pct = Number(chain.allocationPct ?? 0);
-              if (pct <= 0) return null;
-              const dotColors = [
-                "bg-blue-600",
-                "bg-emerald-500",
-                "bg-purple-500",
-                "bg-amber-500",
-                "bg-cyan-500",
-                "bg-indigo-500",
-                "bg-rose-500"
-              ];
-              return (
-                <div key={chain.chain} className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${dotColors[i % dotColors.length]}`} />
-                  <span className="capitalize font-bold text-navy-800">{chain.chain}</span>
-                  <span className="font-mono text-navy-500">{pct}%</span>
-                </div>
-              );
-            })}
+            {report.chains
+              .filter((chain) => parseUsdValue(chain.totalValueUsd) > 0)
+              .map((chain, i) => {
+                const pct = Number(chain.allocationPct ?? 0);
+                if (pct <= 0) return null;
+                const dotColors = [
+                  "bg-blue-600",
+                  "bg-emerald-500",
+                  "bg-purple-500",
+                  "bg-amber-500",
+                  "bg-cyan-500",
+                  "bg-indigo-500",
+                  "bg-rose-500"
+                ];
+                return (
+                  <div key={chain.chain} className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${dotColors[i % dotColors.length]}`} />
+                    <span className="capitalize font-bold text-navy-800">{chain.chain}</span>
+                    <span className="font-mono text-navy-500">{pct}%</span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
@@ -756,27 +782,29 @@ function ReportView({
       <div className="space-y-2">
         <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">By chain</h4>
         <div className="rounded-2xl border border-navy-100/60 overflow-hidden bg-white/70">
-          {report.chains.map((chain) => (
-            <div
-              key={chain.chain}
-              className="flex items-center justify-between px-3.5 sm:px-4 py-2.5 text-xs border-b border-navy-100/40 last:border-b-0 gap-2 flex-wrap sm:flex-nowrap"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-bold text-navy-800 capitalize">{chain.chain}</span>
-                <span className="text-navy-400 font-medium text-[11px]">
-                  ({chain.walletCount} {chain.walletCount === 1 ? "wallet" : "wallets"})
-                </span>
+          {report.chains
+            .filter((chain) => parseUsdValue(chain.totalValueUsd) > 0)
+            .map((chain) => (
+              <div
+                key={chain.chain}
+                className="flex items-center justify-between px-3.5 sm:px-4 py-2.5 text-xs border-b border-navy-100/40 last:border-b-0 gap-2 flex-wrap sm:flex-nowrap"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-bold text-navy-800 capitalize">{chain.chain}</span>
+                  <span className="text-navy-400 font-medium text-[11px]">
+                    ({chain.walletCount} {chain.walletCount === 1 ? "wallet" : "wallets"})
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
+                  <span className="font-mono font-bold text-navy-900">
+                    {formatUsd(chain.totalValueUsd)}
+                  </span>
+                  <span className="font-mono text-[11px] text-navy-500 min-w-[36px] text-right">
+                    {chain.allocationPct === undefined ? "—" : `${chain.allocationPct}%`}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-3 ml-auto">
-                <span className="font-mono font-bold text-navy-900">
-                  {formatUsd(chain.totalValueUsd) ?? "Unpriced"}
-                </span>
-                <span className="font-mono text-[11px] text-navy-500 min-w-[36px] text-right">
-                  {chain.allocationPct === undefined ? "—" : `${chain.allocationPct}%`}
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
@@ -784,67 +812,78 @@ function ReportView({
       <div className="space-y-2">
         <h4 className="text-[11px] font-black uppercase tracking-wider text-navy-400">By wallet</h4>
         <div className="space-y-2">
-          {report.wallets.map((wallet) => {
-            const link = explorerUrl(wallet.chain, wallet.address);
-            return (
-              <div
-                key={`${wallet.chain}:${wallet.address}`}
-                className="rounded-2xl border border-navy-100/60 bg-white/70 p-3.5"
-              >
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-navy-900 capitalize">
-                      {wallet.chain} ·{" "}
-                      {wallet.status === "complete" ? "Fully priced" : "Partially priced"}
-                    </div>
-                    <div className="font-mono text-[10px] text-navy-400 break-all">
-                      {wallet.address}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-sm font-black text-navy-900">
-                      {formatUsd(wallet.totalValueUsd) ?? "Unpriced"}
-                    </div>
-                    <div className="text-[10px] font-mono text-navy-500">
-                      {wallet.nativeAmount} {wallet.nativeSymbol}
-                      {wallet.nativeValueUsd !== undefined
-                        ? ` · ${formatUsd(wallet.nativeValueUsd)}`
-                        : " · native unpriced"}
-                    </div>
-                  </div>
-                </div>
-
-                {wallet.holdings.length > 0 && (
-                  <div className="mt-2.5 pt-2.5 border-t border-navy-100/50 space-y-1">
-                    {wallet.holdings.map((holding) => (
-                      <div
-                        key={`${holding.tokenAddress}-${holding.symbol}`}
-                        className="flex items-center justify-between text-[11px]"
-                      >
-                        <span className="font-semibold text-navy-700">
-                          {holding.amount} {holding.symbol}
-                        </span>
-                        <span className="font-mono text-navy-600">
-                          {formatUsd(holding.valueUsd) ?? "Unpriced"}
-                        </span>
+          {report.wallets
+            .filter(
+              (wallet) =>
+                parseUsdValue(wallet.totalValueUsd) > 0 ||
+                wallet.holdings.some(
+                  (h) => h.valueUsd !== undefined && parseUsdValue(h.valueUsd) > 0
+                )
+            )
+            .map((wallet) => {
+              const link = explorerUrl(wallet.chain, wallet.address);
+              const validHoldings = wallet.holdings.filter(
+                (h) => h.valueUsd !== undefined && parseUsdValue(h.valueUsd) > 0
+              );
+              return (
+                <div
+                  key={`${wallet.chain}:${wallet.address}`}
+                  className="rounded-2xl border border-navy-100/60 bg-white/70 p-3.5"
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-navy-900 capitalize">
+                        {wallet.chain} · Fully priced
                       </div>
-                    ))}
+                      <div className="font-mono text-[10px] text-navy-400 break-all">
+                        {wallet.address}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-sm font-black text-navy-900">
+                        {formatUsd(wallet.totalValueUsd) ?? "$0.00"}
+                      </div>
+                      {wallet.nativeValueUsd !== undefined &&
+                        parseUsdValue(wallet.nativeValueUsd) > 0 && (
+                          <div className="text-[10px] font-mono text-navy-500">
+                            {wallet.nativeAmount} {wallet.nativeSymbol} ·{" "}
+                            {formatUsd(wallet.nativeValueUsd)}
+                          </div>
+                        )}
+                    </div>
                   </div>
-                )}
 
-                {link !== null && (
-                  <a
-                    href={link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-primary-600 hover:text-primary-700"
-                  >
-                    Open in explorer <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            );
-          })}
+                  {validHoldings.length > 0 && (
+                    <div className="mt-2.5 pt-2.5 border-t border-navy-100/50 space-y-1">
+                      {validHoldings.map((holding) => (
+                        <div
+                          key={`${holding.tokenAddress}-${holding.symbol}`}
+                          className="flex items-center justify-between text-[11px]"
+                        >
+                          <span className="font-semibold text-navy-700">
+                            {holding.amount} {holding.symbol}
+                          </span>
+                          <span className="font-mono text-navy-900 font-bold">
+                            {formatUsd(holding.valueUsd)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {link !== null && (
+                    <a
+                      href={link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-primary-600 hover:text-primary-700"
+                    >
+                      Open in explorer <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
 
