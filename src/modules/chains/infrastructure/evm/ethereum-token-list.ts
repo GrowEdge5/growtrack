@@ -621,6 +621,39 @@ export const CRONOS_TOKENS: readonly Erc20Token[] = [
   }
 ];
 
+const ROBINHOOD_TOKENS: readonly Erc20Token[] = [
+  {
+    address: "0x378F906eAD242F0C3aa9ed45AA07612A2C088030",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 18
+  },
+  {
+    address: "0x6a45E05B82FE3cA90e92a8b6801E27d38F41D101",
+    symbol: "WBTC",
+    name: "Wrapped BTC",
+    decimals: 18
+  },
+  {
+    address: "0x1383b43AeD527485F191b60060f5b5471F71B1ca",
+    symbol: "USDG",
+    name: "Global Dollar",
+    decimals: 18
+  },
+  {
+    address: "0xD4DC6B48Ad73EC51E71D9B8F65568f88609b92c1",
+    symbol: "SHERWOOD",
+    name: "Sherwood",
+    decimals: 18
+  },
+  {
+    address: "0xd917B029C761D264c6A312BBbcDA868658eF86a6",
+    symbol: "USAR",
+    name: "USA Rare Earth",
+    decimals: 18
+  }
+];
+
 const CURATED_LISTS: Readonly<Record<number, readonly Erc20Token[]>> = {
   1: ETHEREUM_MAINNET_TOKENS,
   8453: BASE_TOKENS,
@@ -631,7 +664,8 @@ const CURATED_LISTS: Readonly<Record<number, readonly Erc20Token[]>> = {
   43114: AVALANCHE_TOKENS,
   324: ZKSYNC_TOKENS,
   5000: MANTLE_TOKENS,
-  25: CRONOS_TOKENS
+  25: CRONOS_TOKENS,
+  4663: ROBINHOOD_TOKENS
 };
 
 /**

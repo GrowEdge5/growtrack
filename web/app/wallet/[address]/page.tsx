@@ -524,8 +524,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
           continue;
         }
         if (snap?.data?.totalValueUsd !== undefined) {
-          sum += Number(snap.data.totalValueUsd);
-          hasAnyPriced = true;
+          const val = parseUsdValue(snap.data.totalValueUsd);
+          if (val > 0) {
+            sum += val;
+            hasAnyPriced = true;
+          }
         }
       }
     }
@@ -680,7 +683,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
           }
           map[chainSlug].assetCount += (hasNative ? 1 : 0) + snap.data.holdings.length;
           if (snap.data.totalValueUsd !== undefined) {
-            map[chainSlug].totalUsd += Number(snap.data.totalValueUsd);
+            map[chainSlug].totalUsd += parseUsdValue(snap.data.totalValueUsd);
           }
         }
       }
@@ -831,8 +834,21 @@ export default function WalletDashboardPage({ params }: PageProps) {
     return allPos;
   }, [isSelectedAll, tracked, selected, snapshotsByWalletAndChain, selectedChainFilter]);
 
-  const pricedCount = rows.filter((row) => row.valueUsd !== undefined).length;
-  const unpricedCount = rows.length - pricedCount;
+  const activeChainRows = useMemo(() => {
+    if (selectedChainFilter !== null) {
+      return rows.filter((r) => r.chainSlug?.toLowerCase() === selectedChainFilter.toLowerCase());
+    }
+    return rows;
+  }, [rows, selectedChainFilter]);
+
+  const pricedCount = useMemo(
+    () => activeChainRows.filter((row) => row.valueUsd !== undefined).length,
+    [activeChainRows]
+  );
+  const unpricedCount = useMemo(
+    () => activeChainRows.length - pricedCount,
+    [activeChainRows, pricedCount]
+  );
 
   const handleCopy = async (value: string) => {
     try {
@@ -868,6 +884,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setAddError("That wallet is already in this list.");
       return;
     }
+    if (tracked.length >= 20) {
+      setAddError("Maximum limit of 20 tracked wallets reached.");
+      return;
+    }
 
     const hint = detectAddressFormat(candidate);
     if (!hint.isValid) {
@@ -875,11 +895,11 @@ export default function WalletDashboardPage({ params }: PageProps) {
       return;
     }
 
-    // Adding a 2nd wallet requires wallet connection and $1.00 USDC (x402) on Algorand
+    // Adding a 2nd wallet requires wallet connection and 0.001 USDC (x402) on Algorand
     if (!isConnected) {
       setPendingWalletToAdd(candidate);
       requireWallet(
-        "Connect your Algorand wallet to unlock multi-wallet tracking ($1.00 USDC via x402)"
+        "Connect your Algorand wallet to unlock multi-wallet tracking (0.001 USDC via x402)"
       );
       return;
     }
@@ -895,11 +915,15 @@ export default function WalletDashboardPage({ params }: PageProps) {
       setSelected(presetAddress);
       return;
     }
+    if (tracked.length >= 20) {
+      setAddError("Maximum limit of 20 tracked wallets reached.");
+      return;
+    }
 
     if (!isConnected) {
       setPendingWalletToAdd(presetAddress);
       requireWallet(
-        "Connect your Algorand wallet to unlock multi-wallet tracking ($1.00 USDC via x402)"
+        "Connect your Algorand wallet to unlock multi-wallet tracking (0.001 USDC via x402)"
       );
       return;
     }
@@ -932,7 +956,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
   };
 
   const handleGenerateReport = () => {
-    if (!requireWallet("Generate the consolidated portfolio report ($3.00 USDC via x402)")) {
+    if (!requireWallet("Generate the consolidated portfolio report (0.01 USDC via x402)")) {
       return;
     }
     setModalMode("report");
@@ -980,14 +1004,14 @@ export default function WalletDashboardPage({ params }: PageProps) {
         {/* 1. Wallet identity */}
         <section className="glass-frosted rounded-[28px] p-5 sm:p-6 shadow-glass border border-white">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
-            <div className="flex items-start gap-4 min-w-0">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl glass-frosted-tile p-1 flex items-center justify-center border border-white/90 shadow-sm flex-shrink-0">
                 <div className="w-full h-full rounded-[14px] bg-gradient-to-tr from-primary-500 via-primary-600 to-blue-700 flex items-center justify-center text-white">
                   <Wallet className="w-7 h-7" />
                 </div>
               </div>
 
-              <div className="min-w-0">
+              <div className="flex-1 min-w-0">
                 {isSelectedAll ? (
                   <>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1009,7 +1033,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           className="bg-white/70 hover:bg-white px-2 py-0.5 rounded-lg border border-navy-100 text-navy-700 font-medium cursor-pointer transition-all inline-flex items-center gap-1 text-xs"
                           title={`Click to view ${addr}`}
                         >
-                          <span>{KNOWN_NAMES[addr.toLowerCase()] ?? shorten(addr, 6, 4)}</span>
+                          <span>{KNOWN_NAMES[addr?.toLowerCase() ?? ""] ?? (addr ? shorten(addr, 6, 4) : "")}</span>
                           <ArrowUpRight className="w-3 h-3 text-navy-400" />
                         </button>
                       ))}
@@ -1041,9 +1065,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   <>
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
-                        {KNOWN_NAMES[selected.toLowerCase()] ?? shorten(selected, 8, 6)}
+                        {KNOWN_NAMES[selected?.toLowerCase() ?? ""] ?? (selected ? shorten(selected, 8, 6) : "")}
                       </h1>
-                      {KNOWN_NAMES[selected.toLowerCase()] && (
+                      {selected && KNOWN_NAMES[selected.toLowerCase()] && (
                         <span className="font-mono text-xs text-navy-500 font-semibold bg-white/70 px-2 py-0.5 rounded-md border border-navy-100">
                           {shorten(selected, 6, 4)}
                         </span>
@@ -1145,10 +1169,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 ) : (
                   <Lock className="w-3.5 h-3.5" />
                 )}
-                <span>Generate full report ($3.00 USDC)</span>
+                <span>Generate full report (0.01 USDC)</span>
               </button>
               <p className="mt-1.5 text-[10px] text-navy-400 font-medium max-w-full lg:max-w-[15rem] text-center lg:text-left">
-                Institutional multi-wallet audit. Pay $3.00 USDC via x402 on Algorand.
+                Institutional multi-wallet audit. Pay 0.01 USDC via x402 on Algorand.
               </p>
             </div>
           </div>
@@ -1196,7 +1220,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
               <SummaryCard
                 label="Assets found"
-                value={`${rows.length}${rows.length === 1 ? " asset" : " assets"}`}
+                value={`${activeChainRows.length}${activeChainRows.length === 1 ? " asset" : " assets"}`}
                 note={
                   isSelectedAll
                     ? `Across ${tracked.length} wallets`
@@ -1319,12 +1343,9 @@ export default function WalletDashboardPage({ params }: PageProps) {
 
                   if (info && info.hasAssets) {
                     displayValue = formatUsd(info.totalUsd.toString()) ?? "$0";
-                    if (
-                      totalPortfolioValueUsd &&
-                      Number(totalPortfolioValueUsd) > 0 &&
-                      info.totalUsd > 0
-                    ) {
-                      displayPct = `${((info.totalUsd / Number(totalPortfolioValueUsd)) * 100).toFixed(1)}%`;
+                    const netWorthNum = totalNetWorthUsd ? parseUsdValue(totalNetWorthUsd) : 0;
+                    if (netWorthNum > 0 && info.totalUsd > 0) {
+                      displayPct = `${Math.min(100, (info.totalUsd / netWorthNum) * 100).toFixed(1)}%`;
                     }
                   } else if (isCompatible) {
                     displayValue = "$0";
@@ -1576,7 +1597,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
                     <Zap className="w-3.5 h-3.5 fill-white" />
-                    <span>Consolidate {tracked.length} Wallets ($3.00 USDC)</span>
+                    <span>Consolidate {tracked.length} Wallets (0.01 USDC)</span>
                   </button>
                 )}
               </div>
@@ -1585,7 +1606,7 @@ export default function WalletDashboardPage({ params }: PageProps) {
                 <p className="mt-2 text-[10px] text-navy-500 font-medium flex items-center gap-1.5">
                   <Lock className="w-3 h-3 text-navy-400" />
                   <span>
-                    Adding a second wallet needs a connected wallet — unlocked for $1.00 USDC via
+                    Adding a second wallet needs a connected wallet — unlocked for 0.001 USDC via
                     x402 on Algorand.
                   </span>
                 </p>

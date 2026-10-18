@@ -46,7 +46,7 @@ describe("PaymentRequirementsBuilder", () => {
       (id) => testBuilder(id).build().accepts[0]?.amount
     );
 
-    expect(prices).toEqual(["500000", "1000000", "3000000"]);
+    expect(prices).toEqual(["500000", "1000", "10000"]);
     expect(new Set(prices).size).toBe(3);
   });
 

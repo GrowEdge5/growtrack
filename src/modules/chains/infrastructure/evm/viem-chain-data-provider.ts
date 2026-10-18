@@ -53,8 +53,29 @@ const BLOCKSCOUT_HOSTS: Readonly<Record<string, string>> = {
   base: "https://base.blockscout.com",
   arbitrum: "https://arbitrum.blockscout.com",
   optimism: "https://optimism.blockscout.com",
-  polygon: "https://polygon.blockscout.com"
+  polygon: "https://polygon.blockscout.com",
+  robinhood: "https://robinhoodchain.blockscout.com",
+  hood: "https://robinhoodchain.blockscout.com",
+  zetachain: "https://zetachain.blockscout.com",
+  ink: "https://explorer.inkonchain.com",
+  mode: "https://explorer.mode.network",
+  zora: "https://explorer.zora.energy",
+  fuse: "https://explorer.fuse.io",
+  plume: "https://explorer.plumenetwork.xyz"
 };
+
+interface BlockscoutTokenItem {
+  token?: {
+    address?: string;
+    address_hash?: string;
+    symbol?: string;
+    name?: string;
+    decimals?: string | number;
+    exchange_rate?: string | number;
+    type?: string;
+  };
+  value?: string;
+}
 
 export class ViemChainDataProvider implements ChainDataProvider {
   public readonly chain: Chain;
@@ -124,7 +145,9 @@ export class ViemChainDataProvider implements ChainDataProvider {
 
   private async fetchTransactions(owner: string): Promise<WalletTransaction[]> {
     try {
-      const host = BLOCKSCOUT_HOSTS[this.chain.slug] ?? BLOCKSCOUT_HOSTS.ethereum;
+      const host = BLOCKSCOUT_HOSTS[this.chain.slug];
+      if (!host) return [];
+
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
       const res = await fetch(`${host}/api/v2/addresses/${owner}/transactions`, {
@@ -164,47 +187,92 @@ export class ViemChainDataProvider implements ChainDataProvider {
     }
   }
 
-  // Reads ERC-20 balances for the curated token list in a single multicall.
-  // allowFailure keeps a per-token revert (e.g. a non-standard contract) from
-  // failing the whole snapshot; only successful, non-zero balances are returned.
-  // Missing tokens simply do not appear — nothing is fabricated or zero-filled.
+  // Reads ERC-20 balances.
+  // When a Blockscout host is configured for this chain, directly discovers
+  // token balances from the indexer API. Falls back to / merges with multicall3 for
+  // curated token lists.
   private async fetchTokenHoldings(owner: string): Promise<TokenHolding[]> {
-    const tokens = await getErc20TokenList(this.chain.id);
-    if (tokens.length === 0) {
-      return [];
+    const holdingsMap = new Map<string, TokenHolding>();
+
+    // 1. Try Blockscout token indexer if available for this network
+    const host = BLOCKSCOUT_HOSTS[this.chain.slug];
+    if (host) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${host}/api/v2/addresses/${owner}/tokens`, {
+          signal: controller.signal,
+          headers: { accept: "application/json" }
+        });
+        clearTimeout(timer);
+
+        if (res.ok) {
+          const data = (await res.json()) as { items?: BlockscoutTokenItem[] };
+          if (Array.isArray(data.items)) {
+            for (const item of data.items) {
+              const t = item.token;
+              const rawAmount = item.value ?? "0";
+              const tokenAddr = t?.address_hash ?? t?.address;
+              if (tokenAddr && t?.symbol && rawAmount !== "0") {
+                const dec = Number(t.decimals ?? 18);
+                const safeDec = Number.isFinite(dec) && dec >= 0 && dec <= 36 ? dec : 18;
+                const lower = tokenAddr.toLowerCase();
+                holdingsMap.set(lower, {
+                  tokenAddress: lower,
+                  symbol: t.symbol,
+                  name: t.name ?? t.symbol,
+                  decimals: safeDec,
+                  rawAmount
+                });
+              }
+            }
+          }
+        }
+      } catch {
+        // Blockscout error is gracefully ignored, falling through to multicall
+      }
     }
 
-    const results = await this.client.multicall({
-      allowFailure: true,
-      contracts: tokens.map((token) => ({
-        address: getAddress(token.address),
-        abi: ERC20_BALANCE_OF_ABI,
-        functionName: "balanceOf",
-        args: [owner]
-      }))
-    });
+    // 2. Multicall fallback for curated tokens
+    const tokens = await getErc20TokenList(this.chain.id);
+    if (tokens.length > 0) {
+      try {
+        const unqueriedTokens = tokens.filter(
+          (t) => !holdingsMap.has(t.address.toLowerCase())
+        );
+        if (unqueriedTokens.length > 0) {
+          const results = await this.client.multicall({
+            allowFailure: true,
+            contracts: unqueriedTokens.map((token) => ({
+              address: getAddress(token.address),
+              abi: ERC20_BALANCE_OF_ABI,
+              functionName: "balanceOf",
+              args: [owner]
+            }))
+          });
 
-    const holdings: TokenHolding[] = [];
-    results.forEach((result, index) => {
-      const token = tokens[index];
-      if (!token || result.status !== "success") {
-        return;
+          results.forEach((result, index) => {
+            const token = unqueriedTokens[index];
+            if (!token || result.status !== "success") return;
+
+            const rawAmount = result.result as bigint;
+            if (rawAmount === 0n) return;
+
+            const lower = token.address.toLowerCase();
+            holdingsMap.set(lower, {
+              tokenAddress: lower,
+              symbol: token.symbol,
+              name: token.name,
+              decimals: token.decimals,
+              rawAmount: rawAmount.toString()
+            });
+          });
+        }
+      } catch {
+        // Multicall error tolerated
       }
+    }
 
-      const rawAmount = result.result as bigint;
-      if (rawAmount === 0n) {
-        return;
-      }
-
-      holdings.push({
-        tokenAddress: token.address,
-        symbol: token.symbol,
-        name: token.name,
-        decimals: token.decimals,
-        rawAmount: rawAmount.toString()
-      });
-    });
-
-    return holdings;
+    return Array.from(holdingsMap.values());
   }
 }

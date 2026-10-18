@@ -44,10 +44,10 @@ export interface PaidResourceContext {
 
 // $0.50 — live fresh single-wallet read.
 const WALLET_LIVE_PRICE_ATOMIC = "500000";
-// $1.00 — multi-wallet portfolio snapshot / tracking upgrade.
-const PORTFOLIO_SNAPSHOT_PRICE_ATOMIC = "1000000";
-// $3.00 — full consolidated institutional multi-chain audit report.
-const PORTFOLIO_REPORT_PRICE_ATOMIC = "3000000";
+// 0.001 USDC — multi-wallet portfolio snapshot / tracking upgrade.
+const PORTFOLIO_SNAPSHOT_PRICE_ATOMIC = "1000";
+// 0.01 USDC — full consolidated institutional multi-chain audit report.
+const PORTFOLIO_REPORT_PRICE_ATOMIC = "10000";
 
 const SNAPSHOT_OUTPUT_EXAMPLE: Record<string, unknown> = {
   wallet: {
@@ -109,7 +109,7 @@ export function buildPaidResources(
         "total portfolio value in USD, per-chain subtotals, per-wallet subtotals, and how many " +
         "positions could be priced. Addresses on different chains can be mixed in one request, and " +
         "a bare address given without a chain is detected automatically. Saves a caller from " +
-        "issuing and paying for one request per chain. Returns JSON. Pay $1.00 per call in USDC " +
+        "issuing and paying for one request per chain. Returns JSON. Pay 0.001 USDC per call " +
         "on Algorand.",
       queryParams: {
         addresses:
@@ -120,7 +120,7 @@ export function buildPaidResources(
           type: "string",
           description:
             "Comma-separated wallet addresses. Each may be 'chain:address', or a bare address " +
-            "to auto-detect the chain. Up to 10 addresses."
+            "to auto-detect the chain. Up to 20 addresses."
         }
       },
       outputExample: {
@@ -151,7 +151,7 @@ export function buildPaidResources(
         "that could not be priced so a partial valuation is never mistaken for a complete one. " +
         "Ethereum, Algorand, Solana and Bitcoin addresses can be mixed in one request; a bare " +
         "address is chain-detected automatically. Returns JSON shaped for rendering as a " +
-        "statement. Pay $3.00 per report in USDC on Algorand.",
+        "statement. Pay 0.01 USDC per report on Algorand.",
       queryParams: {
         addresses:
           "solana:GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE,ethereum:0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
@@ -161,7 +161,7 @@ export function buildPaidResources(
           type: "string",
           description:
             "Comma-separated wallet addresses. Each may be 'chain:address', or a bare address " +
-            "to auto-detect the chain. Up to 10 addresses."
+            "to auto-detect the chain. Up to 20 addresses."
         }
       },
       outputExample: {

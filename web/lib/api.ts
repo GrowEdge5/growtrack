@@ -133,6 +133,8 @@ export interface PortfolioChainReport {
 
 export interface PortfolioReportTotals {
   totalValueUsd?: string;
+  spotValueUsd?: string;
+  defiValueUsd?: string;
   pricedHoldings: number;
   unpricedHoldings: number;
   walletCount: number;

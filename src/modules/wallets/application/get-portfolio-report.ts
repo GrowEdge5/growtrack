@@ -83,7 +83,7 @@ export interface PortfolioReport {
 // Caps a single request. Each target is a synchronous upstream read plus a price
 // call, so an unbounded list would blow the paid request's latency budget and trip
 // the keyless providers' rate limits.
-export const MAX_PORTFOLIO_TARGETS = 10;
+export const MAX_PORTFOLIO_TARGETS = 20;
 
 // Bounded fan-out over keyless, rate-limited public endpoints. Targets are read in
 // small batches rather than all at once.

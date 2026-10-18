@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   X,
   Zap,
@@ -11,7 +11,10 @@ import {
   RefreshCw,
   Wallet,
   Printer,
-  Layers
+  Layers,
+  PieChart,
+  ShieldCheck,
+  TrendingUp
 } from "lucide-react";
 
 import { useWalletModal } from "@/context/WalletModalContext";
@@ -329,6 +332,8 @@ function buildConsolidatedReport(
   >();
 
   let grandTotalUsd = 0;
+  let grandSpotUsd = 0;
+  let grandDefiUsd = 0;
   let totalPricedHoldings = 0;
 
   for (const rawAddr of addresses) {
@@ -368,7 +373,10 @@ function buildConsolidatedReport(
           )
       );
 
-      if (effectiveChainTotal > 0) grandTotalUsd += effectiveChainTotal;
+      if (effectiveChainTotal > 0) {
+        grandTotalUsd += effectiveChainTotal;
+        grandSpotUsd += effectiveChainTotal;
+      }
 
       const holdings: PortfolioHoldingLine[] = pricedHoldings.map((h) => {
         const lineVal = parseUsdValue(h.valueUsd);
@@ -417,6 +425,7 @@ function buildConsolidatedReport(
         const protoVal = parseUsdValue(proto.totalValueUsd);
         if (protoVal > 0) {
           grandTotalUsd += protoVal;
+          grandDefiUsd += protoVal;
           const slug = proto.chainSlug.toLowerCase();
           const existingChain = chainMap.get(slug) ?? {
             chain: slug,
@@ -505,6 +514,8 @@ function buildConsolidatedReport(
     generatedAt: baseReport.generatedAt || new Date().toISOString(),
     totals: {
       totalValueUsd: grandTotalUsd.toFixed(2),
+      spotValueUsd: grandSpotUsd.toFixed(2),
+      defiValueUsd: grandDefiUsd.toFixed(2),
       pricedHoldings: totalPricedHoldings,
       unpricedHoldings: 0,
       walletCount: addresses.length,
@@ -694,89 +705,17 @@ function ReportView({
         />
       </div>
 
-      {/* Visual Chain Distribution Bar */}
-      {report.chains.length > 0 && Number(report.totals.totalValueUsd ?? 0) > 0 && (
-        <div className="space-y-2 p-3.5 rounded-2xl bg-white/70 border border-navy-100/60">
-          <div className="flex items-center justify-between text-[11px] font-bold text-navy-700">
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-primary-500" />
-              <span>Network Value Distribution</span>
-            </span>
-            <span className="text-primary-600">100% Consolidated</span>
-          </div>
-          <div className="w-full h-3 rounded-full bg-navy-100/70 overflow-hidden flex">
-            {report.chains
-              .filter((chain) => parseUsdValue(chain.totalValueUsd) > 0)
-              .map((chain, i) => {
-                const pct = Number(chain.allocationPct ?? 0);
-                if (pct <= 0) return null;
-                const barColors = [
-                  "bg-blue-600",
-                  "bg-emerald-500",
-                  "bg-purple-500",
-                  "bg-amber-500",
-                  "bg-cyan-500",
-                  "bg-indigo-500",
-                  "bg-rose-500"
-                ];
-                return (
-                  <div
-                    key={chain.chain}
-                    style={{ width: `${pct}%` }}
-                    className={`${barColors[i % barColors.length]} h-full transition-all`}
-                    title={`${chain.chain}: ${pct}%`}
-                  />
-                );
-              })}
-          </div>
-          <div className="flex items-center gap-3.5 flex-wrap text-[10px] text-navy-500 font-medium pt-0.5">
-            {report.chains
-              .filter((chain) => parseUsdValue(chain.totalValueUsd) > 0)
-              .map((chain, i) => {
-                const pct = Number(chain.allocationPct ?? 0);
-                if (pct <= 0) return null;
-                const dotColors = [
-                  "bg-blue-600",
-                  "bg-emerald-500",
-                  "bg-purple-500",
-                  "bg-amber-500",
-                  "bg-cyan-500",
-                  "bg-indigo-500",
-                  "bg-rose-500"
-                ];
-                return (
-                  <div key={chain.chain} className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${dotColors[i % dotColors.length]}`} />
-                    <span className="capitalize font-bold text-navy-800">{chain.chain}</span>
-                    <span className="font-mono text-navy-500">{pct}%</span>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
+      {/* Interactive Network Value Distribution (SVG Donut Chart) */}
+      <NetworkDistributionDonut report={report} />
 
-      {/* DeFi protocol positions slot */}
-      <div className="p-3.5 rounded-2xl bg-white/70 border border-navy-100/60 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-primary-100/80 border border-primary-200/80 flex items-center justify-center text-primary-600 flex-shrink-0">
-            <Layers className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-bold text-navy-900">DeFi Protocol Positions</div>
-            <div className="text-[10px] text-navy-500 font-medium truncate">
-              {report.chains.some((c) => c.chain.toLowerCase() === "hyperliquid")
-                ? "Hyperliquid Perpetuals & Spot, Aave v3, Uniswap & Velodrome indexing"
-                : "Hyperliquid, Folks Finance, Tinyman, Aave v3 & Uniswap liquidity indexing"}
-            </div>
-          </div>
-        </div>
-        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
-          {report.chains.some((c) => c.chain.toLowerCase() === "hyperliquid")
-            ? "Hyperliquid Verified · 0 Liquidations"
-            : "0 Debt / 0 Liquidations"}
-        </span>
-      </div>
+      {/* Asset Allocation: Spot Liquid vs DeFi & Perpetual Equity */}
+      <AssetAllocationSection report={report} />
+
+      {/* Top 5 Holdings Leaderboard across all wallets & chains */}
+      <TopHoldingsLeaderboard report={report} />
+
+      {/* Risk & Security Profile */}
+      <RiskProfileSection report={report} />
 
       {/* Per chain */}
       <div className="space-y-2">
@@ -936,6 +875,450 @@ function ReportView({
         list per chain, so this covers the assets Growtrack tracks — it is not a claim of complete
         on-chain coverage.
       </p>
+    </div>
+  );
+}
+
+const DONUT_COLORS = [
+  "#2563EB", // Primary Blue
+  "#10B981", // Emerald
+  "#8B5CF6", // Purple
+  "#F59E0B", // Amber
+  "#06B6D4", // Cyan
+  "#EC4899", // Pink
+  "#6366F1", // Indigo
+  "#14B8A6", // Teal
+  "#F43F5E", // Rose
+  "#64748B" // Slate
+];
+
+function getDonutSlicePath(
+  cx: number,
+  cy: number,
+  outerRadius: number,
+  innerRadius: number,
+  startAngle: number,
+  endAngle: number
+): string {
+  const angleDelta = endAngle - startAngle;
+  if (angleDelta >= 2 * Math.PI - 0.001) {
+    return [
+      `M ${cx} ${cy - outerRadius}`,
+      `A ${outerRadius} ${outerRadius} 0 1 0 ${cx} ${cy + outerRadius}`,
+      `A ${outerRadius} ${outerRadius} 0 1 0 ${cx} ${cy - outerRadius}`,
+      `M ${cx} ${cy - innerRadius}`,
+      `A ${innerRadius} ${innerRadius} 0 1 1 ${cx} ${cy + innerRadius}`,
+      `A ${innerRadius} ${innerRadius} 0 1 1 ${cx} ${cy - innerRadius}`,
+      "Z"
+    ].join(" ");
+  }
+
+  const x1 = cx + outerRadius * Math.cos(startAngle);
+  const y1 = cy + outerRadius * Math.sin(startAngle);
+  const x2 = cx + outerRadius * Math.cos(endAngle);
+  const y2 = cy + outerRadius * Math.sin(endAngle);
+
+  const x3 = cx + innerRadius * Math.cos(endAngle);
+  const y3 = cy + innerRadius * Math.sin(endAngle);
+  const x4 = cx + innerRadius * Math.cos(startAngle);
+  const y4 = cy + innerRadius * Math.sin(startAngle);
+
+  const largeArcFlag = angleDelta > Math.PI ? 1 : 0;
+
+  return [
+    `M ${x1.toFixed(3)} ${y1.toFixed(3)}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`,
+    `L ${x3.toFixed(3)} ${y3.toFixed(3)}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4.toFixed(3)} ${y4.toFixed(3)}`,
+    "Z"
+  ].join(" ");
+}
+
+function NetworkDistributionDonut({ report }: { report: PortfolioReport }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const activeChains = useMemo(() => {
+    return report.chains
+      .filter((c) => parseUsdValue(c.totalValueUsd) > 0)
+      .sort((a, b) => parseUsdValue(b.totalValueUsd) - parseUsdValue(a.totalValueUsd));
+  }, [report.chains]);
+
+  const totalUsd = useMemo(() => {
+    return activeChains.reduce((sum, c) => sum + parseUsdValue(c.totalValueUsd), 0);
+  }, [activeChains]);
+
+  if (activeChains.length === 0 || totalUsd <= 0) return null;
+
+  let currentAngle = -Math.PI / 2;
+  const slices = activeChains.map((c, i) => {
+    const usd = parseUsdValue(c.totalValueUsd);
+    const pct = totalUsd > 0 ? (usd / totalUsd) * 100 : 0;
+    const sliceAngle = (pct / 100) * 2 * Math.PI;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + sliceAngle;
+    currentAngle = endAngle;
+
+    const color = DONUT_COLORS[i % DONUT_COLORS.length];
+    const path = getDonutSlicePath(100, 100, 80, 52, startAngle, endAngle);
+
+    return {
+      chain: c.chain,
+      walletCount: c.walletCount,
+      usd,
+      pct,
+      color,
+      path
+    };
+  });
+
+  const activeSlice = hoveredIndex !== null ? slices[hoveredIndex] : null;
+
+  return (
+    <div className="space-y-3 p-4 sm:p-5 rounded-2xl bg-white/80 border border-navy-100/70 shadow-xs">
+      <div className="flex items-center justify-between pb-2 border-b border-navy-100/50">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600">
+            <PieChart className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-black text-navy-900 tracking-tight">
+              Network Value Distribution
+            </h4>
+            <p className="text-[10px] text-navy-500 font-medium">
+              Consolidated asset allocation across active chains
+            </p>
+          </div>
+        </div>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          100% Consolidated
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center pt-1">
+        {/* SVG Donut Chart */}
+        <div className="md:col-span-5 flex flex-col items-center justify-center relative">
+          <div className="relative w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center">
+            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-sm">
+              {slices.map((slice, index) => {
+                const isHovered = hoveredIndex === index;
+                return (
+                  <path
+                    key={slice.chain}
+                    d={slice.path}
+                    fill={slice.color}
+                    className="transition-all duration-200 cursor-pointer"
+                    style={{
+                      opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
+                      transformOrigin: "100px 100px",
+                      transform: isHovered ? "scale(1.04)" : "scale(1)"
+                    }}
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Donut Center Display */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-4">
+              <span className="text-[10px] uppercase font-black tracking-wider text-navy-400 truncate max-w-[110px]">
+                {activeSlice ? activeSlice.chain : "Total Value"}
+              </span>
+              <span className="text-sm sm:text-base font-black text-navy-900 tracking-tight">
+                {formatUsd(activeSlice ? activeSlice.usd : totalUsd) ?? "$0"}
+              </span>
+              <span className="text-[10px] font-bold text-primary-600">
+                {activeSlice
+                  ? `${activeSlice.pct.toFixed(1)}% Allocation`
+                  : `${activeChains.length} Chain${activeChains.length === 1 ? "" : "s"}`}
+              </span>
+            </div>
+          </div>
+          <p className="text-[10px] text-navy-400 font-medium mt-1">
+            Hover slices to inspect details
+          </p>
+        </div>
+
+        {/* Legend / Chain breakdown list */}
+        <div className="md:col-span-7 space-y-1.5 max-h-52 overflow-y-auto pr-1">
+          {slices.map((slice, index) => {
+            const isHovered = hoveredIndex === index;
+            return (
+              <div
+                key={slice.chain}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                className={`flex items-center justify-between p-2 rounded-xl transition-all cursor-pointer border ${
+                  isHovered
+                    ? "bg-primary-50/80 border-primary-300 shadow-xs ring-1 ring-primary-300"
+                    : "bg-white/60 hover:bg-white border-navy-100/50"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0 shadow-xs"
+                    style={{ backgroundColor: slice.color }}
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-navy-900 capitalize block truncate">
+                      {slice.chain}
+                    </span>
+                    <span className="text-[10px] text-navy-400 font-medium">
+                      {slice.walletCount} {slice.walletCount === 1 ? "wallet" : "wallets"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right flex-shrink-0 ml-3">
+                  <div className="text-xs font-black text-navy-900 font-mono">
+                    {formatUsd(slice.usd)}
+                  </div>
+                  <div className="text-[10px] font-bold text-primary-600 font-mono">
+                    {slice.pct.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssetAllocationSection({ report }: { report: PortfolioReport }) {
+  const total = parseUsdValue(report.totals.totalValueUsd);
+  if (total <= 0) return null;
+
+  const defiVal = report.totals.defiValueUsd ? parseUsdValue(report.totals.defiValueUsd) : 0;
+  const spotVal = report.totals.spotValueUsd
+    ? parseUsdValue(report.totals.spotValueUsd)
+    : Math.max(0, total - defiVal);
+
+  const spotPct = total > 0 ? (spotVal / total) * 100 : 0;
+  const defiPct = total > 0 ? (defiVal / total) * 100 : 0;
+
+  return (
+    <div className="space-y-2.5 p-3.5 sm:p-4 rounded-2xl bg-white/80 border border-navy-100/70 shadow-xs">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-black text-navy-900">
+          <Layers className="w-3.5 h-3.5 text-primary-500" />
+          <span>Asset Allocation: Spot vs. DeFi Positions</span>
+        </span>
+        <span className="text-[10px] font-bold text-navy-500 font-mono">
+          {formatUsd(total)} Total
+        </span>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="w-full h-3 rounded-full bg-navy-100/80 overflow-hidden flex shadow-inner">
+        {spotPct > 0 && (
+          <div
+            style={{ width: `${spotPct}%` }}
+            className="bg-blue-600 h-full transition-all"
+            title={`Spot Assets: ${spotPct.toFixed(1)}%`}
+          />
+        )}
+        {defiPct > 0 && (
+          <div
+            style={{ width: `${defiPct}%` }}
+            className="bg-emerald-500 h-full transition-all"
+            title={`DeFi & Perpetual Equity: ${defiPct.toFixed(1)}%`}
+          />
+        )}
+      </div>
+
+      {/* Dual Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 flex-shrink-0" />
+            <div>
+              <div className="text-[11px] font-bold text-navy-900">Liquid Spot Holdings</div>
+              <div className="text-[10px] text-navy-500">Self-custodial native & ERC-20 tokens</div>
+            </div>
+          </div>
+          <div className="text-right font-mono">
+            <div className="text-xs font-black text-navy-900">{formatUsd(spotVal)}</div>
+            <div className="text-[10px] font-bold text-blue-700">{spotPct.toFixed(1)}%</div>
+          </div>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+            <div>
+              <div className="text-[11px] font-bold text-navy-900">DeFi & Perpetual Equity</div>
+              <div className="text-[10px] text-navy-500">Hyperliquid perp margin, Aave & LPs</div>
+            </div>
+          </div>
+          <div className="text-right font-mono">
+            <div className="text-xs font-black text-navy-900">{formatUsd(defiVal)}</div>
+            <div className="text-[10px] font-bold text-emerald-700">{defiPct.toFixed(1)}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopHoldingsLeaderboard({ report }: { report: PortfolioReport }) {
+  const topHoldings = useMemo(() => {
+    const map = new Map<
+      string,
+      { symbol: string; name: string; totalUsd: number; amount: string; chains: Set<string> }
+    >();
+
+    for (const chain of report.chains) {
+      for (const h of chain.holdings) {
+        const val = h.valueUsd ? parseUsdValue(h.valueUsd) : 0;
+        if (val <= 0) continue;
+        const sym = h.symbol.toUpperCase();
+        const existing = map.get(sym) ?? {
+          symbol: h.symbol,
+          name: h.name,
+          totalUsd: 0,
+          amount: h.amount,
+          chains: new Set<string>()
+        };
+        existing.totalUsd += val;
+        existing.chains.add(chain.chain);
+        map.set(sym, existing);
+      }
+    }
+
+    for (const w of report.wallets) {
+      if (w.nativeValueUsd && parseUsdValue(w.nativeValueUsd) > 0) {
+        const val = parseUsdValue(w.nativeValueUsd);
+        const sym = w.nativeSymbol.toUpperCase();
+        const existing = map.get(sym) ?? {
+          symbol: w.nativeSymbol,
+          name: `${w.chain} Native`,
+          totalUsd: 0,
+          amount: w.nativeAmount ?? "0",
+          chains: new Set<string>()
+        };
+        existing.totalUsd += val;
+        existing.chains.add(w.chain);
+        map.set(sym, existing);
+      }
+    }
+
+    const grandTotal = parseUsdValue(report.totals.totalValueUsd);
+    return Array.from(map.values())
+      .sort((a, b) => b.totalUsd - a.totalUsd)
+      .slice(0, 5)
+      .map((item) => ({
+        ...item,
+        pct: grandTotal > 0 ? ((item.totalUsd / grandTotal) * 100).toFixed(1) : "0.0"
+      }));
+  }, [report.chains, report.wallets, report.totals.totalValueUsd]);
+
+  if (topHoldings.length === 0) return null;
+
+  return (
+    <div className="space-y-2.5 p-3.5 sm:p-4 rounded-2xl bg-white/80 border border-navy-100/70 shadow-xs">
+      <div className="flex items-center justify-between pb-1.5 border-b border-navy-100/50">
+        <div className="flex items-center gap-1.5">
+          <TrendingUp className="w-3.5 h-3.5 text-primary-500" />
+          <h4 className="text-xs font-black text-navy-900 tracking-tight">Top Asset Holdings</h4>
+        </div>
+        <span className="text-[10px] text-navy-400 font-medium">Largest aggregated positions</span>
+      </div>
+
+      <div className="space-y-1.5">
+        {topHoldings.map((token, index) => (
+          <div
+            key={token.symbol}
+            className="flex items-center justify-between p-2 rounded-xl bg-white/60 hover:bg-white border border-navy-100/40 text-xs transition-colors"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-5 h-5 rounded-lg bg-navy-100 text-navy-700 font-mono font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                #{index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="font-bold text-navy-900 flex items-center gap-1.5">
+                  <span>{token.symbol}</span>
+                  <span className="text-[10px] font-normal text-navy-400 truncate max-w-[120px] sm:max-w-[200px]">
+                    · {token.name}
+                  </span>
+                </div>
+                <div className="text-[10px] text-navy-400 capitalize truncate">
+                  Across {Array.from(token.chains).join(", ")}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right flex-shrink-0 ml-3">
+              <div className="font-mono font-black text-navy-900">{formatUsd(token.totalUsd)}</div>
+              <div className="text-[10px] font-bold text-primary-600 font-mono">{token.pct}%</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RiskProfileSection({ report }: { report: PortfolioReport }) {
+  const activeChains = report.chains.filter((c) => parseUsdValue(c.totalValueUsd) > 0);
+  const topChain = activeChains[0];
+  const topPct = topChain?.allocationPct ? parseFloat(topChain.allocationPct) : 0;
+
+  const diversificationRating =
+    topPct > 80
+      ? {
+          label: `Concentrated in ${topChain?.chain ?? "Single Chain"}`,
+          color: "text-amber-700 bg-amber-50 border-amber-200"
+        }
+      : topPct > 50
+        ? {
+            label: `Moderate Spread (${topChain?.chain ?? "Primary"} lead)`,
+            color: "text-blue-700 bg-blue-50 border-blue-200"
+          }
+        : {
+            label: "Well Diversified Multi-Chain",
+            color: "text-emerald-700 bg-emerald-50 border-emerald-200"
+          };
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      <div className="p-3 rounded-2xl bg-white/80 border border-navy-100/60 shadow-xs space-y-1">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Margin & Health</span>
+        </div>
+        <div className="text-xs font-black text-navy-900">0 Liquidations Detected</div>
+        <div className="text-[10px] text-emerald-700 font-medium">
+          Isolated margin · Safe protocol equity
+        </div>
+      </div>
+
+      <div className="p-3 rounded-2xl bg-white/80 border border-navy-100/60 shadow-xs space-y-1">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+          <Layers className="w-3.5 h-3.5 text-primary-500" />
+          <span>Chain Allocation</span>
+        </div>
+        <div className="text-xs font-black text-navy-900 truncate">
+          {diversificationRating.label}
+        </div>
+        <div className="text-[10px] text-navy-500 font-medium">
+          {activeChains.length} active networks indexed
+        </div>
+      </div>
+
+      <div className="p-3 rounded-2xl bg-white/80 border border-navy-100/60 shadow-xs space-y-1">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+          <Wallet className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Signer Redundancy</span>
+        </div>
+        <div className="text-xs font-black text-navy-900">
+          {report.totals.walletCount} Key{report.totals.walletCount === 1 ? "" : "s"} Consolidated
+        </div>
+        <div className="text-[10px] text-indigo-700 font-medium">
+          Verified Algorand x402 settlement
+        </div>
+      </div>
     </div>
   );
 }

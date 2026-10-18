@@ -13,7 +13,7 @@ const LANDING_DESCRIPTION =
   "Track an entire on-chain portfolio from one address on Ethereum, Algorand, Solana or Bitcoin: " +
   "holdings, USD values and per-chain allocation, with no API key and no account. Agents and " +
   "developers pay per request in USDC on Algorand via x402 — $0.50 for a live wallet snapshot, " +
-  "$1.00 for combined portfolio totals, $3.00 for a full report.";
+  "0.001 USDC for combined portfolio totals, 0.01 USDC for a full report.";
 
 const FEATURES: readonly (readonly [string, string])[] = [
   [
