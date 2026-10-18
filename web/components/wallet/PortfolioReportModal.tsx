@@ -345,9 +345,7 @@ function buildConsolidatedReport(
 
       const nativeDec = chainDecimalsMap.get(chainSlug.toLowerCase()) ?? 18;
       const nativeAmt = toWholeUnits(snap.data.nativeBalance, nativeDec);
-      const nativeVal = snap.data.nativeValueUsd
-        ? parseUsdValue(snap.data.nativeValueUsd)
-        : 0;
+      const nativeVal = snap.data.nativeValueUsd ? parseUsdValue(snap.data.nativeValueUsd) : 0;
       const walletChainTotal = snap.data.totalValueUsd ? parseUsdValue(snap.data.totalValueUsd) : 0;
 
       // Filter to keep ONLY holdings with real positive USD value (> 0)
@@ -357,8 +355,7 @@ function buildConsolidatedReport(
       });
 
       // Completely skip chains/wallets that have 0 or unpriced value
-      const hasPositiveValue =
-        walletChainTotal > 0 || nativeVal > 0 || pricedHoldings.length > 0;
+      const hasPositiveValue = walletChainTotal > 0 || nativeVal > 0 || pricedHoldings.length > 0;
       if (!hasPositiveValue) {
         continue;
       }
@@ -367,10 +364,7 @@ function buildConsolidatedReport(
       const effectiveChainTotal = Math.max(
         walletChainTotal,
         nativeVal +
-          pricedHoldings.reduce(
-            (acc, h) => acc + (h.valueUsd ? parseUsdValue(h.valueUsd) : 0),
-            0
-          )
+          pricedHoldings.reduce((acc, h) => acc + (h.valueUsd ? parseUsdValue(h.valueUsd) : 0), 0)
       );
 
       if (effectiveChainTotal > 0) {
@@ -483,8 +477,7 @@ function buildConsolidatedReport(
   const chains: PortfolioChainReport[] = Array.from(chainMap.values())
     .filter((c) => c.totalValueUsd > 0)
     .map((c) => {
-      const pct =
-        grandTotalUsd > 0 ? ((c.totalValueUsd / grandTotalUsd) * 100).toFixed(2) : "0.00";
+      const pct = grandTotalUsd > 0 ? ((c.totalValueUsd / grandTotalUsd) * 100).toFixed(2) : "0.00";
       return {
         chain: c.chain,
         totalValueUsd: c.totalValueUsd.toFixed(2),
@@ -497,8 +490,7 @@ function buildConsolidatedReport(
 
   // Annotate wallet allocation percentages ONLY for active wallets
   const activeWallets = wallets.filter(
-    (w) =>
-      (w.totalValueUsd ? parseUsdValue(w.totalValueUsd) > 0 : false) || w.holdings.length > 0
+    (w) => (w.totalValueUsd ? parseUsdValue(w.totalValueUsd) > 0 : false) || w.holdings.length > 0
   );
 
   const annotatedWallets = activeWallets.map((w) => {
@@ -688,21 +680,13 @@ function ReportView({
 
       {/* Totals */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat
-          label="Total value"
-          value={formatUsd(report.totals.totalValueUsd) ?? "$0.00"}
-        />
+        <Stat label="Total value" value={formatUsd(report.totals.totalValueUsd) ?? "$0.00"} />
         <Stat label="Wallets" value={String(report.totals.walletCount)} />
         <Stat
           label="Active Chains"
-          value={String(
-            report.chains.filter((c) => parseUsdValue(c.totalValueUsd) > 0).length
-          )}
+          value={String(report.chains.filter((c) => parseUsdValue(c.totalValueUsd) > 0).length)}
         />
-        <Stat
-          label="Priced Holdings"
-          value={`${report.totals.pricedHoldings} assets`}
-        />
+        <Stat label="Priced Holdings" value={`${report.totals.pricedHoldings} assets`} />
       </div>
 
       {/* Interactive Network Value Distribution (SVG Donut Chart) */}

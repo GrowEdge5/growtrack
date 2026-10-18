@@ -1033,7 +1033,10 @@ export default function WalletDashboardPage({ params }: PageProps) {
                           className="bg-white/70 hover:bg-white px-2 py-0.5 rounded-lg border border-navy-100 text-navy-700 font-medium cursor-pointer transition-all inline-flex items-center gap-1 text-xs"
                           title={`Click to view ${addr}`}
                         >
-                          <span>{KNOWN_NAMES[addr?.toLowerCase() ?? ""] ?? (addr ? shorten(addr, 6, 4) : "")}</span>
+                          <span>
+                            {KNOWN_NAMES[addr?.toLowerCase() ?? ""] ??
+                              (addr ? shorten(addr, 6, 4) : "")}
+                          </span>
                           <ArrowUpRight className="w-3 h-3 text-navy-400" />
                         </button>
                       ))}
@@ -1065,7 +1068,8 @@ export default function WalletDashboardPage({ params }: PageProps) {
                   <>
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-xl sm:text-2xl font-black text-navy-900 tracking-tight">
-                        {KNOWN_NAMES[selected?.toLowerCase() ?? ""] ?? (selected ? shorten(selected, 8, 6) : "")}
+                        {KNOWN_NAMES[selected?.toLowerCase() ?? ""] ??
+                          (selected ? shorten(selected, 8, 6) : "")}
                       </h1>
                       {selected && KNOWN_NAMES[selected.toLowerCase()] && (
                         <span className="font-mono text-xs text-navy-500 font-semibold bg-white/70 px-2 py-0.5 rounded-md border border-navy-100">

@@ -237,9 +237,7 @@ export class ViemChainDataProvider implements ChainDataProvider {
     const tokens = await getErc20TokenList(this.chain.id);
     if (tokens.length > 0) {
       try {
-        const unqueriedTokens = tokens.filter(
-          (t) => !holdingsMap.has(t.address.toLowerCase())
-        );
+        const unqueriedTokens = tokens.filter((t) => !holdingsMap.has(t.address.toLowerCase()));
         if (unqueriedTokens.length > 0) {
           const results = await this.client.multicall({
             allowFailure: true,
