@@ -53,6 +53,9 @@ export interface X402GuardOptions {
   // guard fails closed (always 402): with no facilitator it cannot confirm payment,
   // so a gated request can never be served.
   facilitator?: PaymentFacilitator;
+  // Optional pre-settlement request validation. If supplied and the request fails
+  // validation, returns 400 without settling payment on-chain.
+  validate?: (request: FastifyRequest) => void | Promise<void>;
 }
 
 export function createX402Guard(options: X402GuardOptions) {
@@ -95,6 +98,31 @@ export function createX402Guard(options: X402GuardOptions) {
       return requirePayment("Invalid PAYMENT-SIGNATURE encoding");
     }
 
+    // 2b. If request validation was provided, validate BEFORE verifying and settling!
+    // This prevents user funds from ever being deducted if the input is malformed or invalid.
+    if (options.validate !== undefined) {
+      try {
+        await options.validate(request);
+      } catch (err: unknown) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "statusCode" in err &&
+          typeof err.statusCode === "number"
+        ) {
+          return reply.code(err.statusCode).send(err);
+        }
+        const message = err instanceof Error ? err.message : "Request validation failed";
+        return reply.code(400).type("application/json").send({
+          type: "https://growtrack.pro/problems/validation-error",
+          title: "Request validation failed",
+          status: 400,
+          detail: message,
+          code: "VALIDATION_ERROR"
+        });
+      }
+    }
+
     // The single accept this resource was priced at — the canonical, deterministic
     // paymentRequirements the facilitator validates the payment against.
     const requirements = builder.buildAccept();
@@ -105,10 +133,12 @@ export function createX402Guard(options: X402GuardOptions) {
     // auto-catalogs the Bazaar listing from exactly these payload fields — so the
     // guard attaches its OWN resource metadata before forwarding. The client's
     // payment data (paymentGroup, signatures) is forwarded untouched.
+    // GoPlausible facilitator v2 schema also strictly requires `accepted` on paymentPayload.
     const resource = builder.buildResource();
     const extensions = builder.buildExtensions();
     const payloadWithResource: PaymentPayload = {
       ...payload,
+      accepted: (payload as Record<string, unknown>).accepted ?? requirements,
       ...(resource !== undefined ? { resource } : {}),
       ...(extensions !== undefined ? { extensions } : {})
     };

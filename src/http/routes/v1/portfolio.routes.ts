@@ -21,17 +21,20 @@ export function registerPortfolioRoutes(
   app.get(
     "/v1/portfolio",
     {
+      preValidation: createX402Guard({
+        enabled: container.env.X402_ENABLED,
+        builder: paidResourceBuilder(container, "portfolio-snapshot"),
+        facilitator: container.paymentFacilitator,
+        validate: (request) => {
+          portfolioQuerySchema.parse(request.query);
+        }
+      }),
       schema: {
         tags: ["portfolio"],
         summary: "Get combined portfolio totals across wallets and chains (x402 paid)",
         querystring: portfolioQuerySchema,
         response: { 200: portfolioSummaryResponseSchema, 402: paymentRequiredSchema }
-      },
-      preHandler: createX402Guard({
-        enabled: container.env.X402_ENABLED,
-        builder: paidResourceBuilder(container, "portfolio-snapshot"),
-        facilitator: container.paymentFacilitator
-      })
+      }
     },
     async (request) => {
       const { addresses } = portfolioQuerySchema.parse(request.query);
@@ -53,17 +56,20 @@ export function registerPortfolioRoutes(
   app.get(
     "/v1/portfolio/report",
     {
+      preValidation: createX402Guard({
+        enabled: container.env.X402_ENABLED,
+        builder: paidResourceBuilder(container, "portfolio-report"),
+        facilitator: container.paymentFacilitator,
+        validate: (request) => {
+          portfolioQuerySchema.parse(request.query);
+        }
+      }),
       schema: {
         tags: ["portfolio"],
         summary: "Get a full multichain portfolio report (x402 paid)",
         querystring: portfolioQuerySchema,
         response: { 200: portfolioReportResponseSchema, 402: paymentRequiredSchema }
-      },
-      preHandler: createX402Guard({
-        enabled: container.env.X402_ENABLED,
-        builder: paidResourceBuilder(container, "portfolio-report"),
-        facilitator: container.paymentFacilitator
-      })
+      }
     },
     async (request) => {
       const { addresses } = portfolioQuerySchema.parse(request.query);

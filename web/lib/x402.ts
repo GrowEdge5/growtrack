@@ -199,6 +199,7 @@ export async function payAndRetry<T>(
     x402Version: envelope.x402Version,
     scheme: "exact",
     network: accept.network,
+    accepted: accept,
     resource: envelope.resource,
     extensions: envelope.extensions,
     payload: { paymentGroup, paymentIndex: built.paymentIndex }
@@ -287,6 +288,7 @@ interface PaymentSignaturePayload {
   x402Version: number;
   scheme: string;
   network: string;
+  accepted?: PaymentRequirements;
   resource: PaymentRequiredEnvelope["resource"];
   extensions: PaymentRequiredEnvelope["extensions"];
   payload: { paymentGroup: string[]; paymentIndex: number };
@@ -305,6 +307,9 @@ function encodePaymentSignature(payload: PaymentSignaturePayload): string {
     network: payload.network,
     payload: payload.payload
   };
+  if (payload.accepted !== undefined) {
+    body.accepted = payload.accepted;
+  }
   if (payload.resource !== undefined) {
     body.resource = payload.resource;
   }

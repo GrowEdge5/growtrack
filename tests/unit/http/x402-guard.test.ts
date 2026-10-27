@@ -184,6 +184,8 @@ describe("createX402Guard", () => {
     expect(reply.code).not.toHaveBeenCalled();
     expect(reply.send).not.toHaveBeenCalled();
     expect(verify).toHaveBeenCalledTimes(1);
+    const forwardedPayload = (verify.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(forwardedPayload.accepted).toBeDefined();
     expect(settle).toHaveBeenCalledTimes(1);
 
     const [headerName, headerValue] = reply.header.mock.calls[0] as unknown as [string, string];

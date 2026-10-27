@@ -5,7 +5,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider
 } from "fastify-type-provider-zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import type { ApplicationContainer } from "../../src/app/build-container.js";
@@ -249,6 +249,60 @@ describe("public surface end to end", () => {
     });
 
     expect(response.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it("emits 402 challenge first for bodyless and paramless probes (402-first compliance)", async () => {
+    const app = await buildApp({ x402Enabled: true });
+
+    // Bodyless/paramless GET /v1/portfolio
+    const pResponse = await app.inject({
+      method: "GET",
+      url: "/v1/portfolio"
+    });
+    expect(pResponse.statusCode).toBe(402);
+    expect(pResponse.headers["payment-required"]).toBeDefined();
+    const pBody = paidRequestBody.parse(pResponse.json());
+    expect(pBody.accepts[0]?.amount).toBe("1000");
+
+    // Bodyless/paramless GET /v1/portfolio/report
+    const rResponse = await app.inject({
+      method: "GET",
+      url: "/v1/portfolio/report"
+    });
+    expect(rResponse.statusCode).toBe(402);
+    expect(rResponse.headers["payment-required"]).toBeDefined();
+    const rBody = paidRequestBody.parse(rResponse.json());
+    expect(rBody.accepts[0]?.amount).toBe("10000");
+
+    await app.close();
+  });
+
+  it("rejects invalid input before moving funds even when payment signature is presented", async () => {
+    const settleSpy = vi.fn(async () => ({
+      success: true,
+      transaction: "TX123",
+      network: "algorand:x"
+    }));
+    const facilitator: PaymentFacilitator = {
+      verify: async () => ({ isValid: true }),
+      settle: settleSpy
+    };
+    const app = await buildApp({ x402Enabled: true, facilitator });
+
+    const tooMany = Array.from({ length: 21 }, () => SOLANA).join(",");
+    const signature = Buffer.from(JSON.stringify({ x402Version: 2 }), "utf8").toString("base64");
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/v1/portfolio?addresses=${tooMany}`,
+      headers: { "payment-signature": signature }
+    });
+
+    expect(response.statusCode).toBe(400);
+    // Crucial: settle must NEVER have been called so no funds are deducted on invalid query
+    expect(settleSpy).not.toHaveBeenCalled();
 
     await app.close();
   });
